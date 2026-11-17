@@ -121,6 +121,42 @@ class MirrorWatchTests(unittest.TestCase):
         self.assertEqual(api.name, "Streaming HD miroir")
         self.assertEqual(len(api.bot_messages), 1)
 
+    def test_migrate_existing_html_announcement_into_old_and_new_names(self):
+        api = FakeAPI([human_message()])
+        s = state()
+        with patch("mirror_watch.check_site", side_effect=lambda u: response(url=u)):
+            mirror_watch.sync_thread(api, s, self.now)
+        state1 = s["tracked_threads"][mirror_watch.THREAD_ID]["url_states"]
+        for entry in state1.values():
+            entry["site_name"] = "momdax devient nandov.com"
+            entry["name_attempted_at"] = self.now.isoformat()
+        with patch("mirror_watch.check_site") as http, patch("mirror_watch.probe_site_name") as metadata:
+            mirror_watch.sync_thread(api, s, self.now + timedelta(hours=5))
+        http.assert_not_called()
+        metadata.assert_not_called()
+        entry = state1[URLS[0]]
+        self.assertEqual(entry["site_name"], "MOMDAX")
+        self.assertEqual(entry["pending_name"], "NANDOV")
+        self.assertEqual(entry["announced_url"], "https://nandov.com/")
+        self.assertIn("NANDOV", api.bot_messages[0]["content"])
+        self.assertIn("https://nandov.com/", api.bot_messages[0]["content"])
+        self.assertEqual(
+            len([e for e in s["events"] if e["type"] == "mirror_name_suspected"]), 5
+        )
+        with patch("mirror_watch.check_site", side_effect=lambda u: response(url=u)), patch(
+            "mirror_watch.probe_site_name", return_value={
+                "name": "NANDOV", "previous_name": "MOMDAX",
+                "announced_url": "https://nandov.com/",
+                "confidence": "strong", "evidence": "title:rename"
+            }
+        ):
+            mirror_watch.sync_thread(api, s, self.now + timedelta(days=1))
+        self.assertEqual(entry["site_name"], "NANDOV")
+        self.assertIsNone(entry["pending_name"])
+        self.assertEqual(
+            len([e for e in s["events"] if e["type"] == "mirror_name_changed"]), 5
+        )
+
     def test_antibot_page_or_failed_request_never_renames(self):
         api = FakeAPI([human_message()])
         s = state()
