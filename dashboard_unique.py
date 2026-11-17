@@ -1,139 +1,113 @@
-"""Tableau de bord Discord en un SEUL message Components V2.
+"""Catalogue Discord compact : TOUTES les fiches sont visibles et cliquables.
 
-Aucun serveur actif en permanence : les liens sont natifs et les messages
-sont seulement actualises par GitHub Actions.
+Le message reste sur une seule carte d'accueil et une carte par categorie.
+On retire les textes repetitifs plutot que de masquer les publications.
+Discord Components V2 : maximum 40 composants / 4 000 caracteres de texte.
 """
 from datetime import datetime, timezone
 
 from catalogue_v2 import (
-    MARKER, FLAG_V2, marker_id, style, category_visuals, salon_sort,
+    MARKER, FLAG_V2, marker_id, category_visuals, salon_sort,
     icon, safe, fold, ordered, count_items, text, sep, section, container,
     total_components, total_chars, normalize,
 )
 
 MAX_COMPONENTS = 40
 MAX_CHARS = 4000
-MAX_CARDS = 7
 
 
 def forum_link(url, label="Ouvrir"):
-    """Liens Markdown nommés : pas de #inconnu avec les fils Discord archivés."""
+    """Des noms cliquables, jamais des mentions #inconnu."""
     if not url:
         return safe(label)
     return f"[{safe(label)}]({url})"
 
 
-def entries_for_forum(name, entries, cap):
-    original = next((url for title, url in entries
-                     if title == "Ouvrir le forum" or title.startswith("#")), None)
+def entries_for_forum(name, entries, include_forum_link=True):
+    """Un lien cliquable par fiche : aucun seuil ni texte de remplacement."""
+    source = next(
+        (url for title, url in entries
+         if title == "Ouvrir le forum" or title.startswith("#")), None
+    )
     is_forum = any(title == "Ouvrir le forum" for title, _ in entries)
-    entries = sorted(
+    items = sorted(
         [(title, url) for title, url in entries
          if title != "Ouvrir le forum" and not title.startswith("#")],
-        key=lambda x: fold(x[0]),
+        key=lambda item: fold(item[0]),
     )
-    count = len(entries)
-    title = safe(name.replace("-", " ").replace("_", " ").upper())
-    heading = f"**{icon(name)}  {title}**"
-    if original:
-        heading += f"  ·  {forum_link(original, 'Forum' if is_forum else 'Salon')}"
-    if count:
-        visible = entries if cap is None else entries[:cap]
-        link_lines = [
-            "  ·  ".join(forum_link(url, title[:46]) for title, url in visible[i:i + 2])
-            for i in range(0, len(visible), 2)
-        ]
-        body = "\n".join(link_lines)
-        hidden = count - len(visible)
-        if hidden:
-            body += f"\n-# +{hidden} fiches accessibles dans le forum ci-dessus"
-        return heading + f"  ·  {count} {'fiche' if count == 1 else 'fiches'}\n" + body
-    return heading + ("\n-# Salon textuel" if original else "")
+    heading = f"**{icon(name)} {safe(name.replace('-', ' ').replace('_', ' ').upper())}**"
+    if source and (include_forum_link or not items):
+        heading += f" · {forum_link(source, 'Forum' if is_forum else 'Salon')}"
+    if items:
+        heading += f" · {len(items)} {'fiche' if len(items) == 1 else 'fiches'}"
+        links = [f"• {forum_link(url, title)}" for title, url in items]
+        return heading + "\n" + "\n".join(links)
+    return heading
 
 
-def build(grouped, *, max_entries=None, now=None):
+def build(grouped, *, include_forum_links=True, compact=False, now=None):
+    """Une mise en page complete, sans pagination destructive."""
     sorted_categories = ordered(grouped)
     visuals = category_visuals(grouped)
     count = sum(count_items(forums) for forums in grouped.values())
     updated = int((now or datetime.now(timezone.utc)).timestamp())
 
-    headline = container(
-        MARKER + "index", 0x977AF4,
+    intro = (
+        "# ✦ LES NOTES D'ELIKTO\n"
+        f"**{len(grouped)} catégories · {count} fiches**  ·  "
+        f"<t:{updated}:f>"
+    )
+    parts = container(
+        MARKER + "index",
+        0x977AF4,
         [
-            text(
-                "# ✦ LES NOTES D'ELIKTO\n"
-                "### 📚 CATALOGUE GÉNÉRAL\n"
-                "-# Streaming, téléchargements, anti-pub et toutes les ressources du serveur"
-            ),
-            sep(),
-            text(
-                f"**📁 {len(grouped)} catégories**   ·   **📚 {count} fiches**\n"
-                f"-# Actualisé le <t:{updated}:f> · Prochaine vérification automatique sous 6 h"
-            ),
+            text(intro),
             sep(),
             section(
-                "### 🌐 Catalogue web interactif\n"
-                "-# Recherche instantanée, catégories et fiches avec liens directs.",
+                "🌐 **Catalogue web** · recherche, alertes et disponibilité",
                 "https://elikto.github.io/Elikto-Discord-Bot/",
                 "Ouvrir le site",
             ),
         ],
     )
 
-    parts = headline[:]
-    for (cat_id, cat_name), forums in sorted_categories[:MAX_CARDS]:
-        _, emoji, color, description = visuals[(cat_id, cat_name)]
+    for (cat_id, cat_name), forums in sorted_categories:
+        _, emoji, color, _ = visuals[(cat_id, cat_name)]
         blocks = [
-            entries_for_forum(name, entries, max_entries)
+            entries_for_forum(name, entries, include_forum_links)
             for name, entries in sorted(forums.items(), key=salon_sort)
         ]
         body = "\n\n".join(blocks) or "-# Aucun forum référencé."
-        # Ne jamais couper une adresse au milieu : le mode compact choisira
-        # combien de fiches montrer si la limite Discord est depassee.
-        parts.extend(container(
-            f"{MARKER}dashboard:{cat_id}", color,
-            [
-                text(
-                    f"## {emoji}  {safe(cat_name.upper())}\n"
-                    f"-# {description}  ·  {count_items(forums)} fiches"
-                ),
-                sep(),
-                text(body),
-            ],
-        ))
-
-    other = sorted_categories[MAX_CARDS:]
-    if other:
-        body_lines = []
-        for (cat_id, name), forums in other:
-            emoji = visuals[(cat_id, name)][1]
-            overview = "  ·  ".join(
-                forum_link(url, name_of_forum)
-                for name_of_forum, entries in sorted(forums.items(), key=salon_sort)
-                for title, url in entries
-                if title == "Ouvrir le forum" or title.startswith("#")
-            )
-            body_lines.append(f"• {emoji} **{safe(name)}** · {count_items(forums)} fiches\n  {overview}")
-        parts.extend(container(
-            MARKER + "dashboard:other", 0x8493AA,
-            [text("## 📂  AUTRES CATÉGORIES"), sep(),
-             text("\n".join(body_lines)[:1600])],
-        ))
-
-    parts.append(
-        text("-# 🔗 Clique sur une fiche ou sur un forum pour l'ouvrir directement. "
-             "🔒 Les salons privés sont exclus de cet index.")
-    )
+        label = (
+            f"## {emoji} {safe(cat_name.upper())} · {count_items(forums)} fiches"
+            if not compact else
+            f"**{emoji} {safe(cat_name.upper())}**"
+        )
+        children = [text(label), sep(), text(body)]
+        parts.extend(container(f"{MARKER}dashboard:{cat_id}", color, children))
     return parts
 
 
 def render_dashboard(grouped, now=None):
-    """Tente le catalogue complet puis compacte si les limites Discord sont atteintes."""
-    for cap in (None, 20, 12, 8, 5, 3, 1, 0):
-        parts = build(grouped, max_entries=cap, now=now)
+    """Priorite absolue aux liens des fiches, pas aux descriptions.
+
+    Commence avec les liens de forums, puis retire uniquement ces liens
+    secondaires si necessaire. Toutes les fiches demeurent presentes.
+    Leve une erreur plutot que publier un index incomplet.
+    """
+    for include_forum_links, compact in (
+        (True, False),
+        (False, False),
+        (False, True),
+    ):
+        parts = build(
+            grouped, include_forum_links=include_forum_links,
+            compact=compact, now=now,
+        )
         if total_components(parts) <= MAX_COMPONENTS and total_chars(parts) <= MAX_CHARS:
             return parts
     raise ValueError(
-        "Le serveur compte trop de categories/salons pour un message Discord. "
-        "Il faut reduire la densite des cartes avant de publier."
+        "Le catalogue complet depasse les limites d'un message Discord. "
+        "Aucune fiche ne sera masquee. Il faut repartir les fiches sur "
+        "plusieurs messages de catalogue."
     )
