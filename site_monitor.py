@@ -167,6 +167,24 @@ def record_check(state: dict, record: dict, observation: dict, now: datetime) ->
     return alerts
 
 
+def public_mirrors(state: dict, thread_id: str) -> list[dict]:
+    """Liste publique des adresses distinctes déjà vérifiées pour un fil."""
+    tracked = state.get("tracked_threads", {}).get(str(thread_id), {})
+    observed = tracked.get("url_states", {})
+    return [
+        {
+            "url": url,
+            "name": entry.get("label"),
+            "status": entry.get("status", "pending"),
+            "last_checked": entry.get("last_checked"),
+            "http_status": entry.get("http_status"),
+            "redirect_url": entry.get("redirect_url"),
+        }
+        for url in tracked.get("urls", [])
+        if (entry := observed.get(url)) is not None
+    ]
+
+
 def watch_catalogue(api, catalogue: dict, state: dict, now=None) -> tuple[dict, list[dict]]:
     now = now or utc_now()
     alerts = []
@@ -272,6 +290,7 @@ def watch_catalogue(api, catalogue: dict, state: dict, now=None) -> tuple[dict, 
                     "http_status": record.get("http_status"),
                     "redirect_url": record.get("redirect_url"),
                     "reason": record.get("reason"),
+                    "mirrors": public_mirrors(state, thread_id),
                 }
 
     # Ne plus exposer les fiches supprimees du catalogue, mais conserver leurs
@@ -304,6 +323,7 @@ def watch_catalogue(api, catalogue: dict, state: dict, now=None) -> tuple[dict, 
             "http_status": r.get("http_status"),
             "redirect_url": r.get("redirect_url"),
             "reason": r.get("reason"),
+            "mirrors": public_mirrors(state, r["thread_id"]),
         } for r in state["records"].values()],
     }
     return report, alerts
@@ -353,6 +373,12 @@ def notify_discord(api, guild_id: str, alerts: list[dict]) -> int:
         "redirect_detected": "🔀 Autre domaine détecté",
         "site_unreachable": "🔴 Site inaccessible (confirmé)",
         "site_recovered": "🟢 Site de nouveau joignable",
+        "mirror_added": "🆕 Nouvelle adresse miroir",
+        "mirror_removed": "➖ Adresse miroir retirée",
+        "mirror_renamed": "✏️ Nom d'une adresse modifié",
+        "mirror_redirect": "🔀 Redirection d'un miroir",
+        "mirror_offline": "🔴 Adresse miroir inaccessible",
+        "mirror_recovered": "🟢 Adresse miroir rétablie",
     }
     count = 0
     # Une alerte par changement important, sans mention ni spam de masse.
