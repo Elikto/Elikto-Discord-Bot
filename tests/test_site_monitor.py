@@ -156,6 +156,44 @@ class MonitorTests(unittest.TestCase):
         self.assertEqual(report["monitored"], 1)
         self.assertEqual(alerts[0]["type"], "address_changed")
 
+    def test_mirror_urls_are_exported_and_counted_individually(self):
+        class FakeAPI: pass
+        thread_id = "1430988094374547559"
+        catalog = {"categories": [{"id": "1", "name": "Streaming",
+            "channels": [{"name": "films", "kind": "forum",
+                "items": [{"title": "Streaming HD miroir",
+                    "url": "https://discord.com/channels/1/" + thread_id}]}]}]}
+        current_state = state()
+        urls = ["https://one.example.org/", "https://two.example.org/"]
+        current_state["tracked_threads"] = {
+            thread_id: {
+                "urls": urls,
+                "url_states": {
+                    urls[0]: {"url": urls[0], "label": "Un", "status": "online",
+                              "last_checked": self.now.isoformat(), "http_status": 200},
+                    urls[1]: {"url": urls[1], "label": "Deux", "status": "offline",
+                              "last_checked": self.now.isoformat(), "http_status": 503}
+                }
+            }
+        }
+        current_state["records"][thread_id] = {
+            "thread_id": thread_id, "title": "Streaming HD miroir",
+            "discord_url": "https://discord.com/channels/1/" + thread_id,
+            "site_url": urls[0], "status": "online",
+            "last_checked": self.now.isoformat(),
+            "last_discovery": self.now.isoformat()
+        }
+        with patch("site_monitor.check_site") as mock_check:
+            report, alerts = watch_catalogue(FakeAPI(), catalog, current_state, self.now)
+        mock_check.assert_not_called()
+        self.assertEqual(report["fiches"], 1)
+        self.assertEqual(report["total"], 2)
+        self.assertEqual(report["monitored"], 2)
+        self.assertEqual(report["status_counts"], {"online": 1, "offline": 1})
+        self.assertEqual(len(catalog["categories"][0]["channels"][0]["items"][0]["monitor"]["mirrors"]), 2)
+        self.assertEqual(len(report["sites"][0]["mirrors"]), 2)
+        self.assertEqual(alerts, [])
+
     def test_title_change_creates_history_event(self):
         class FakeAPI: pass
         current_state = state()
