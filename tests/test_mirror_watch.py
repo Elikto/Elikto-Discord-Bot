@@ -132,13 +132,13 @@ class MirrorWatchTests(unittest.TestCase):
             entry["name_attempted_at"] = self.now.isoformat()
         with patch("mirror_watch.check_site",
                    return_value=response(url="https://nandov.com/")) as http, patch(
-            "mirror_watch.probe_site_name"
+            "mirror_watch.probe_site_name", return_value=None
         ) as metadata:
             mirror_watch.sync_thread(api, s, self.now + timedelta(hours=5))
-        # Le nouveau domaine, partagé par les cinq alias de cet essai,
-        # est contrôlé une seule fois. Les anciens liens ne sont pas re-testés.
+        # Le nouveau domaine partagé par les cinq alias est contrôlé
+        # une seule fois pour sa disponibilité et pour son nom.
         http.assert_called_once_with("https://nandov.com/")
-        metadata.assert_not_called()
+        metadata.assert_called_once_with("https://nandov.com/")
         entry = state1[URLS[0]]
         self.assertEqual(entry["site_name"], "MOMDAX")
         self.assertEqual(entry["pending_name"], "NANDOV")
@@ -223,6 +223,41 @@ class MirrorWatchTests(unittest.TestCase):
             mirror_watch.sync_thread(api, s, self.now + timedelta(hours=2))
         second_probe.assert_not_called()
         self.assertEqual(len(api.bot_messages), 1)
+
+    def test_future_rename_of_a_new_domain_is_followed_without_duplicate(self):
+        """MOMDAX->NANDOV, puis NANDOV->NOUVEAU, sans perdre l'historique."""
+        api = FakeAPI([human_message(["https://momdax.com/"])])
+        s = state()
+        source = {
+            "url": "https://momdax.com/", "label": "momdax.com",
+            "site_name": "MOMDAX", "pending_name": "NANDOV",
+            "announced_url": "https://nandov.com/", "status": "online",
+            "last_checked": self.now.isoformat(), "failures": 0,
+            "name_attempted_at": self.now.isoformat(),
+        }
+        s["tracked_threads"] = {
+            mirror_watch.THREAD_ID: {
+                "url_states": {"https://momdax.com/": source},
+                "urls": ["https://momdax.com/"],
+            }
+        }
+        with patch("mirror_watch.check_site", side_effect=lambda u: response(url=u)), patch(
+            "mirror_watch.probe_site_name", return_value={
+                "name": "NOUVEAU", "previous_name": "NANDOV",
+                "announced_url": "https://nouveau.com/",
+                "confidence": "strong", "evidence": "title:rename"
+            }
+        ) as names:
+            mirror_watch.sync_thread(api, s, self.now + timedelta(hours=1))
+        display = s["tracked_threads"][mirror_watch.THREAD_ID]["display_sites"]
+        self.assertEqual(len(display), 1)
+        self.assertEqual(display[0]["url"], "https://nouveau.com/")
+        self.assertEqual(display[0]["name"], "NOUVEAU")
+        self.assertIn("MOMDAX", display[0]["previous_names"])
+        self.assertIn("NANDOV", display[0]["previous_names"])
+        self.assertEqual(names.call_count, 2)
+        self.assertIn("https://nouveau.com/", api.bot_messages[0]["content"])
+        self.assertNotIn("https://nandov.com/", api.bot_messages[0]["content"])
 
     def test_antibot_page_or_failed_request_never_renames(self):
         api = FakeAPI([human_message()])
