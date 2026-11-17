@@ -175,6 +175,10 @@ def public_mirrors(state: dict, thread_id: str) -> list[dict]:
         {
             "url": url,
             "name": entry.get("label"),
+            "site_name": entry.get("site_name"),
+            "pending_name": entry.get("pending_name"),
+            "name_evidence": entry.get("name_evidence"),
+            "name_last_checked": entry.get("name_last_checked"),
             "status": entry.get("status", "pending"),
             "last_checked": entry.get("last_checked"),
             "http_status": entry.get("http_status"),
@@ -392,6 +396,8 @@ def notify_discord(api, guild_id: str, alerts: list[dict]) -> int:
         "mirror_redirect": "🔀 Redirection d'un miroir",
         "mirror_offline": "🔴 Adresse miroir inaccessible",
         "mirror_recovered": "🟢 Adresse miroir rétablie",
+        "mirror_name_suspected": "🟡 Changement de nom détecté, à confirmer",
+        "mirror_name_changed": "🔄 Nouveau nom du site confirmé",
     }
     count = 0
     # Une alerte par changement important, sans mention ni spam de masse.
