@@ -419,17 +419,31 @@ def sync_thread(api, state, now=None):
         raise ValueError("Fil public attendu sur le serveur")
     bot_id = str(api.call("GET", "/users/@me")["id"])
     messages = api.call("GET", f"/channels/{THREAD_ID}/messages", params={"limit": 100})
-    if not any(m.get("content") or m.get("embeds") for m in messages
-               if str(m.get("author", {}).get("id")) != bot_id):
-        print("MIROIRS : contenu source inaccessible.")
+    tracked = state.setdefault("tracked_threads", {}).setdefault(THREAD_ID, {})
+    entries = tracked.setdefault("url_states", {})
+    readable = any(
+        m.get("content") or m.get("embeds")
+        for m in messages if str(m.get("author", {}).get("id")) != bot_id
+    )
+    if not readable and not entries:
+        print("MIROIRS : contenu source inaccessible et aucun historique conservé.")
         return "blocked"
     sources = find_urls(messages, bot_id)
     print("MIROIRS : liens distincts détectés =", len(sources))
     if not sources:
-        return "no_urls"
+        # Si le message original n'affiche plus les anciennes URL, conserver
+        # les sources déjà vérifiées. Le bot doit pouvoir rééditer son propre
+        # récapitulatif même si les textes Discord ont été réorganisés.
+        sources = [
+            {"url": url, "label": entries[url].get("label", url)}
+            for url in tracked.get("urls", list(entries))
+            if url in entries
+        ]
+        if not sources:
+            return "no_urls"
+        print("MIROIRS : aucun lien lisible dans le fil ; réutilisation de",
+              len(sources), "adresses historiques validées.")
 
-    tracked = state.setdefault("tracked_threads", {}).setdefault(THREAD_ID, {})
-    entries = tracked.setdefault("url_states", {})
     is_first = not entries
     before = set(entries)
     observed = {s["url"] for s in sources}
