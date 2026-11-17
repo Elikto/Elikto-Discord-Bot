@@ -14,6 +14,7 @@ on:
       - 'site_monitor.py'
       - 'site_probe.py'
       - 'tests/test_site_monitor.py'
+      - 'tests/test_dashboard_unique.py'
       - 'site/**'
       - 'tests/test_web_export.py'
       - 'tests/test_website.py'
