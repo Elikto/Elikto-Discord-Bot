@@ -18,7 +18,7 @@ def safe(value):
     return "".join("\\" + c if c in special else c for c in s)
 
 def marker_id(marker):
-    return max(1, int.from_bytes(hashlib.blake2s(marker.encode(), digest_size=4).digest(), "big"))
+    return max(1, int.from_bytes(hashlib.blake2s(marker.encode(), digest_size=4).digest(), "big") & 0x7FFFFFFF)
 
 def style(name):
     n = fold(name)
