@@ -261,36 +261,93 @@ def grouped_current_sites(items):
 
 
 def decorate_destinations(groups, source_items, target_states, now, state):
-    """Vérifier chaque NOUVEAU domaine une seule fois, pas chaque alias ancien."""
+    """Contrôler les nouveaux domaines, y compris leurs renommages ultérieurs.
+
+    Chaque cible est vérifiée une seule fois par jour. Un second changement
+    annoncé dans le HTML suit la même procédure, jusqu'à trois transitions
+    pour empêcher les cycles et les redirections infinies.
+    """
     source_index = {item["url"]: item for item in source_items}
     required = set()
-    for group in groups:
-        target = group["url"]
-        source = source_index.get(target)
-        if source:
-            observation = source
+    projected = {}
+
+    for initial in groups:
+        group = {
+            **initial,
+            "previous_names": list(initial.get("previous_names", [])),
+            "source_urls": list(initial.get("source_urls", [])),
+        }
+        visited = set()
+        for _hop in range(4):
+            target = group["url"]
+            if target in visited:
+                break
+            visited.add(target)
+            source = source_index.get(target)
+            if source is not None:
+                observation = source
+            else:
+                required.add(target)
+                observation = target_states.get(target)
+                is_new = observation is None
+                if is_new:
+                    observation = {
+                        "url": target, "label": group["name"],
+                        "site_name": group["name"], "status": "pending",
+                        "last_checked": None, "http_status": None, "failures": 0,
+                        "reason": None, "redirect_url": None, "final_url": None,
+                    }
+                    target_states[target] = observation
+                if not is_checked_today(observation.get("last_checked"), now):
+                    update_probe(
+                        observation, check_site(target), now, state, first_run=is_new
+                    )
+                if (observation.get("status") == "online"
+                        and not is_checked_today(observation.get("name_attempted_at"), now)):
+                    observation["name_attempted_at"] = now.isoformat(timespec="seconds")
+                    update_name(
+                        observation, probe_site_name(target), now, state,
+                        first_run=is_new,
+                    )
+
+            # Une page qui annonce "NANDOV devient X.com" est une preuve
+            # d'annonce, pas encore la confirmation de son identité.
+            successor = clean_url(observation.get("announced_url")) if observation.get("announced_url") else None
+            successor_name = observation.get("pending_name")
+            if (successor and successor != target and successor not in visited
+                    and successor_name):
+                current_name = group["name"]
+                if identity_key(current_name) != identity_key(successor_name):
+                    if identity_key(current_name) not in {
+                        identity_key(name) for name in group["previous_names"]
+                    }:
+                        group["previous_names"].append(current_name)
+                group["url"] = successor
+                group["name"] = str(successor_name)
+                group["pending"] = True
+                group["announced"] = True
+                continue
+
+            for field in ("status", "last_checked", "http_status", "redirect_url"):
+                group[field] = observation.get(field)
+            break
+
+        url = urlsplit(group["url"])
+        key = ((url.hostname or "").removeprefix("www."), url.path.rstrip("/") or "/")
+        if key not in projected:
+            projected[key] = group
         else:
-            required.add(target)
-            observation = target_states.get(target)
-            is_new = observation is None
-            if is_new:
-                observation = {
-                    "url": target, "label": group["name"], "status": "pending",
-                    "last_checked": None, "http_status": None, "failures": 0,
-                    "reason": None, "redirect_url": None, "final_url": None,
-                }
-                target_states[target] = observation
-            if not is_checked_today(observation.get("last_checked"), now):
-                update_probe(
-                    observation, check_site(target), now, state,
-                    first_run=is_new,
-                )
-        for field in ("status", "last_checked", "http_status", "redirect_url"):
-            group[field] = observation.get(field)
-    # Un domaine abandonné ne reste pas dans le tableau de bord.
+            merged = projected[key]
+            for field in ("source_urls", "previous_names"):
+                for val in group.get(field, []):
+                    if val not in merged[field]:
+                        merged[field].append(val)
+            merged["pending"] = merged["pending"] or group.get("pending", False)
+            merged["announced"] = merged["announced"] or group.get("announced", False)
+
     for url in set(target_states) - required:
         del target_states[url]
-    return groups
+    return list(projected.values())
 
 
 def summary_message(items, thread_name):
@@ -441,7 +498,7 @@ def sync_thread(api, state, now=None):
     source_items = [entries[source["url"]] for source in sources]
     sites = grouped_current_sites(source_items)
     target_states = tracked.setdefault("target_states", {})
-    decorate_destinations(sites, source_items, target_states, now, state)
+    sites = decorate_destinations(sites, source_items, target_states, now, state)
     summary = summary_message(sites, thread_name)
     try:
         message_id = upsert_bot_message(api, tracked, bot_id, summary)
