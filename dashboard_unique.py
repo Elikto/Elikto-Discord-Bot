@@ -27,12 +27,12 @@ def entries_for_forum(name, entries, include_forum_link=True):
     """Un lien cliquable par fiche : aucun seuil ni texte de remplacement."""
     source = next(
         (url for title, url in entries
-         if title == "Ouvrir le forum" or title.startswith("#")), None
+         if title in ("Ouvrir le forum", "Ouvrir le salon")), None
     )
     is_forum = any(title == "Ouvrir le forum" for title, _ in entries)
     items = sorted(
         [(title, url) for title, url in entries
-         if title != "Ouvrir le forum" and not title.startswith("#")],
+         if title not in ("Ouvrir le forum", "Ouvrir le salon")],
         key=lambda item: fold(item[0]),
     )
     heading = f"**{icon(name)} {safe(name.replace('-', ' ').replace('_', ' ').upper())}**"
