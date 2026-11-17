@@ -710,7 +710,7 @@
         "https://zinzov.com/",
         "https://didvip.com/"
       ],
-      "last_synced": "2026-11-17T22:37:26+00:00",
+      "last_synced": "2026-11-17T22:40:07+00:00",
       "target_states": {
         "https://nandov.com/": {
           "url": "https://nandov.com/",
@@ -721,7 +721,8 @@
           "failures": 0,
           "reason": null,
           "redirect_url": null,
-          "final_url": "https://nandov.com/"
+          "final_url": "https://nandov.com/",
+          "name_attempted_at": "2026-11-17T22:40:07+00:00"
         },
         "https://dotivoz.com/": {
           "url": "https://dotivoz.com/",
@@ -732,7 +733,8 @@
           "failures": 0,
           "reason": null,
           "redirect_url": null,
-          "final_url": "https://dotivoz.com/"
+          "final_url": "https://dotivoz.com/",
+          "name_attempted_at": "2026-11-17T22:40:07+00:00"
         },
         "https://farsov.com/": {
           "url": "https://farsov.com/",
@@ -743,7 +745,8 @@
           "failures": 0,
           "reason": null,
           "redirect_url": null,
-          "final_url": "https://farsov.com/"
+          "final_url": "https://farsov.com/",
+          "name_attempted_at": "2026-11-17T22:40:07+00:00"
         },
         "https://timbov.com/": {
           "url": "https://timbov.com/",
@@ -754,7 +757,8 @@
           "failures": 0,
           "reason": null,
           "redirect_url": null,
-          "final_url": "https://timbov.com/"
+          "final_url": "https://timbov.com/",
+          "name_attempted_at": "2026-11-17T22:40:07+00:00"
         }
       },
       "display_sites": [
