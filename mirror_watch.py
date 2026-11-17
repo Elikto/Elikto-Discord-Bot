@@ -358,7 +358,6 @@ def summary_message(items, thread_name):
     """
     lines = [
         "## ✦ SITES ACTUELS",
-        "-# Les noms et adresses sont suivis automatiquement",
         "",
     ]
     for item in items:
