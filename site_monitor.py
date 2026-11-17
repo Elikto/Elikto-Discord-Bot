@@ -6,6 +6,7 @@ public ne contient jamais de jeton Discord ni le contenu brut des messages.
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 import json
 import os
 from pathlib import Path
@@ -14,7 +15,8 @@ from urllib.parse import urlsplit
 from site_probe import check_site, extract_candidate_urls, other_domain
 
 
-INTERVAL = timedelta(hours=48)
+INTERVAL = timedelta(hours=20)
+PARIS = ZoneInfo("Europe/Paris")
 STATE_PATH = Path("data/monitor_state.json")
 PUBLIC_PATH = Path("site/monitoring.json")
 CATALOGUE_PATH = Path("site/catalogue.json")
@@ -39,7 +41,8 @@ def due(last: str | None, now: datetime, interval=INTERVAL) -> bool:
         then = datetime.fromisoformat(last.replace("Z", "+00:00"))
         if then.tzinfo is None:
             return True
-        return now - then >= interval
+        return (now - then >= interval and
+                then.astimezone(PARIS).date() != now.astimezone(PARIS).date())
     except (ValueError, TypeError):
         return True
 
@@ -337,15 +340,38 @@ def watch_catalogue(api, catalogue: dict, state: dict, now=None) -> tuple[dict, 
             control_count += 1
             monitored_urls += int(bool(rec.get("site_url")))
 
+    server = [
+        {
+            "url": rec["site_url"],
+            "title": rec.get("site_name") or rec.get("title"),
+            "status": rec.get("status", "pending"),
+            "last_checked": rec.get("last_checked"),
+            "http_status": rec.get("http_status"),
+            "redirect_url": rec.get("redirect_url"),
+            "pending_name": rec.get("pending_name"),
+            "source_count": rec.get("source_count", 0),
+            "sources": rec.get("sources", [])[:6],
+            "first_seen": rec.get("first_seen"),
+        }
+        for rec in state.get("server_links", {}).values() if rec.get("active")
+    ]
+    server_statuses = {}
+    for rec in server:
+        name = rec["status"]
+        server_statuses[name] = server_statuses.get(name, 0) + 1
     events = state["events"][-120:]
     report = {
         "schema_version": 1,
         "updated_at": stamp(now),
-        "next_check_policy": "48 hours after previous check (Github Actions cadence)",
+        "next_check_policy": "Daily (Europe/Paris), minimum 20 hours between checks",
         "status_counts": statuses,
         "total": control_count,
         "fiches": len(state["records"]),
         "monitored": monitored_urls,
+        "server_sites": server,
+        "server_site_total": len(server),
+        "server_site_status_counts": server_statuses,
+        "server_scan": state.get("server_scan", {}),
         "events": list(reversed(events)),
         "sites": [{
             "thread_id": r["thread_id"],
@@ -417,6 +443,10 @@ def notify_discord(api, guild_id: str, alerts: list[dict]) -> int:
         "mirror_recovered": "🟢 Adresse miroir rétablie",
         "mirror_name_suspected": "🟡 Changement de nom détecté, à confirmer",
         "mirror_name_changed": "🔄 Nouveau nom du site confirmé",
+        "server_site_added": "🆕 Nouveau site repéré dans le serveur",
+        "server_site_removed": "➖ Site retiré du serveur",
+        "server_name_suspected": "🟡 Nouveau nom détecté dans le serveur",
+        "server_name_changed": "✅ Changement de nom confirmé dans le serveur",
     }
     count = 0
     # Une alerte par changement important, sans mention ni spam de masse.
