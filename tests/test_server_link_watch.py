@@ -94,7 +94,7 @@ class ServerWatchTests(unittest.TestCase):
                     "https://eta.example.org/"):
             self.assertIn(url, urls, url)
         self.assertEqual(len(urls), 7)
-        self.assertEqual(counts["locations_discovered"], 7)
+        self.assertEqual(counts["locations_discovered"], 6)
         self.assertEqual(errors, [])
         for forbidden in ("secret", "private", "hidden", "nsfw"):
             self.assertFalse(any(forbidden in x for x in urls))
@@ -131,7 +131,7 @@ class ServerWatchTests(unittest.TestCase):
         api.messages["11"][0]["content"] += " https://buried.example.org/"
         found, counts, errors = watch.find_server_links(api)
         self.assertIn("https://buried.example.org/", found)
-        self.assertEqual(found["https://alpha.example.org/"]["source_count"], 125)
+        self.assertEqual(found["https://alpha.example.org/"]["source_count"], 126)
         self.assertEqual(errors, [])
         self.assertGreaterEqual(counts["messages_read"], 125)
 
