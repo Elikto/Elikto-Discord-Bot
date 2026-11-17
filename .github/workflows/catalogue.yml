@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: '23 */6 * * *'
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'sync_catalogue.py'
+      - '.github/workflows/catalogue.yml'
 
 concurrency:
   group: elikto-catalogue
