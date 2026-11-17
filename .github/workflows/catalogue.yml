@@ -9,6 +9,7 @@ on:
     paths:
       - 'sync_catalogue.py'
       - 'catalogue_v2.py'
+      - 'dashboard_unique.py'
       - '.github/workflows/catalogue.yml'
 
 concurrency:
