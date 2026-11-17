@@ -1,6 +1,8 @@
 import unittest
 import sync_catalogue
-from sync_catalogue import VIEW_CHANNEL, public_channel, chunks, render, ensure_catalog_channel
+from sync_catalogue import (VIEW_CHANNEL, public_channel, chunks, render,
+                            ensure_catalog_channel, category_style, overview_embed,
+                            category_sort)
 
 
 class CatalogueTests(unittest.TestCase):
@@ -73,6 +75,40 @@ class CatalogueTests(unittest.TestCase):
                 ensure_catalog_channel(FakeAPI())
         finally:
             sync_catalogue.CHANNEL_ID = old
+
+
+    def test_category_visual_identity(self):
+        streaming = category_style("Streaming")
+        anti_pub = category_style("anti-pub")
+        self.assertEqual(streaming[1], "🎬")
+        self.assertEqual(anti_pub[1], "🛡️")
+        self.assertNotEqual(streaming[2], anti_pub[2])
+
+    def test_catalog_navigation_links(self):
+        data = {
+            ("2", "Streaming"): {"films": [
+                ("Ouvrir le forum", "https://discord.com/channels/1/2"),
+                ("Site A", "https://discord.com/channels/1/123")]}
+        }
+        link = "https://discord.com/channels/1/888/999"
+        embed = overview_embed(data, {"2": link})
+        self.assertIn(link, embed["description"])
+        self.assertIn("1 fiche(s)", embed["description"])
+        self.assertIn("7", str(category_style("Streaming")[2]))
+
+    def test_category_order(self):
+        data = [(("22", "Anti-pub"), {}), (("11", "Streaming"), {})]
+        ordered = sorted(data, key=category_sort)
+        self.assertEqual(ordered[0][0][1], "Streaming")
+
+    def test_compact_embed_limit(self):
+        data = {("2", "Streaming"): {
+            "films": [("Ouvrir le forum", "https://discord.com/channels/1/2")] +
+                     [("Site " + str(i), "https://discord.com/channels/1/" + str(i))
+                      for i in range(350)]}}
+        pages = render(data)
+        self.assertGreater(len(pages), 2)
+        self.assertTrue(all(len(e[2]["description"]) <= 4096 for e in pages))
 
     def test_render_categories(self):
         data = {("2", "Streaming"): {"films": [("Site A", "https://discord.com/channels/1/123")]}}
