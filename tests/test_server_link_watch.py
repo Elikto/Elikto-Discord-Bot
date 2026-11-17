@@ -169,7 +169,7 @@ class ServerWatchTests(unittest.TestCase):
         prior = len(s["server_links"])
         original_call = api.call
         def fail_one(method, path, **kwargs):
-            if path == "/channels/12/messages":
+            if path == "/channels/11/messages":
                 raise RuntimeError("Discord GET /channels/12/messages : HTTP 403")
             return original_call(method, path, **kwargs)
         api.call = fail_one
