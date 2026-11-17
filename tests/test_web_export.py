@@ -15,7 +15,7 @@ class WebExportTests(unittest.TestCase):
                 ]
             },
             ("11", "Salons textuels"): {
-                "général": [("#général", "https://discord.com/channels/1/11")]
+                "général": [("Ouvrir le salon", "https://discord.com/channels/1/11")]
             },
         }
         result = serialize(dataset, now=datetime(2026, 11, 17, tzinfo=timezone.utc))
@@ -26,10 +26,28 @@ class WebExportTests(unittest.TestCase):
         self.assertEqual(result["categories"][1]["channels"][0]["kind"], "text")
         self.assertNotIn("token", str(result).lower())
 
+    def test_numbered_movix_thread_is_a_real_fiche(self):
+        data = {
+            ("10", "Streaming"): {
+                "films-et-series": [
+                    ("Ouvrir le forum", "https://discord.com/channels/1/77"),
+                    ("#1 Movix", "https://discord.com/channels/1/1430991985572839547")
+                ]
+            }
+        }
+        result = serialize(data)
+        forum = result["categories"][0]["channels"][0]
+        self.assertEqual(result["stats"]["entries"], 1)
+        self.assertEqual(forum["items"][0]["title"], "#1 Movix")
+        self.assertEqual(
+            forum["items"][0]["url"],
+            "https://discord.com/channels/1/1430991985572839547"
+        )
+
     def test_discussion_salon_last_and_category_icons_distinct(self):
         dataset = {
             ("10", "Streaming"): {
-                "discussion": [("#discussion", "https://discord.com/channels/1/10")],
+                "discussion": [("Ouvrir le salon", "https://discord.com/channels/1/10")],
                 "films": [
                     ("Ouvrir le forum", "https://discord.com/channels/1/12"),
                     ("A", "https://discord.com/channels/1/15"),
