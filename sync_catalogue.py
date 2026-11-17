@@ -6,8 +6,8 @@ visibles par @everyone. Ne modifie pas les fiches d'origine.
 from __future__ import annotations
 
 from collections import defaultdict
+from datetime import datetime, timezone
 import os
-import sys
 import time
 import unicodedata
 
@@ -127,8 +127,11 @@ class DiscordAPI:
                 if str(message.get("author", {}).get("id")) != me:
                     continue
                 for embed in message.get("embeds", []):
-                    marker = embed.get("footer", {}).get("text", "")
-                    if marker.startswith(MARKER):
+                    footer = embed.get("footer", {}).get("text", "")
+                    if MARKER in footer:
+                        # Compatible avec les anciens marqueurs, meme si le pied
+                        # de page a ete rendu plus lisible dans la nouvelle UI.
+                        marker = footer[footer.index(MARKER):].split()[0]
                         found[marker] = message
             before = page[-1]["id"]
         return found
@@ -217,39 +220,146 @@ def get_items(api: DiscordAPI):
     return grouped
 
 
+
+def category_style(name: str):
+    """Ordre, emoji, couleur et courte description. Les noms reels restent intacts."""
+    n = fold(name)
+    if "stream" in n or "film" in n or "serie" in n or "cinema" in n:
+        return (0, "🎬", 0x9C84F7, "Films, séries et plateformes")
+    if "iptv" in n or "television" in n:
+        return (1, "📺", 0x45B5D9, "Télévision et chaînes")
+    if "anime" in n or "manga" in n:
+        return (2, "🌸", 0xEC91C6, "Anime et animation")
+    if "telecharg" in n or "download" in n or "torrent" in n:
+        return (3, "📥", 0x5F9CF0, "Téléchargements et ressources")
+    if "anti" in n and ("pub" in n or "publicit" in n):
+        return (4, "🛡️", 0x52CDAA, "Bloqueurs de publicité et protection")
+    if "android" in n or "mobile" in n or "application" in n:
+        return (5, "📱", 0x8ACB73, "Applications et outils mobiles")
+    if "jeu" in n or "gaming" in n or "game" in n:
+        return (6, "🎮", 0xF0B96A, "Jeux et ressources")
+    if "livre" in n or "comic" in n or "lecture" in n:
+        return (7, "📖", 0xD5A1FC, "Livres, comics et lecture")
+    return (100, "📁", 0x8493AA, "Ressources du serveur")
+
+
+def forum_icon(name: str) -> str:
+    n = fold(name)
+    if "film" in n and "serie" in n:
+        return "📺"
+    if "film" in n:
+        return "🎞️"
+    if "serie" in n:
+        return "📺"
+    if "iptv" in n:
+        return "📡"
+    if "anime" in n or "manga" in n:
+        return "🌸"
+    if "jeu" in n or "gaming" in n:
+        return "🎮"
+    if "livre" in n or "comic" in n:
+        return "📖"
+    if "anti" in n and ("pub" in n or "publicit" in n):
+        return "🛡️"
+    if "android" in n:
+        return "📱"
+    return "📂"
+
+
+def pretty(name: str) -> str:
+    return " ".join(name.replace("-", " ").replace("_", " ").split()).upper()
+
+
+def category_sort(item):
+    category = item[0][1]
+    return (category_style(category)[0], fold(category))
+
+
+def category_counts(forums):
+    return sum(1 for entries in forums.values()
+               for title, _ in entries
+               if title != "Ouvrir le forum" and not title.startswith("#"))
+
+
+def overview_embed(grouped, links=None):
+    links = links or {}
+    now = datetime.now(timezone.utc)
+    count = sum(category_counts(forums) for forums in grouped.values())
+    lines = []
+    for (cat_id, cat_name), forums in sorted(grouped.items(), key=category_sort):
+        icon = category_style(cat_name)[1]
+        name = escape(cat_name)
+        url = links.get(cat_id)
+        label = f"[**{name}**]({url})" if url else f"**{name}**"
+        line = f"{icon} {label}  ·  {category_counts(forums)} fiche(s)"
+        if len("\n".join(lines)) + len(line) > 2700:
+            lines.append("• D'autres rubriques sont détaillées plus bas.")
+            break
+        lines.append(line)
+    index = "\n".join(lines) if lines else "Les rubriques publiques apparaîtront ici."
+    description = (
+        "> **Ton point d'entrée vers toutes les ressources du serveur.**\n"
+        "> Fiches classées par catégorie et par forum, avec des liens directs.\n\n"
+        "**🧭  EXPLORER LES CATÉGORIES**\n\n" + index +
+        "\n\n━━━━━━━━━━━━━━━━\n"
+        f"📚 **{count} fiches**  •  🗂️ **{len(grouped)} catégories**\n"
+        "🔎 Sélectionne une rubrique pour ouvrir sa page.\n"
+        f"🔄 Dernière synchronisation : <t:{int(now.timestamp())}:f>\n"
+        "🔒 Salons privés exclus de l'index public."
+    )
+    return {
+        "title": "✦ LES NOTES D'ELIKTO  |  CATALOGUE",
+        "description": description,
+        "color": 0x977AF4,
+        "footer": {"text": f"Index général · mise à jour automatique · {MARKER}index"},
+    }
+
+
 def render(grouped):
-    rendered = []
-    categories_summary = []
-    total = 0
-    for (cat_id, cat_name), forums in sorted(grouped.items(), key=lambda e: fold(e[0][1])):
-        lines, count = [], 0
+    """Un message d'accueil et un embed par catégorie, paginés si nécessaire."""
+    rendered = [(f"{MARKER}index", "📚  **LE CATALOGUE DES NOTES D'ELIKTO**",
+                 overview_embed(grouped))]
+    for (cat_id, cat_name), forums in sorted(grouped.items(), key=category_sort):
+        _, icon, color, subtitle = category_style(cat_name)
+        lines = []
         for name, entries in sorted(forums.items(), key=lambda e: fold(e[0])):
-            lines.append("\n**" + escape(name) + "**")
-            for title, url in sorted(entries, key=lambda e: (e[0] != "Ouvrir le forum", fold(e[0]))):
-                if title != "Ouvrir le forum" and not title.startswith("#"):
-                    count += 1
-                lines.append("• [" + escape(title[:95]) + "](" + url + ")")
-        total += count
-        categories_summary.append("• **" + escape(cat_name) + f"** — {count} fiche(s)")
-        pages = chunks(lines)
+            thread_items = [(title, url) for title, url in entries
+                            if title != "Ouvrir le forum" and not title.startswith("#")]
+            open_forum = next((url for title, url in entries
+                               if title == "Ouvrir le forum"), None)
+            open_text = next((url for title, url in entries if title.startswith("#")), None)
+            local_count = len(thread_items)
+            kind = "fiche" if local_count == 1 else "fiches"
+            lines.append(
+                f"\n**{forum_icon(name)}  {escape(pretty(name))}**"
+                + (f"  ·  {local_count} {kind}" if open_forum else "")
+            )
+            if open_forum:
+                lines.append(f"↳ [Ouvrir le forum]({open_forum})")
+            elif open_text:
+                lines.append(f"↳ [Accéder au salon]({open_text})")
+            for title, url in sorted(thread_items, key=lambda e: fold(e[0])):
+                lines.append(f"• [{escape(title[:95])}]({url})")
+            lines.append("")
+        pages = chunks(lines, max_chars=3250)
+        count = category_counts(forums)
         for i, body in enumerate(pages, 1):
             marker = f"{MARKER}cat:{cat_id}:{i}"
+            description = (
+                f"> {subtitle}\n"
+                f"> **{count} fiches**  •  **{len(forums)} salons**\n"
+                "\n━━━━━━━━━━━━━━━━\n"
+                + body
+            )
             embed = {
-                "title": f"📁 {cat_name}" + (f" · {i}/{len(pages)}" if len(pages) > 1 else ""),
-                "description": body,
-                "color": 5793266,
-                "footer": {"text": marker},
+                "title": f"{icon}  {cat_name}"[:235]
+                         + (f" · Page {i}/{len(pages)}" if len(pages) > 1 else ""),
+                "description": description,
+                "color": color,
+                "footer": {"text": f"Catalogue · synchronisation 6 h · {marker}"},
             }
-            rendered.append((marker, f"📂 {cat_name} · {i}/{len(pages)}", embed))
-    description = "\n".join(categories_summary)[:3700] or "Aucun salon public indexable."
-    description += f"\n\n**{total} fiches** · synchronisation automatique toutes les 6 heures."
-    summary = {
-        "title": "📚 Les notes d'Elikto — Catalogue general",
-        "description": description,
-        "color": 5793266,
-        "footer": {"text": f"{MARKER}index"},
-    }
-    return [(f"{MARKER}index", "📚 Catalogue general — Les notes d'Elikto", summary)] + rendered
+            rendered.append((marker, f"{icon}  **{cat_name.upper()}**"[:180], embed))
+    return rendered
 
 
 def publish(api: DiscordAPI, grouped):
@@ -257,23 +367,44 @@ def publish(api: DiscordAPI, grouped):
     existing = api.own_messages(CHANNEL_ID, me)
     rendered = render(grouped)
     wanted = set()
-    for marker, content, embed in rendered:
-        wanted.add(marker)
+    category_links = {}
+
+    def upsert(marker, content, embed):
         payload = {"content": content, "embeds": [embed], "allowed_mentions": {"parse": []}}
         if marker in existing:
             message = existing[marker]
-            old_embed = next((e for e in message.get("embeds", []) if e.get("footer", {}).get("text") == marker), {})
-            if (message.get("content") != content or
-                old_embed.get("description") != embed["description"] or
-                old_embed.get("title") != embed["title"]):
+            old_embed = next(
+                (e for e in message.get("embeds", [])
+                 if MARKER in e.get("footer", {}).get("text", "")), {}
+            )
+            keys = ("description", "title", "color", "footer")
+            if (message.get("content") != content
+                    or any(old_embed.get(k) != embed.get(k) for k in keys)):
                 api.call("PATCH", f"/channels/{CHANNEL_ID}/messages/{message['id']}", json=payload)
                 print("Actualise", marker)
-        else:
-            api.call("POST", f"/channels/{CHANNEL_ID}/messages", json=payload)
-            print("Cree", marker)
+            return str(message["id"])
+        result = api.call("POST", f"/channels/{CHANNEL_ID}/messages", json=payload)
+        print("Cree", marker)
+        return str(result["id"])
+
+    # D'abord les catégories : les liens de navigation pointent directement
+    # vers leurs messages Discord, sans message supplémentaire ni doublon.
+    for marker, content, embed in rendered[1:]:
+        wanted.add(marker)
+        message_id = upsert(marker, content, embed)
+        if marker.endswith(":1"):
+            cat_id = marker[len(f"{MARKER}cat:"):-2]
+            category_links[cat_id] = (
+                f"https://discord.com/channels/{GUILD_ID}/{CHANNEL_ID}/{message_id}"
+            )
+
+    marker, content, _ = rendered[0]
+    wanted.add(marker)
+    upsert(marker, content, overview_embed(grouped, category_links))
+
     for marker, message in existing.items():
         if marker not in wanted:
-            # Ne supprime que les pages d'index du bot devenues inutiles.
+            # Ne supprime que les anciens messages d'index appartenant au bot.
             api.call("DELETE", f"/channels/{CHANNEL_ID}/messages/{message['id']}")
             print("Ancienne page d'index retiree", marker)
     print(f"Termine : {len(rendered)} messages dans {len(grouped)} categories.")
