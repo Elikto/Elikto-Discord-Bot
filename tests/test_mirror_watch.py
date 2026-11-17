@@ -104,7 +104,7 @@ class MirrorWatchTests(unittest.TestCase):
         tracked = s["tracked_threads"][mirror_watch.THREAD_ID]["url_states"][URLS[0]]
         self.assertEqual(tracked["site_name"], "MOMDAX")
         self.assertEqual(tracked["pending_name"], "NANDOV")
-        self.assertIn("Nouveau nom annoncé", api.bot_messages[0]["content"])
+        self.assertIn("### ✦ [NANDOV]", api.bot_messages[0]["content"])
         self.assertEqual(len([e for e in s["events"] if e["type"] == "mirror_name_suspected"]), 5)
         with patch("mirror_watch.check_site", side_effect=lambda u: response(url=u)), patch(
             "mirror_watch.probe_site_name", return_value={
@@ -211,8 +211,14 @@ class MirrorWatchTests(unittest.TestCase):
         self.assertEqual(dotivoz["previous_names"], ["ZAKMAV", "FOPOV"])
         self.assertEqual(farsov["previous_names"], ["DOVLIP", "DIDVIP"])
         message = api.bot_messages[0]["content"]
+        self.assertIn("### ✦ [DOTIVOZ](https://dotivoz.com/)\\n-# ↳ Ancien : ZAKMAV, FOPOV", message)
+        self.assertIn("### ✦ [FARSOV](https://farsov.com/)\\n-# ↳ Ancien : DOVLIP, DIDVIP", message)
+        self.assertNotIn("HTTP", message)
+        self.assertNotIn("🟡", message)
+        self.assertNotIn("Accessible", message)
+        self.assertNotIn("<t:", message)
         for name in names:
-            self.assertEqual(message.count("**" + str(names.index(name)+1) + ". " + name + "**"), 1)
+            self.assertEqual(message.count("### ✦ [" + name + "]("), 1)
         for url in target_urls:
             self.assertEqual(message.count(url), 1)
         for domain, _, _, _ in originals:
@@ -223,6 +229,28 @@ class MirrorWatchTests(unittest.TestCase):
             mirror_watch.sync_thread(api, s, self.now + timedelta(hours=2))
         second_probe.assert_not_called()
         self.assertEqual(len(api.bot_messages), 1)
+
+    def test_minimal_summary_only_new_name_and_former_names(self):
+        sites = [
+            {"name": "DOTIVOZ", "url": "https://dotivoz.com/",
+             "previous_names": ["ZAKMAV", "FOPOV"], "status": "online",
+             "http_status": 200, "pending": True,
+             "last_checked": self.now.isoformat()},
+            {"name": "TIMBOV", "url": "https://timbov.com/",
+             "previous_names": ["ZINZOV"], "status": "offline",
+             "http_status": 503, "pending": False},
+        ]
+        out = mirror_watch.summary_message(sites, "Streaming HD miroir")
+        self.assertEqual(out, (
+            "## ✦ SITES ACTUELS\\n\\n"
+            "### ✦ [DOTIVOZ](https://dotivoz.com/)\\n"
+            "-# ↳ Ancien : ZAKMAV, FOPOV\\n\\n"
+            "### ✦ [TIMBOV](https://timbov.com/)\\n"
+            "-# ↳ Ancien : ZINZOV"
+        ))
+        self.assertNotIn("HTTP", out)
+        self.assertNotIn("Nouveau nom annoncé", out)
+        self.assertNotIn("Inaccessible", out)
 
     def test_future_rename_of_a_new_domain_is_followed_without_duplicate(self):
         """MOMDAX->NANDOV, puis NANDOV->NOUVEAU, sans perdre l'historique."""
@@ -317,7 +345,7 @@ class MirrorWatchTests(unittest.TestCase):
         rendered = api.bot_messages[0]["content"]
         for url in URLS:
             self.assertIn(url, rendered)
-        self.assertIn("quotidienne", rendered)
+        self.assertIn("## ✦ SITES ACTUELS", rendered)
         self.assertEqual(s["events"], [])
 
     def test_no_double_check_on_same_paris_calendar_day(self):
@@ -349,7 +377,7 @@ class MirrorWatchTests(unittest.TestCase):
             probe.reset_mock()
             mirror_watch.sync_thread(api, s, self.now + timedelta(days=1))
         self.assertEqual(probe.call_count, 5)
-        self.assertIn("Dernier contrôle", api.bot_messages[0]["content"])
+        self.assertNotIn("Dernier contrôle", api.bot_messages[0]["content"])
 
     def test_two_distinct_daily_failures_confirm_offline(self):
         api = FakeAPI([human_message()])
