@@ -132,7 +132,7 @@ class SiteDiscoveryTests(unittest.TestCase):
     def test_group_projection_is_distinct(self):
         tracked = {}
         rows = site_discovery.candidate_groups(tracked, NOW, fetcher=lambda _: None)
-        self.assertEqual(len({row["url"] for row in rows}), 12)
+        self.assertEqual(len({row["url"] for row in rows}), 16)
         self.assertTrue(all(not row["source_urls"] for row in rows))
         self.assertEqual(rows[0]["name"], "BIMDAV")
 
