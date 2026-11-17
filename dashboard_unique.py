@@ -6,9 +6,9 @@ sont seulement actualises par GitHub Actions.
 from datetime import datetime, timezone
 
 from catalogue_v2 import (
-    MARKER, FLAG_V2, marker_id, style, icon, safe, fold, ordered,
-    count_items, text, sep, container, total_components, total_chars,
-    normalize,
+    MARKER, FLAG_V2, marker_id, style, category_visuals, salon_sort,
+    icon, safe, fold, ordered, count_items, text, sep, container,
+    total_components, total_chars, normalize,
 )
 
 MAX_COMPONENTS = 40
@@ -16,12 +16,11 @@ MAX_CHARS = 4000
 MAX_CARDS = 7
 
 
-def forum_link(url):
-    """La mention Discord <#id> est un lien court directement vers la fiche."""
-    parts = url.rstrip("/").split("/")
-    if len(parts) >= 2 and parts[-1].isdigit() and "discord.com" in url:
-        return f"<#{parts[-1]}>"
-    return f"[Ouvrir]({url})"
+def forum_link(url, label="Ouvrir"):
+    """Liens Markdown nommés : pas de #inconnu avec les fils Discord archivés."""
+    if not url:
+        return safe(label)
+    return f"[{safe(label)}]({url})"
 
 
 def entries_for_forum(name, entries, cap):
@@ -36,11 +35,14 @@ def entries_for_forum(name, entries, cap):
     title = safe(name.replace("-", " ").replace("_", " ").upper())
     heading = f"**{icon(name)}  {title}**"
     if original:
-        heading += f"  ·  {forum_link(original)}"
+        has_forum = any(t == "Ouvrir le forum" for t, _ in entries)
+        heading += f"  ·  {forum_link(original, 'Forum' if has_forum else 'Salon')}"
     if count:
         visible = entries if cap is None else entries[:cap]
-        link_lines = ["  ".join(forum_link(url) for _, url in visible[i:i + 5])
-                      for i in range(0, len(visible), 5)]
+        link_lines = [
+            "  ·  ".join(forum_link(url, title[:46]) for title, url in visible[i:i + 2])
+            for i in range(0, len(visible), 2)
+        ]
         body = "\n".join(link_lines)
         hidden = count - len(visible)
         if hidden:
@@ -51,6 +53,7 @@ def entries_for_forum(name, entries, cap):
 
 def build(grouped, *, max_entries=None, now=None):
     sorted_categories = ordered(grouped)
+    visuals = category_visuals(grouped)
     count = sum(count_items(forums) for forums in grouped.values())
     updated = int((now or datetime.now(timezone.utc)).timestamp())
 
@@ -72,10 +75,10 @@ def build(grouped, *, max_entries=None, now=None):
 
     parts = headline[:]
     for (cat_id, cat_name), forums in sorted_categories[:MAX_CARDS]:
-        _, emoji, color, description = style(cat_name)
+        _, emoji, color, description = visuals[(cat_id, cat_name)]
         blocks = [
             entries_for_forum(name, entries, max_entries)
-            for name, entries in sorted(forums.items(), key=lambda item: fold(item[0]))
+            for name, entries in sorted(forums.items(), key=salon_sort)
         ]
         body = "\n\n".join(blocks) or "-# Aucun forum référencé."
         # Ne jamais couper une adresse au milieu : le mode compact choisira
@@ -95,14 +98,15 @@ def build(grouped, *, max_entries=None, now=None):
     other = sorted_categories[MAX_CARDS:]
     if other:
         body_lines = []
-        for (_, name), forums in other:
-            overview = " ".join(
-                forum_link(url)
-                for entries in forums.values()
+        for (cat_id, name), forums in other:
+            emoji = visuals[(cat_id, name)][1]
+            overview = "  ·  ".join(
+                forum_link(url, name_of_forum)
+                for name_of_forum, entries in sorted(forums.items(), key=salon_sort)
                 for title, url in entries
                 if title == "Ouvrir le forum" or title.startswith("#")
             )
-            body_lines.append(f"• **{safe(name)}** · {count_items(forums)} fiches\n  {overview}")
+            body_lines.append(f"• {emoji} **{safe(name)}** · {count_items(forums)} fiches\n  {overview}")
         parts.extend(container(
             MARKER + "dashboard:other", 0x8493AA,
             [text("## 📂  AUTRES CATÉGORIES"), sep(),
