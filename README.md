@@ -33,31 +33,39 @@ Un site peut changer de domaine par redirection : le nouveau domaine est alors
 **signalé pour vérification**, sans remplacer automatiquement l'adresse officielle.
 Une réponse HTTP ne prouve pas que le site est sûr ou que son contenu est correct.
 
-### Suivi dédié : fil « Streaming HD miroir »
+### Suivi quotidien des cinq miroirs et de leur domaine principal
 
-Le fil public **1430988094374547559** dispose d'un suivi de nom et d'adresse
-spécifique (`thread_watch.py`), relancé toutes les six heures par GitHub
-Actions.
+Le fil **Streaming HD miroir** (ID Discord `1430988094374547559`)
+dispose d'un suivi spécialisé dans `mirror_watch.py`.
 
-- Quand **l'auteur du fil** renseigne une adresse valide dans son message ou
-  annonce clairement « Nouvelle adresse : https://… », le bot met à jour
-  **son propre message de suivi dans ce fil** (un seul message, jamais de doublon).
-- Si l'auteur écrit « Nouveau nom : … », le bot peut aussi corriger le **titre
-  du fil** lorsqu'il possède la permission **Gérer les fils**.
-- Les anciennes adresses et les modifications de nom sont historisées dans
-  `data/monitor_state.json` et présentées dans le tableau de bord.
-- Si une ancienne adresse redirige vers un domaine différent, le bot le
-  **signale sans supposer** qu'il s'agit du même site. Aucun changement de
-  nom n'est déduit automatiquement d'un simple nom de domaine.
-- Le bot **ne peut pas éditer le texte du message original d'un membre** :
-  seul son message de suivi est corrigé. Aucune écriture n'a lieu si le texte
-  source n'est pas lisible ou si plusieurs URL sont ambiguës.
-- Si l'auteur modifie directement le titre du fil, le bot reflète ce titre
-  lors de sa prochaine synchronisation.
+- Le bot extrait **toutes les URL distinctes** des messages humains de ce fil,
+  sans prendre ses propres liens de récapitulatif pour de nouveaux sites.
+- Premier inventaire : **6 URL** détectées, soit le domaine principal
+  (`momdax.com`) et cinq autres domaines (`zakmav.com`, `fopov.com`,
+  `dovlip.com`, `zinzov.com`, `didvip.com`). Si l'inventaire évolue,
+  le bot ajoute ou retire les liens du récapitulatif automatiquement.
+- Chaque adresse possède son état HTTP propre : accessible, accès restreint,
+  à vérifier (première erreur) ou inaccessible (après deux contrôles).
+- **Une vérification par jour** selon le calendrier Europe/Paris, avec au
+  moins 20 heures d'écart entre les mesures ; le workflow GitHub Actions
+  se déclenche toutes les 6 h, sans multiplier les vérifications le même jour.
+- Un seul **message du bot dans le fil** récapitule toutes les adresses
+  cliquables, les états et la date réelle de contrôle de chacune.
+- Le tableau de bord web publie les adresses et leurs statuts séparément ;
+  les transitions et les redirections alimentent l'historique.
+- Une nouvelle adresse, une suppression ou un changement de libellé dans les
+  messages du fil est répercuté à la synchronisation suivante.
+- Les redirections vers de nouveaux domaines sont signalées, **sans supposer
+  automatiquement qu'elles prouvent un changement d'identité**.
+- Un renommage automatique du **fil lui-même** est possible uniquement
+  si son auteur indique « Nouveau nom du fil : … » et que le bot possède
+  la permission `Gérer les fils`.
+- Les messages originaux des membres ne sont jamais édités par le bot ;
+  seules ses propres publications de suivi sont modifiées.
 
-**Prérequis :** activer `Message Content Intent` pour que les URL des
-messages soient visibles au bot. Vérifier aussi `Écrire dans les fils` ;
-`Gérer les fils` est nécessaire pour renommer les fils créés par autrui.
+Le mode de surveillance général des autres fiches demeure à 48 heures.
+Les réponses HTTP (même 200) n'établissent ni la légalité d'un site ni son
+fonctionnement applicatif complet.
 
 ### Autorisation Discord indispensable
 
