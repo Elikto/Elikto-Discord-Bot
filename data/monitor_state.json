@@ -507,9 +507,81 @@
       "current": "#1 Movix",
       "detail": "Nouvelle fiche publique ajoutée au serveur.",
       "alert": true
+    },
+    {
+      "id": 2,
+      "type": "mirror_name_suspected",
+      "at": "2026-11-17T22:22:58+00:00",
+      "thread_id": "1430988094374547559",
+      "title": "momdax.com",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1430988094374547559",
+      "previous": "MOMDAX",
+      "current": "NANDOV",
+      "detail": "La page du site annonce un nouveau nom ou domaine ; à confirmer.",
+      "alert": true
+    },
+    {
+      "id": 3,
+      "type": "mirror_name_suspected",
+      "at": "2026-11-17T22:22:58+00:00",
+      "thread_id": "1430988094374547559",
+      "title": "zakmav.com",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1430988094374547559",
+      "previous": "ZAKMAV",
+      "current": "DOTIVOZ",
+      "detail": "La page du site annonce un nouveau nom ou domaine ; à confirmer.",
+      "alert": true
+    },
+    {
+      "id": 4,
+      "type": "mirror_name_suspected",
+      "at": "2026-11-17T22:22:58+00:00",
+      "thread_id": "1430988094374547559",
+      "title": "fopov.com",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1430988094374547559",
+      "previous": "FOPOV",
+      "current": "DOTIVOZ",
+      "detail": "La page du site annonce un nouveau nom ou domaine ; à confirmer.",
+      "alert": true
+    },
+    {
+      "id": 5,
+      "type": "mirror_name_suspected",
+      "at": "2026-11-17T22:22:58+00:00",
+      "thread_id": "1430988094374547559",
+      "title": "dovlip.com",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1430988094374547559",
+      "previous": "DOVLIP",
+      "current": "FARSOV",
+      "detail": "La page du site annonce un nouveau nom ou domaine ; à confirmer.",
+      "alert": true
+    },
+    {
+      "id": 6,
+      "type": "mirror_name_suspected",
+      "at": "2026-11-17T22:22:58+00:00",
+      "thread_id": "1430988094374547559",
+      "title": "zinzov.com",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1430988094374547559",
+      "previous": "ZINZOV",
+      "current": "TIMBOV",
+      "detail": "La page du site annonce un nouveau nom ou domaine ; à confirmer.",
+      "alert": true
+    },
+    {
+      "id": 7,
+      "type": "mirror_name_suspected",
+      "at": "2026-11-17T22:22:58+00:00",
+      "thread_id": "1430988094374547559",
+      "title": "didvip.com",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1430988094374547559",
+      "previous": "DIDVIP",
+      "current": "FARSOV",
+      "detail": "La page du site annonce un nouveau nom ou domaine ; à confirmer.",
+      "alert": true
     }
   ],
-  "event_sequence": 1,
+  "event_sequence": 7,
   "tracked_threads": {
     "1430988094374547559": {
       "url_states": {
@@ -525,11 +597,12 @@
           "final_url": "https://momdax.com/",
           "name_attempted_at": "2026-11-17T22:18:26+00:00",
           "name_last_checked": "2026-11-17T22:18:26+00:00",
-          "name_evidence": "title",
-          "site_name": "momdax devient nandov.com",
-          "pending_name": null,
-          "pending_seen_at": null,
-          "pending_count": 0
+          "name_evidence": "title:rename",
+          "site_name": "MOMDAX",
+          "pending_name": "NANDOV",
+          "pending_seen_at": "2026-11-17T22:22:58+00:00",
+          "pending_count": 1,
+          "announced_url": "https://nandov.com/"
         },
         "https://zakmav.com/": {
           "url": "https://zakmav.com/",
@@ -543,11 +616,12 @@
           "final_url": "https://zakmav.com/",
           "name_attempted_at": "2026-11-17T22:18:26+00:00",
           "name_last_checked": "2026-11-17T22:18:26+00:00",
-          "name_evidence": "title",
-          "site_name": "zakmav devient dotivoz.com",
-          "pending_name": null,
-          "pending_seen_at": null,
-          "pending_count": 0
+          "name_evidence": "title:rename",
+          "site_name": "ZAKMAV",
+          "pending_name": "DOTIVOZ",
+          "pending_seen_at": "2026-11-17T22:22:58+00:00",
+          "pending_count": 1,
+          "announced_url": "https://dotivoz.com/"
         },
         "https://fopov.com/": {
           "url": "https://fopov.com/",
@@ -561,11 +635,12 @@
           "final_url": "https://fopov.com/",
           "name_attempted_at": "2026-11-17T22:18:26+00:00",
           "name_last_checked": "2026-11-17T22:18:26+00:00",
-          "name_evidence": "title",
-          "site_name": "fopov devient dotivoz.com",
-          "pending_name": null,
-          "pending_seen_at": null,
-          "pending_count": 0
+          "name_evidence": "title:rename",
+          "site_name": "FOPOV",
+          "pending_name": "DOTIVOZ",
+          "pending_seen_at": "2026-11-17T22:22:58+00:00",
+          "pending_count": 1,
+          "announced_url": "https://dotivoz.com/"
         },
         "https://dovlip.com/": {
           "url": "https://dovlip.com/",
@@ -579,11 +654,12 @@
           "final_url": "https://dovlip.com/",
           "name_attempted_at": "2026-11-17T22:18:26+00:00",
           "name_last_checked": "2026-11-17T22:18:26+00:00",
-          "name_evidence": "title",
-          "site_name": "dovlip devient farsov.com",
-          "pending_name": null,
-          "pending_seen_at": null,
-          "pending_count": 0
+          "name_evidence": "title:rename",
+          "site_name": "DOVLIP",
+          "pending_name": "FARSOV",
+          "pending_seen_at": "2026-11-17T22:22:58+00:00",
+          "pending_count": 1,
+          "announced_url": "https://farsov.com/"
         },
         "https://zinzov.com/": {
           "url": "https://zinzov.com/",
@@ -597,11 +673,12 @@
           "final_url": "https://zinzov.com/",
           "name_attempted_at": "2026-11-17T22:18:26+00:00",
           "name_last_checked": "2026-11-17T22:18:26+00:00",
-          "name_evidence": "title",
-          "site_name": "zinzov devient timbov.com",
-          "pending_name": null,
-          "pending_seen_at": null,
-          "pending_count": 0
+          "name_evidence": "title:rename",
+          "site_name": "ZINZOV",
+          "pending_name": "TIMBOV",
+          "pending_seen_at": "2026-11-17T22:22:58+00:00",
+          "pending_count": 1,
+          "announced_url": "https://timbov.com/"
         },
         "https://didvip.com/": {
           "url": "https://didvip.com/",
@@ -615,11 +692,12 @@
           "final_url": "https://didvip.com/",
           "name_attempted_at": "2026-11-17T22:18:26+00:00",
           "name_last_checked": "2026-11-17T22:18:26+00:00",
-          "name_evidence": "title",
-          "site_name": "didvip devient farsov.com",
-          "pending_name": null,
-          "pending_seen_at": null,
-          "pending_count": 0
+          "name_evidence": "title:rename",
+          "site_name": "DIDVIP",
+          "pending_name": "FARSOV",
+          "pending_seen_at": "2026-11-17T22:22:58+00:00",
+          "pending_count": 1,
+          "announced_url": "https://farsov.com/"
         }
       },
       "name": "Streaming HD miroir",
@@ -632,7 +710,7 @@
         "https://zinzov.com/",
         "https://didvip.com/"
       ],
-      "last_synced": "2026-11-17T22:20:21+00:00"
+      "last_synced": "2026-11-17T22:22:58+00:00"
     }
   }
 }
