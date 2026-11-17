@@ -9,7 +9,7 @@ une recherche, les fiches Discord et désormais une rubrique **Surveillance des 
 
 - Disponible (réponse HTTP 2xx-3xx, sans garantie de bon fonctionnement applicatif).
 - À vérifier (première erreur 404/5xx/connexion, sans affirmer une panne).
-- Inaccessible (deux contrôles successifs espacés d'au moins 48 h).
+- Inaccessible (deux contrôles quotidiens successifs, espacés d'au moins 20 h).
 - Accès restreint (401/403/429, notamment les protections anti-bot).
 - Adresse introuvable / contrôle impossible (pas de lien exploitable).
 - Un historique daté des nouveaux titres, changements d'adresse, redirections,
@@ -24,7 +24,7 @@ une recherche, les fiches Discord et désormais une rubrique **Surveillance des 
 `catalogue.yml` est lancé toutes les six heures (et lors des modifications).
 `sync_catalogue.py` collecte les forums et fils visibles par @everyone.
 `site_monitor.py` extrait les URL des **messages d'ouverture des fils**,
-contrôle chaque adresse au maximum toutes les 48 heures et publie
+contrôle chaque adresse chaque jour, avec au moins 20 heures entre contrôles, et publie
 `site/monitoring.json` ainsi que les statuts de `site/catalogue.json`.
 `data/monitor_state.json`, sans identifiants de connexion, est sauvegardé
 automatiquement dans GitHub pour conserver l'historique entre les lancements.
@@ -32,6 +32,45 @@ automatiquement dans GitHub pour conserver l'historique entre les lancements.
 Un site peut changer de domaine par redirection : le nouveau domaine est alors
 **signalé pour vérification**, sans remplacer automatiquement l'adresse officielle.
 Une réponse HTTP ne prouve pas que le site est sûr ou que son contenu est correct.
+
+### Surveillance exhaustive des liens du serveur public — chaque jour
+
+Le module `server_link_watch.py` recense désormais les sites cités dans
+**tous les salons textuels, annonces, forums, médias et fils publics**,
+y compris les **fils archivés**. Il lit l'historique complet par pages
+Discord de 100 messages, ainsi que les liens présents dans les messages,
+embeds et boutons. Il reconnaît les domaines écrits sans `https://`.
+
+- Chaque URL publique distincte est contrôlée **une fois par jour en heure
+  de Paris**, avec au moins **20 heures** entre deux vérifications. Plusieurs
+  citations de la même adresse donnent un seul enregistrement, mais le bot
+  conserve jusqu'à six liens vers les messages Discord qui la mentionnent.
+- Le bot analyse également le **nom affiché** sur la page quand elle est
+  accessible. Les changements de nom sont suspectés au premier contrôle
+  et confirmés sur un second jour indépendant. Les redirections et les
+  changements de disponibilité sont historisés et peuvent être signalés
+  dans `#alertes-sites`.
+- L'analyse n'expose **jamais les salons privés ou NSFW** dans les exports
+  publics : elle n'inclut que les espaces visibles par `@everyone`.
+  Les messages écrits par le bot lui-même sont exclus pour éviter de
+  réimporter ses propres liens ; les autres messages de bots peuvent être
+  analysés.
+- Le rapport `site/monitoring.json` contient une liste `server_sites`,
+  les états individuels et un objet `server_scan` avec le nombre de salons,
+  fils et messages parcourus. Une permission refusée ou une archive non
+  accessible est **signalée comme une couverture incomplète** ; les sites
+  précédemment connus restent surveillés.
+- La page web présente les sites recensés, leur état, une recherche
+  et leur message Discord d'origine. Elle distingue les espaces manquants
+  d'une vérification complète.
+- Le workflow continue de tourner toutes les six heures pour détecter
+  les nouvelles publications rapidement, mais ne lance pas de deuxième
+  contrôle du même site le même jour.
+- En parallèle, `site_discovery.py` continue de consulter les **trois
+  blogs/annuaires publics** sélectionnés pour trouver de nouvelles
+  migrations de domaines. Cette veille ne couvre pas l'intégralité du Web,
+  et une réponse HTTP ne garantit pas la légalité ou le fonctionnement
+  complet d'un site.
 
 ### Suivi quotidien des cinq miroirs et de leur domaine principal
 
@@ -85,7 +124,7 @@ dispose d'un suivi spécialisé dans `mirror_watch.py`.
 - Les messages originaux des membres ne sont jamais édités par le bot ;
   seules ses propres publications de suivi sont modifiées.
 
-Le mode de surveillance général des autres fiches demeure à 48 heures.
+Le mode de surveillance général de toutes les autres fiches est désormais quotidien.
 Les réponses HTTP (même 200) n'établissent ni la légalité d'un site ni son
 fonctionnement applicatif complet.
 
