@@ -205,7 +205,7 @@ def get_items(api: DiscordAPI):
         name = channel["name"]
         link = f"https://discord.com/channels/{GUILD_ID}/{channel['id']}"
         if channel["type"] == CHANNEL_TEXT:
-            grouped[(cat_id, cat_name)][name].append(("#" + name, link))
+            grouped[(cat_id, cat_name)][name].append(("Ouvrir le salon", link))
             continue
         threads = dict(by_parent.get(str(channel["id"]), {}))
         # Une erreur de lecture des archives bloque toute publication plutot
@@ -279,7 +279,7 @@ def category_sort(item):
 def category_counts(forums):
     return sum(1 for entries in forums.values()
                for title, _ in entries
-               if title != "Ouvrir le forum" and not title.startswith("#"))
+               if title not in ("Ouvrir le forum", "Ouvrir le salon"))
 
 
 def overview_embed(grouped, links=None):
@@ -325,10 +325,10 @@ def render(grouped):
         lines = []
         for name, entries in sorted(forums.items(), key=lambda e: fold(e[0])):
             thread_items = [(title, url) for title, url in entries
-                            if title != "Ouvrir le forum" and not title.startswith("#")]
+                            if title not in ("Ouvrir le forum", "Ouvrir le salon")]
             open_forum = next((url for title, url in entries
                                if title == "Ouvrir le forum"), None)
-            open_text = next((url for title, url in entries if title.startswith("#")), None)
+            open_text = next((url for title, url in entries if title == "Ouvrir le salon"), None)
             local_count = len(thread_items)
             kind = "fiche" if local_count == 1 else "fiches"
             lines.append(
