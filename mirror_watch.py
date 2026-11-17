@@ -1,7 +1,7 @@
 """Suivi quotidien de toutes les URLs du fil Streaming HD miroir."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
@@ -34,6 +34,10 @@ def is_checked_today(last, now):
         return False
     try:
         previous = datetime.fromisoformat(last.replace("Z", "+00:00"))
+        # Deux jours calendaires peuvent se suivre à moins de deux heures.
+        # Éviter de compter ces deux contrôles rapprochés comme indépendants.
+        if now - previous < timedelta(hours=20):
+            return True
         return previous.astimezone(PARIS).date() == now.astimezone(PARIS).date()
     except (TypeError, ValueError):
         return False
