@@ -66,7 +66,7 @@ class WebsiteTests(unittest.TestCase):
     def test_no_mock_content_in_public_html(self):
         self.assertNotIn("Movix", self.html)
         self.assertNotIn("WebFlix", self.html)
-        self.assertEqual(self.parser.scripts, ["./app.js?v=3"])
+        self.assertEqual(self.parser.scripts, ["./app.js?v=4"])
 
 
 if __name__ == "__main__":
