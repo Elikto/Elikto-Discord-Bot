@@ -522,7 +522,14 @@
           "failures": 0,
           "reason": null,
           "redirect_url": null,
-          "final_url": "https://momdax.com/"
+          "final_url": "https://momdax.com/",
+          "name_attempted_at": "2026-11-17T22:18:26+00:00",
+          "name_last_checked": "2026-11-17T22:18:26+00:00",
+          "name_evidence": "title",
+          "site_name": "momdax devient nandov.com",
+          "pending_name": null,
+          "pending_seen_at": null,
+          "pending_count": 0
         },
         "https://zakmav.com/": {
           "url": "https://zakmav.com/",
@@ -533,7 +540,14 @@
           "failures": 0,
           "reason": null,
           "redirect_url": null,
-          "final_url": "https://zakmav.com/"
+          "final_url": "https://zakmav.com/",
+          "name_attempted_at": "2026-11-17T22:18:26+00:00",
+          "name_last_checked": "2026-11-17T22:18:26+00:00",
+          "name_evidence": "title",
+          "site_name": "zakmav devient dotivoz.com",
+          "pending_name": null,
+          "pending_seen_at": null,
+          "pending_count": 0
         },
         "https://fopov.com/": {
           "url": "https://fopov.com/",
@@ -544,7 +558,14 @@
           "failures": 0,
           "reason": null,
           "redirect_url": null,
-          "final_url": "https://fopov.com/"
+          "final_url": "https://fopov.com/",
+          "name_attempted_at": "2026-11-17T22:18:26+00:00",
+          "name_last_checked": "2026-11-17T22:18:26+00:00",
+          "name_evidence": "title",
+          "site_name": "fopov devient dotivoz.com",
+          "pending_name": null,
+          "pending_seen_at": null,
+          "pending_count": 0
         },
         "https://dovlip.com/": {
           "url": "https://dovlip.com/",
@@ -555,7 +576,14 @@
           "failures": 0,
           "reason": null,
           "redirect_url": null,
-          "final_url": "https://dovlip.com/"
+          "final_url": "https://dovlip.com/",
+          "name_attempted_at": "2026-11-17T22:18:26+00:00",
+          "name_last_checked": "2026-11-17T22:18:26+00:00",
+          "name_evidence": "title",
+          "site_name": "dovlip devient farsov.com",
+          "pending_name": null,
+          "pending_seen_at": null,
+          "pending_count": 0
         },
         "https://zinzov.com/": {
           "url": "https://zinzov.com/",
@@ -566,7 +594,14 @@
           "failures": 0,
           "reason": null,
           "redirect_url": null,
-          "final_url": "https://zinzov.com/"
+          "final_url": "https://zinzov.com/",
+          "name_attempted_at": "2026-11-17T22:18:26+00:00",
+          "name_last_checked": "2026-11-17T22:18:26+00:00",
+          "name_evidence": "title",
+          "site_name": "zinzov devient timbov.com",
+          "pending_name": null,
+          "pending_seen_at": null,
+          "pending_count": 0
         },
         "https://didvip.com/": {
           "url": "https://didvip.com/",
@@ -577,7 +612,14 @@
           "failures": 0,
           "reason": null,
           "redirect_url": null,
-          "final_url": "https://didvip.com/"
+          "final_url": "https://didvip.com/",
+          "name_attempted_at": "2026-11-17T22:18:26+00:00",
+          "name_last_checked": "2026-11-17T22:18:26+00:00",
+          "name_evidence": "title",
+          "site_name": "didvip devient farsov.com",
+          "pending_name": null,
+          "pending_seen_at": null,
+          "pending_count": 0
         }
       },
       "name": "Streaming HD miroir",
@@ -590,7 +632,7 @@
         "https://zinzov.com/",
         "https://didvip.com/"
       ],
-      "last_synced": "2026-11-17T22:17:42+00:00"
+      "last_synced": "2026-11-17T22:18:26+00:00"
     }
   }
 }
