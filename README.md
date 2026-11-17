@@ -1,26 +1,52 @@
 # Elikto Discord Bot — catalogue global
 
-## Catalogue web (nouveau)
+## Site web et surveillance des adresses
 
-Site web statique et responsive dans le dossier [site/](site/), avec :
-- recherche instantanée par nom, même sans accents ;
-- navigation par les **vraies catégories du serveur Discord** ;
-- fiches et forums avec liens cliquables, tri A–Z/Z–A/quantité et cartes dépliables ;
-- affichage sombre moderne, sur PC et téléphone ;
-- catégorie et salons **Discussion à la fin** ;
-- données régénérées toutes les six heures par GitHub Actions, sans NAS ni PC.
+**Site : https://elikto.github.io/Elikto-Discord-Bot/**
 
-Le workflow [catalogue.yml](.github/workflows/catalogue.yml) lit uniquement les salons et fils publics visibles par @everyone, produit temporairement le fichier JSON de la version web et déploie les fichiers statiques sur GitHub Pages. Le jeton du bot **ne figure jamais** dans le site ni dans les fichiers publiés.
+Le tableau de bord (dossier `site/`) comprend un menu unique de catégories,
+une recherche, les fiches Discord et désormais une rubrique **Surveillance des sites** :
 
-**Activation initiale nécessaire (une seule fois)** : sur GitHub, ouvrir
-**Settings → Pages → Build and deployment → Source : GitHub Actions**.
-Le jeton automatique GitHub Actions ne peut pas activer Pages à la place du propriétaire du dépôt (erreur 403). Une fois la source activée, ouvrir **Actions → Synchroniser Discord et publier le catalogue web → Run workflow**.
+- Disponible (réponse HTTP 2xx-3xx, sans garantie de bon fonctionnement applicatif).
+- À vérifier (première erreur 404/5xx/connexion, sans affirmer une panne).
+- Inaccessible (deux contrôles successifs espacés d'au moins 48 h).
+- Accès restreint (401/403/429, notamment les protections anti-bot).
+- Adresse introuvable / contrôle impossible (pas de lien exploitable).
+- Un historique daté des nouveaux titres, changements d'adresse, redirections,
+  indisponibilités confirmées et rétablissements.
+- Filtres par état, par catégorie et recherche. Les discussions restent à la fin.
+- Un salon privé `#alertes-sites` est créé pour les administrateurs
+  (la permission `Voir le salon` est refusée à @everyone) ; seules les
+  transitions importantes déclenchent des messages.
 
-Adresse attendue après un déploiement réussi :
-**https://elikto.github.io/Elikto-Discord-Bot/**
+### Mise à jour automatique et historique
 
-Le site est **public** : il ne publie donc ni les salons privés ni le contenu des messages, seulement les noms et liens des ressources des forums publics. GitHub Pages ne nécessite pas de serveur personnel, et la synchronisation reste assurée par GitHub Actions.
+`catalogue.yml` est lancé toutes les six heures (et lors des modifications).
+`sync_catalogue.py` collecte les forums et fils visibles par @everyone.
+`site_monitor.py` extrait les URL des **messages d'ouverture des fils**,
+contrôle chaque adresse au maximum toutes les 48 heures et publie
+`site/monitoring.json` ainsi que les statuts de `site/catalogue.json`.
+`data/monitor_state.json`, sans identifiants de connexion, est sauvegardé
+automatiquement dans GitHub pour conserver l'historique entre les lancements.
 
+Un site peut changer de domaine par redirection : le nouveau domaine est alors
+**signalé pour vérification**, sans remplacer automatiquement l'adresse officielle.
+Une réponse HTTP ne prouve pas que le site est sûr ou que son contenu est correct.
+
+### Autorisation Discord indispensable
+
+**Pour lire les URL des messages** (et non seulement leur titre), activer
+`MESSAGE CONTENT INTENT` depuis
+**Discord Developer Portal → Applications → scan stream → Bot → Privileged Gateway Intents**
+et enregistrer. Sans cette autorisation, Discord masque le texte et les embeds
+des messages au bot : les fiches restent dans le catalogue, mais sont indiquées
+**« Adresse manquante »**, sans faux contrôle de disponibilité.
+
+Le bot conserve uniquement le nom de la fiche, son lien Discord et l'URL
+publique normalisée ; jamais le contenu intégral des messages ni les secrets
+d'accès. Les hôtes privés, loopback et les redirections vers des adresses
+non publiques sont refusés avant la connexion ; aucun jeton du bot ne
+figure dans le site statique.
 
 
 Catalogue automatique du serveur Discord **Les notes d'Elikto**.
@@ -54,7 +80,7 @@ Les onglets interactifs sans navigation exigeraient un service de reponse aux in
 
 Le filtre est volontairement prudent : les salons visibles uniquement par des roles membres ne sont pas recenses dans un index public. La configuration des permissions de Discord peut comporter des cas complexes : verifie la visibilite du salon catalogue avant la premiere synchronisation.
 
-**Pas encore implemente :** detection et validation automatique des changements d'adresse de sites, recherche interactive `/chercher`, notifications instantanees. Une edition via GitHub Actions fonctionne ponctuellement, et non 24 h/24.
+**Limite actuelle :** la recherche interactive `/chercher` et les alertes instantanées ne sont pas disponibles, car le bot fonctionne par GitHub Actions. La surveillance HTTP et les alertes sur changement sont exécutées aux passages programmés, et uniquement pour les adresses effectivement détectées.
 
 ## Configuration (une seule fois)
 
@@ -77,7 +103,7 @@ Le repo peut etre public, car **aucun secret n'est versionne**. Pour le rendre p
 - Integrer les liens
 - **Gerer les salons** pour creer automatiquement `#catalogue` (la permission peut etre retiree apres creation)
 
-La creation est idempotente : identification du canal par un marqueur dans son sujet ; aucune duplication aux controles suivants. Si la creation echoue faute de permission, le workflow s'arrete avec un message explicite.
+La creation est idempotente : identification des salons du bot par leur marqueur dans leur sujet ; aucune duplication aux controles suivants. Si la creation echoue faute de permission, le workflow s'arrete avec un message explicite.
 
 Pour de futurs modules, les permissions `Envoyer des messages dans les fils` et `Gerer les fils` pourront etre utiles. La permission `Administrateur` n'est pas necessaire.
 
