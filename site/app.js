@@ -208,13 +208,17 @@ function resourceCard(item) {
   const card = element("article", "resource-card");
   const monitor = item.monitor || {};
   const status = monitor.status || "missing_url";
+  const mirrors = Array.isArray(monitor.mirrors) ? monitor.mirrors : [];
   card.dataset.status = status;
   card.style.setProperty("--card-accent", colorFor(item.category.color));
 
   const top = element("div", "card-top");
   top.append(element("span", "card-icon", item.channel.icon || item.category.icon || "📁"));
   const badgeData = healthLabels[status] || healthLabels.unknown;
-  top.append(element("span", "health-badge health-" + badgeData[1], badgeData[0]));
+  const badge = mirrors.length ?
+    mirrors.length + " adresses" : badgeData[0];
+  top.append(element("span", "health-badge health-" +
+    (mirrors.length ? "pending" : badgeData[1]), badge));
 
   const title = element("h3", "card-title", item.title);
   const details = element("div", "card-details");
@@ -226,15 +230,16 @@ function resourceCard(item) {
 
   const metadata = element("div", "card-monitor-meta");
   metadata.append(element("span", "",
-    monitor.last_checked ?
+    mirrors.length ? "Vérification de chaque adresse tous les jours" :
+    (monitor.last_checked ?
       "Contrôlé le " + formatDate(monitor.last_checked).replace("Mis à jour le ", "") :
-      "Contrôle non encore effectué"
+      "Contrôle non encore effectué")
   ));
-  if (monitor.http_status !== null && monitor.http_status !== undefined) {
+  if (!mirrors.length && monitor.http_status !== null && monitor.http_status !== undefined) {
     metadata.append(element("span", "http-code", "HTTP " + monitor.http_status));
   }
 
-  if (monitor.redirect_url) {
+  if (!mirrors.length && monitor.redirect_url) {
     const note = element("p", "card-redirect", "↪ Autre domaine détecté — à confirmer");
     const newTarget = websiteUrl(monitor.redirect_url);
     if (newTarget) {
@@ -246,14 +251,32 @@ function resourceCard(item) {
     }
     metadata.append(note);
   }
-  if (status === "missing_url") {
+  if (!mirrors.length && status === "missing_url") {
     metadata.append(element("p", "card-no-website",
       "Aucune adresse exploitable détectée dans cette fiche Discord."));
   }
 
+  const mirrorsList = element("div", "mirrors-list");
+  if (mirrors.length) {
+    mirrorsList.append(element("strong", "mirrors-title", "ADRESSES CONTRÔLÉES"));
+    for (const mirror of mirrors) {
+      const href = websiteUrl(mirror.url);
+      if (!href) continue;
+      const row = element("a", "mirror-row");
+      row.href = href;
+      row.target = "_blank";
+      row.rel = "noopener noreferrer nofollow";
+      const name = element("span", "mirror-name", mirror.name || new URL(href).hostname);
+      const health = healthLabels[mirror.status] || healthLabels.unknown;
+      const healthNode = element("span", "mirror-status health-" + health[1], health[0]);
+      row.append(name, healthNode);
+      mirrorsList.append(row);
+    }
+  }
+
   const actions = element("div", "card-actions");
   const siteHref = websiteUrl(monitor.site_url);
-  if (siteHref) {
+  if (siteHref && !mirrors.length) {
     const website = element("a", "card-website", "🌐 Ouvrir le site ↗");
     website.href = siteHref;
     website.target = "_blank";
@@ -266,7 +289,9 @@ function resourceCard(item) {
   discord.target = "_blank";
   discord.rel = "noopener noreferrer";
   actions.append(discord);
-  card.append(top, title, details, metadata, actions);
+  card.append(top, title, details, metadata);
+  if (mirrors.length) card.append(mirrorsList);
+  card.append(actions);
   return card;
 }
 
@@ -303,7 +328,13 @@ function renderHistory() {
     address_changed: "🔗 Adresse modifiée",
     redirect_detected: "🔀 Redirection détectée",
     site_unreachable: "🔴 Inaccessibilité confirmée",
-    site_recovered: "🟢 Site de nouveau joignable"
+    site_recovered: "🟢 Site de nouveau joignable",
+    mirror_added: "🆕 Nouvelle adresse miroir",
+    mirror_removed: "➖ Adresse retirée",
+    mirror_renamed: "✏️ Nom d'adresse modifié",
+    mirror_redirect: "🔀 Redirection d'un miroir",
+    mirror_offline: "🔴 Adresse miroir inaccessible",
+    mirror_recovered: "🟢 Adresse miroir rétablie"
   };
   const cards = events.map((entry) => {
     const row = element("article", "history-event");
