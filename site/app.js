@@ -1,305 +1,300 @@
-const DISCORD_BASE = "https://discord.com/channels/";
-const COLLATOR = new Intl.Collator("fr", { sensitivity: "base", numeric: true });
+"use strict";
 
-const state = {
-  data: null,
-  category: "all",
-  query: "",
-  sort: "default",
-  expanded: new Set(),
-  expandAll: false,
+const DISCORD_HOSTS = new Set(["discord.com", "www.discord.com"]);
+const collator = new Intl.Collator("fr", { numeric: true, sensitivity: "base" });
+const state = { data: null, category: "all", search: "", sort: "az" };
+
+const byId = (id) => document.getElementById(id);
+const ui = {
+  sidebar: byId("sidebar"),
+  backdrop: byId("backdrop"),
+  menuButton: byId("menuButton"),
+  allButton: byId("allButton"),
+  allCount: byId("allCount"),
+  categoryItems: byId("categoryItems"),
+  search: byId("searchInput"),
+  sort: byId("sortSelect"),
+  title: byId("sectionTitle"),
+  caption: byId("sectionCaption"),
+  total: byId("resultTotal"),
+  grid: byId("resourceGrid"),
+  discussionSection: byId("discussionSection"),
+  discussionGrid: byId("discussionGrid"),
+  empty: byId("emptyState"),
+  clear: byId("clearFilters"),
+  syncDate: byId("syncDate"),
 };
 
-const $ = (selector) => document.querySelector(selector);
-const dom = {
-  sidebar: $("#sidebar"),
-  backdrop: $("#menuBackdrop"),
-  mobileMenu: $("#mobileMenu"),
-  nav: $("#categoryNav"),
-  navAll: $("#allCategories"),
-  tabs: $("#categoryTabs"),
-  cards: $("#cards"),
-  input: $("#search"),
-  sort: $("#sort"),
-  empty: $("#emptyState"),
-  reset: $("#resetFilters"),
-  expandAll: $("#expandAll"),
-  title: $("#resultsTitle"),
-  count: $("#resultCount"),
-};
-
-function normalized(input) {
-  return String(input || "")
-    .normalize("NFD")
+function normalize(value) {
+  return String(value || "")
+    .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLocaleLowerCase("fr")
     .trim();
 }
 
-function safeUrl(url) {
+function element(tag, className, value) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (value !== undefined) node.textContent = String(value);
+  return node;
+}
+
+function discordUrl(value) {
   try {
-    const value = new URL(url);
-    if (value.protocol !== "https:") return "";
-    if (value.hostname !== "discord.com" && value.hostname !== "www.discord.com") return "";
-    if (!/^\/channels\/\d+\/\d+/.test(value.pathname)) return "";
-    return value.href;
+    const url = new URL(value);
+    if (url.protocol !== "https:" || !DISCORD_HOSTS.has(url.hostname)) return "";
+    if (!/^\/channels\/\d+\/\d+(?:\/\d+)?\/?$/.test(url.pathname)) return "";
+    return url.href;
   } catch {
     return "";
   }
 }
 
-function el(tag, className, content) {
-  const node = document.createElement(tag);
-  if (className) node.className = className;
-  if (content !== undefined) node.textContent = content;
-  return node;
+function colorFor(value) {
+  return /^#[a-fA-F0-9]{6}$/.test(value || "") ? value : "#ae9df8";
 }
 
-function addLink(parent, text, url, className = "") {
-  const target = safeUrl(url);
-  if (!target) return null;
-  const link = el("a", className, text);
-  link.href = target;
-  link.target = "_blank";
-  link.rel = "noopener noreferrer";
-  parent.append(link);
-  return link;
-}
-
-function sortedCategories() {
+function categoryList() {
   return [...(state.data?.categories || [])].sort(
-    (a, b) => Number(a.rank ?? 100) - Number(b.rank ?? 100) || COLLATOR.compare(a.name, b.name)
+    (a, b) => Number(a.rank ?? 100) - Number(b.rank ?? 100) ||
+      collator.compare(a.name, b.name)
   );
 }
 
-function countLabel(count, singular, plural) {
-  return String(count) + " " + (count === 1 ? singular : plural);
+function isDiscussion(category, channel) {
+  const categoryName = normalize(category.name);
+  const name = normalize(channel.name).replace(/[-_]/g, " ");
+  return channel.kind === "text" ||
+    categoryName.includes("discussion") ||
+    categoryName.includes("salons textuels") ||
+    /\b(discussion|general|chat|blabla|bavardage)\b/.test(name);
 }
 
-function setCategory(id) {
-  state.category = String(id);
-  state.expanded.clear();
-  state.expandAll = false;
-  renderNavigation();
-  render();
-  closeMenu();
-}
+function catalogueEntries() {
+  const entries = [];
+  const discussion = [];
+  const visited = new Set();
 
-function navButton(cat, isAll = false) {
-  const id = isAll ? "all" : String(cat.id);
-  const btn = el("button", "nav-link" + (state.category === id ? " is-active" : ""));
-  btn.type = "button";
-  btn.setAttribute("aria-pressed", String(state.category === id));
-  const emoji = el("span", "nav-symbol", isAll ? "◈" : cat.icon || "📁");
-  const title = el("span", "", isAll ? "Vue d'ensemble" : cat.name);
-  const counter = el("span", "nav-count", isAll ? String(state.data.stats.categories) : String(cat.count || 0));
-  btn.append(emoji, title, counter);
-  btn.addEventListener("click", () => setCategory(id));
-  return btn;
-}
-
-function categoryPill(cat, all = false) {
-  const id = all ? "all" : String(cat.id);
-  const btn = el("button", "category-tab" + (state.category === id ? " is-active" : ""));
-  btn.type = "button";
-  btn.setAttribute("aria-pressed", String(state.category === id));
-  btn.append(el("span", "", all ? "✦" : cat.icon || "📁"), el("span", "", all ? "Tout voir" : cat.name));
-  btn.addEventListener("click", () => setCategory(id));
-  return btn;
-}
-
-function renderNavigation() {
-  if (!state.data) return;
-  const cats = sortedCategories();
-  dom.nav.replaceChildren(...cats.map((cat) => navButton(cat)));
-  dom.tabs.replaceChildren(categoryPill(null, true), ...cats.map((cat) => categoryPill(cat)));
-  dom.navAll.classList.toggle("is-active", state.category === "all");
-  dom.navAll.setAttribute("aria-pressed", String(state.category === "all"));
-  $("#navTotal").textContent = String(state.data.stats.categories);
-}
-
-function formatDate(input) {
-  if (!input) return "Date inconnue";
-  const d = new Date(input);
-  if (Number.isNaN(d.getTime())) return "Date inconnue";
-  return new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" }).format(d);
-}
-
-function updateStats() {
-  const totals = state.data.stats || {};
-  $("#statCategories").textContent = String(totals.categories ?? 0);
-  $("#statForums").textContent = String(totals.channels ?? 0);
-  $("#statEntries").textContent = String(totals.entries ?? 0);
-  $("#lastUpdateHero").textContent = "Mis à jour le " + formatDate(state.data.updated_at);
-}
-
-function discussionLast(name) {
-  const n = normalized(name);
-  return n.includes("discussion") || n.includes("blabla") || n === "general" || n === "général" || n === "chat";
-}
-
-function filterCards() {
-  const query = normalized(state.query);
-  const result = [];
-  for (const category of sortedCategories()) {
+  for (const category of categoryList()) {
     if (state.category !== "all" && String(category.id) !== state.category) continue;
     for (const channel of category.channels || []) {
-      const all = channel.items || [];
-      const matchesContext = normalized(category.name).includes(query) || normalized(channel.name).includes(query);
-      const filtered = !query || matchesContext ? all : all.filter((item) => normalized(item.title).includes(query));
-      if (query && !matchesContext && filtered.length === 0) continue;
-      result.push({ category, channel, items: filtered, total: all.length });
+      const conversational = isDiscussion(category, channel);
+      const scopeMatch =
+        normalize(category.name).includes(normalize(state.search)) ||
+        normalize(channel.name).includes(normalize(state.search));
+
+      for (const item of channel.items || []) {
+        const href = discordUrl(item.url);
+        if (!href || visited.has(href)) continue;
+        if (state.search && !scopeMatch &&
+            !normalize(item.title).includes(normalize(state.search))) continue;
+        visited.add(href);
+        const record = { title: item.title, url: href, category, channel };
+        (conversational ? discussion : entries).push(record);
+      }
+
+      if (conversational) {
+        const href = discordUrl(channel.url);
+        if (href && (!state.search || scopeMatch)) {
+          const id = "salon:" + href;
+          if (!visited.has(id)) {
+            visited.add(id);
+            discussion.push({
+              title: channel.name,
+              url: href,
+              category,
+              channel,
+              isChannel: true,
+            });
+          }
+        }
+      }
     }
   }
 
-  if (state.sort === "az") {
-    result.sort((a, b) => Number(discussionLast(a.channel.name)) - Number(discussionLast(b.channel.name)) || COLLATOR.compare(a.channel.name, b.channel.name));
-  } else if (state.sort === "za") {
-    result.sort((a, b) => Number(discussionLast(a.channel.name)) - Number(discussionLast(b.channel.name)) || COLLATOR.compare(b.channel.name, a.channel.name));
-  } else if (state.sort === "size") {
-    result.sort((a, b) => Number(discussionLast(a.channel.name)) - Number(discussionLast(b.channel.name)) || b.total - a.total || COLLATOR.compare(a.channel.name, b.channel.name));
-  }
-  return result;
+  const sortEntries = (a, b) => {
+    if (state.sort === "category") {
+      return Number(a.category.rank ?? 100) - Number(b.category.rank ?? 100) ||
+        collator.compare(a.title, b.title);
+    }
+    return state.sort === "za" ?
+      collator.compare(b.title, a.title) :
+      collator.compare(a.title, b.title);
+  };
+  entries.sort(sortEntries);
+  discussion.sort((a, b) => {
+    if (state.sort === "category") {
+      return Number(a.category.rank ?? 100) - Number(b.category.rank ?? 100) ||
+        collator.compare(a.title, b.title);
+    }
+    return collator.compare(a.title, b.title);
+  });
+  return { entries, discussion };
 }
 
-function resultCard(info) {
-  const { category, channel, items, total } = info;
-  const identity = String(category.id) + ":" + String(channel.name);
-  const expanded = state.expandAll || state.expanded.has(identity);
-  const visible = expanded ? items : items.slice(0, 4);
-  const color = /^#[0-9a-fA-F]{6}$/.test(category.color || "") ? category.color : "#a18aff";
+function closeMenu() {
+  ui.sidebar.classList.remove("is-open");
+  ui.menuButton.setAttribute("aria-expanded", "false");
+  ui.backdrop.hidden = true;
+}
 
-  const card = el("article", "resource-card");
-  card.style.setProperty("--card-accent", color);
+function chooseCategory(id) {
+  state.category = String(id);
+  refreshSidebar();
+  render();
+  closeMenu();
+  if (window.innerWidth < 791) window.scrollTo({ top: 0, behavior: "smooth" });
+}
 
-  const inner = el("div", "card-inner");
-  const header = el("div", "card-top");
-  header.append(el("span", "category-label", (category.icon || "📁") + "  " + category.name));
-  addLink(header, "↗", channel.url, "card-outlink");
-  inner.append(header);
+function categoryButton(category) {
+  const button = element("button", "nav-item", "");
+  const active = state.category === String(category.id);
+  if (active) button.classList.add("is-active");
+  button.setAttribute("aria-pressed", String(active));
+  button.type = "button";
+  button.append(
+    element("span", "nav-emoji", category.icon || "🧩"),
+    element("span", "nav-name", category.name),
+    element("span", "nav-count", category.count || (category.channels || []).length)
+  );
+  button.addEventListener("click", () => chooseCategory(category.id));
+  return button;
+}
 
-  const head = el("div", "card-head");
-  head.append(el("div", "card-avatar", channel.icon || "📂"));
-  const titles = el("div", "card-title-wrap");
-  titles.append(el("h3", "card-title", channel.name.replace(/[-_]/g, " ")));
-  titles.append(el("p", "card-subtitle", channel.kind === "forum" ? countLabel(total, "publication", "publications") + " dans ce forum" : "Salon Discord"));
-  head.append(titles);
-  inner.append(head);
+function refreshSidebar() {
+  ui.allButton.classList.toggle("is-active", state.category === "all");
+  ui.allButton.setAttribute("aria-pressed", String(state.category === "all"));
+  ui.allCount.textContent = String(state.data?.stats?.entries ?? 0);
+  ui.categoryItems.replaceChildren(...categoryList().map(categoryButton));
+}
 
-  const entriesTitle = el("div", "entries-title");
-  entriesTitle.append(el("span", "", "PUBLICATIONS"), el("span", "entry-count", state.query && items.length !== total ? items.length + " trouvée(s)" : String(total)));
-  inner.append(entriesTitle);
+function resourceCard(item) {
+  const link = element("a", "resource-card");
+  link.href = item.url;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.setAttribute("aria-label", "Ouvrir " + item.title + " sur Discord");
+  link.style.setProperty("--card-accent", colorFor(item.category.color));
 
-  if (visible.length === 0) {
-    inner.append(el("p", "card-no-items", state.query ? "Aucune fiche correspondante." : "Ce salon ne contient pas de publication de forum à indexer."));
-  } else {
-    const list = el("ul", "entries-list");
-    for (const item of visible) {
-      const li = el("li");
-      const link = addLink(li, "", item.url, "entry-link");
-      if (!link) continue;
-      link.append(el("span", "entry-bullet"), el("span", "entry-name", item.title), el("span", "entry-arrow", "↗"));
-      list.append(li);
-    }
-    inner.append(list);
-  }
-  card.append(inner);
+  const top = element("div", "card-top");
+  top.append(
+    element("span", "card-icon", item.channel.icon || item.category.icon || "📁"),
+    element("span", "card-arrow", "↗")
+  );
 
-  const footer = el("div", "card-footer");
-  addLink(footer, channel.kind === "forum" ? "Ouvrir le forum ↗" : "Voir le salon ↗", channel.url, "card-forum");
-  if (items.length > 4) {
-    const btn = el("button", "more-btn", expanded ? "Afficher moins ↑" : "Voir les " + (items.length - 4) + " autres ↓");
-    btn.type = "button";
-    btn.setAttribute("aria-expanded", String(expanded));
-    btn.addEventListener("click", () => {
-      if (expanded) {
-        state.expanded.delete(identity);
-        state.expandAll = false;
-      } else {
-        state.expanded.add(identity);
-      }
-      render();
-    });
-    footer.append(btn);
-  }
-  card.append(footer);
-  return card;
+  const title = element("h3", "card-title", item.title);
+  const details = element("div", "card-details");
+  const category = element("span", "card-category", (item.category.icon || "📁") + " " + item.category.name);
+  details.append(
+    category,
+    element("span", "card-divider", "·"),
+    element("span", "card-forum", item.channel.name.replace(/[-_]/g, " "))
+  );
+  const action = element("div", "card-action");
+  action.append(element("span", "", "Voir la fiche Discord"), element("span", "", "↗"));
+  link.append(top, title, details, action);
+  return link;
+}
+
+function discussionCard(item) {
+  const link = element("a", "discussion-card");
+  link.href = item.url;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.setAttribute("aria-label", "Ouvrir " + item.title + " sur Discord");
+  link.style.setProperty("--card-accent", colorFor(item.category.color));
+  link.append(element("div", "discussion-icon", item.isChannel ? "💬" : "🗨️"));
+  const body = element("div", "discussion-body");
+  body.append(
+    element("strong", "", String(item.title).replace(/[-_]/g, " ")),
+    element("span", "", item.category.name + (item.isChannel ? " · Salon" : " · Publication"))
+  );
+  link.append(body, element("span", "discussion-link-arrow", "↗"));
+  return link;
 }
 
 function render() {
   if (!state.data) return;
-  const items = filterCards();
-  const selected = sortedCategories().find((c) => String(c.id) === state.category);
-  dom.title.textContent = selected ? selected.icon + " " + selected.name : "Tous les forums";
-  dom.count.textContent = String(items.length);
-  dom.expandAll.textContent = state.expandAll ? "Tout réduire ↑" : "Tout développer ↓";
-  dom.cards.replaceChildren(...items.map((item) => resultCard(item)));
-  dom.empty.hidden = items.length > 0;
-  dom.cards.hidden = items.length === 0;
-}
+  const selected = categoryList().find((category) => String(category.id) === state.category);
+  ui.title.textContent = selected ? selected.name : "Toutes les ressources";
+  ui.caption.textContent = selected ? "CATÉGORIE" : "CATALOGUE PUBLIC";
 
-function closeMenu() {
-  dom.sidebar.classList.remove("is-open");
-  dom.mobileMenu.setAttribute("aria-expanded", "false");
-  dom.backdrop.hidden = true;
+  const { entries, discussion } = catalogueEntries();
+  ui.total.textContent = entries.length + " " + (entries.length === 1 ? "fiche" : "fiches");
+  ui.grid.replaceChildren(...entries.map(resourceCard));
+  ui.grid.hidden = entries.length === 0;
+
+  ui.discussionGrid.replaceChildren(...discussion.map(discussionCard));
+  ui.discussionSection.hidden = discussion.length === 0;
+
+  ui.empty.hidden = entries.length > 0 || discussion.length > 0;
 }
 
 function resetFilters() {
   state.category = "all";
-  state.query = "";
-  state.sort = "default";
-  state.expanded.clear();
-  state.expandAll = false;
-  dom.input.value = "";
-  dom.sort.value = "default";
-  renderNavigation();
+  state.search = "";
+  state.sort = "az";
+  ui.search.value = "";
+  ui.sort.value = "az";
+  refreshSidebar();
   render();
-  closeMenu();
 }
 
-function bindUi() {
-  dom.navAll.addEventListener("click", () => setCategory("all"));
-  dom.input.addEventListener("input", (event) => { state.query = event.target.value; render(); });
-  dom.sort.addEventListener("change", (event) => { state.sort = event.target.value; render(); });
-  dom.expandAll.addEventListener("click", () => { state.expandAll = !state.expandAll; state.expanded.clear(); render(); });
-  dom.reset.addEventListener("click", resetFilters);
-  dom.mobileMenu.addEventListener("click", () => {
-    const open = !dom.sidebar.classList.contains("is-open");
-    dom.sidebar.classList.toggle("is-open", open);
-    dom.mobileMenu.setAttribute("aria-expanded", String(open));
-    dom.backdrop.hidden = !open;
-  });
-  dom.backdrop.addEventListener("click", closeMenu);
+function formatDate(value) {
+  const date = new Date(value);
+  if (!value || !Number.isFinite(date.getTime())) return "Date de synchronisation inconnue";
+  return "Mis à jour le " + new Intl.DateTimeFormat("fr-FR", {
+    timeZone: "Europe/Paris", day: "numeric", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit"
+  }).format(date);
+}
 
+function bindEvents() {
+  ui.allButton.addEventListener("click", () => chooseCategory("all"));
+  ui.search.addEventListener("input", (event) => {
+    state.search = event.target.value.trim();
+    render();
+  });
+  ui.sort.addEventListener("change", (event) => {
+    state.sort = event.target.value;
+    render();
+  });
+  ui.clear.addEventListener("click", resetFilters);
+  ui.menuButton.addEventListener("click", () => {
+    const open = !ui.sidebar.classList.contains("is-open");
+    ui.sidebar.classList.toggle("is-open", open);
+    ui.backdrop.hidden = !open;
+    ui.menuButton.setAttribute("aria-expanded", String(open));
+  });
+  ui.backdrop.addEventListener("click", closeMenu);
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") { closeMenu(); if (document.activeElement === dom.input) dom.input.blur(); return; }
-    if (event.key === "/" && !event.ctrlKey && !event.metaKey && !event.altKey &&
-        !["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName)) {
+    if (event.key === "Escape") closeMenu();
+    if (event.key === "/" && !event.ctrlKey && !event.metaKey &&
+      !event.altKey && !["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement?.tagName)) {
       event.preventDefault();
-      dom.input.focus();
+      ui.search.focus();
     }
   });
 }
 
-async function loadCatalogue() {
-  bindUi();
+async function start() {
+  bindEvents();
   try {
     const response = await fetch("./catalogue.json", { cache: "no-store" });
     if (!response.ok) throw new Error("HTTP " + response.status);
     const data = await response.json();
-    if (!Array.isArray(data.categories) || !data.stats) throw new Error("Format de catalogue invalide");
+    if (!Array.isArray(data.categories) || !data.stats) throw new Error("JSON invalide");
     state.data = data;
-    updateStats();
-    renderNavigation();
+    ui.syncDate.textContent = formatDate(data.updated_at);
+    refreshSidebar();
     render();
   } catch (error) {
-    dom.cards.replaceChildren();
-    const message = el("div", "loading-card");
-    message.append(el("div", "", "⚠️"), el("p", "", "Le catalogue est temporairement indisponible."));
-    message.append(el("p", "", "Réessaie après la prochaine synchronisation Discord."));
-    dom.cards.append(message);
-    console.error("Erreur de chargement du catalogue :", error);
+    ui.grid.replaceChildren();
+    const errorMessage = element("div", "loading-state", "Le catalogue ne peut pas être chargé. Réessaie plus tard.");
+    ui.grid.append(errorMessage);
+    console.error("Impossible de charger les fiches publiques Discord :", error);
   }
 }
 
-loadCatalogue();
+start();
