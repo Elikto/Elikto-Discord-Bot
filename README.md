@@ -44,8 +44,22 @@ dispose d'un suivi spécialisé dans `mirror_watch.py`.
   (`momdax.com`) et cinq autres domaines (`zakmav.com`, `fopov.com`,
   `dovlip.com`, `zinzov.com`, `didvip.com`). Si l'inventaire évolue,
   le bot ajoute ou retire les liens du récapitulatif automatiquement.
-- Chaque adresse possède son état HTTP propre : accessible, accès restreint,
-  à vérifier (première erreur) ou inaccessible (après deux contrôles).
+- **Objectif prioritaire : détecter les changements de NOM des sites**
+  (par exemple MOMDAX → NANDOV), même si l'adresse continue de répondre 200.
+  Le bot lit le nom indiqué par la page HTML (Open Graph site_name,
+  application-name ou titre), le compare au dernier nom connu et conserve
+  une identité par URL. L'inspection n'exécute aucun JavaScript.
+- Au premier changement visible, il signale **« Changement de nom suspecté »**
+  dans le fil et dans `#alertes-sites`, avec ancien nom et nouveau nom.
+  Si le nouveau nom est observé lors d'un second contrôle quotidien,
+  le bot confirme le renommage, actualise son propre récapitulatif
+  et enregistre la transition datée dans l'historique du site web.
+- Les pages anti-bot, noms génériques, erreurs HTTP et résultats sans nom
+  crédible ne déclenchent aucune correction. Si le site est inaccessible
+  ou masque son identité, il n'invente pas de nom.
+- Chaque adresse possède également son état HTTP propre : accessible,
+  accès restreint, à vérifier (première erreur) ou inaccessible
+  (après deux contrôles).
 - **Une vérification par jour** selon le calendrier Europe/Paris, avec au
   moins 20 heures d'écart entre les mesures ; le workflow GitHub Actions
   se déclenche toutes les 6 h, sans multiplier les vérifications le même jour.
