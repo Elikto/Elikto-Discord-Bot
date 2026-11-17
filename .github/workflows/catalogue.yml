@@ -47,11 +47,6 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Verifier le JavaScript du site
         run: node --check site/app.js
-      - name: Diagnostic ponctuel de Movix
-        env:
-          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
-          DISCORD_GUILD_ID: '1430984645012357263'
-        run: python diagnose_thread.py
       - name: Synchroniser les forums Discord et exporter les fiches publiques
         env:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
