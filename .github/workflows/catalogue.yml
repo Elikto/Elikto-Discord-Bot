@@ -1,4 +1,4 @@
-name: Synchroniser le catalogue Discord
+name: Synchroniser Discord et publier le catalogue web
 
 on:
   schedule:
@@ -10,6 +10,9 @@ on:
       - 'sync_catalogue.py'
       - 'catalogue_v2.py'
       - 'dashboard_unique.py'
+      - 'export_catalogue.py'
+      - 'site/**'
+      - 'tests/test_web_export.py'
       - '.github/workflows/catalogue.yml'
 
 concurrency:
@@ -18,10 +21,16 @@ concurrency:
 
 jobs:
   synchroniser:
+    name: Synchroniser Discord et publier le site
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -31,9 +40,23 @@ jobs:
         run: python -m pip install -r requirements.txt
       - name: Tester le projet
         run: python -m unittest discover -s tests -v
-      - name: Importer et actualiser le catalogue
+      - name: Synchroniser les forums Discord et exporter les fiches publiques
         env:
-          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }
           DISCORD_GUILD_ID: '1430984645012357263'
-          EXCLUDED_CHANNEL_IDS: ${{ vars.EXCLUDED_CHANNEL_IDS }}
+          EXCLUDED_CHANNEL_IDS: ${{ vars.EXCLUDED_CHANNEL_IDS }
         run: python sync_catalogue.py
+      - name: Verifier le catalogue web genere
+        run: |
+          python -c "import json; d=json.load(open('site/catalogue.json', encoding='utf-8')); assert d['visibility']=='public_everyone_only'; assert len(d['categories'])>0; print('Fiches publiques:', d['stats']['entries'])"
+      - name: Configurer GitHub Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - name: Preparer le contenu du site
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+      - name: Mettre le catalogue en ligne
+        id: deployment
+        uses: actions/deploy-pages@v4
