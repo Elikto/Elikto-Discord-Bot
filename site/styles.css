@@ -267,3 +267,8 @@ h1 span { color: #bdaaff; }
 .mirror-status.health-suspect {color:#edb582;border-color:#74543c;}
 .mirror-status.health-offline {color:#f6a49b;border-color:#854442;}
 @media (max-width:550px) {.mirror-row {padding:9px 8px;}.mirror-status {font-size:9px;}}
+
+/* Nom réel détecté dans la page, indépendant de la disponibilité HTTP */
+.mirror-identity {display:flex;flex-direction:column;min-width:0;flex:1;gap:3px;}
+.mirror-domain {font-size:10px;color:#96a0b5;overflow-wrap:anywhere;}
+.mirror-rename-warning {color:#e6b97e;font-size:10px;line-height:1.45;overflow-wrap:anywhere;}
