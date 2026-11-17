@@ -10,6 +10,7 @@ import os
 import re
 
 from site_probe import check_site, extract_candidate_urls, other_domain
+from name_probe import probe_site_name
 from site_monitor import event
 
 THREAD_ID = "1430988094374547559"
@@ -111,6 +112,71 @@ def update_probe(item, observation, now, state, first_run=False):
                      previous, item["status"], "Le serveur répond à nouveau.")
 
 
+def identity_key(name):
+    """Comparer le nom sans majuscules, accents ou ponctuation."""
+    import unicodedata
+    value = unicodedata.normalize("NFKD", name or "")
+    return re.sub(r"[\W_]+", "", "".join(
+        ch for ch in value if not unicodedata.combining(ch)
+    ).casefold())
+
+
+def update_name(item, identity, now, state, first_run=False):
+    """Une différence est suspecte au premier jour, confirmée au deuxième.
+
+    Si la page est inaccessible, protégée ou ne fournit aucun nom crédible,
+    le dernier nom fiable reste inchangé.
+    """
+    if not identity or not identity.get("name"):
+        return
+    detected = identity["name"][:58]
+    item["name_last_checked"] = now.isoformat(timespec="seconds")
+    item["name_evidence"] = identity.get("evidence", "html")
+    official = item.get("site_name")
+    if not official:
+        item["site_name"] = detected
+        item["pending_name"] = None
+        item["pending_seen_at"] = None
+        item["pending_count"] = 0
+        return
+    if identity_key(detected) == identity_key(official):
+        item["pending_name"] = None
+        item["pending_seen_at"] = None
+        item["pending_count"] = 0
+        return
+
+    old_candidate = item.get("pending_name")
+    candidate_same = identity_key(old_candidate) == identity_key(detected)
+    previous_at = item.get("pending_seen_at")
+    distinct_day = not is_checked_today(previous_at, now)
+
+    if not candidate_same:
+        item["pending_name"] = detected
+        item["pending_seen_at"] = now.isoformat(timespec="seconds")
+        item["pending_count"] = 1
+        if not first_run:
+            change_event(state, "mirror_name_suspected", item, now,
+                         before=official, after=detected,
+                         detail="Autre nom détecté sur le site : confirmation nécessaire au prochain contrôle.")
+        return
+
+    if not distinct_day:
+        return
+    item["pending_seen_at"] = now.isoformat(timespec="seconds")
+    item["pending_count"] = int(item.get("pending_count") or 1) + 1
+    if item["pending_count"] < 2:
+        return
+
+    item["site_name"] = detected
+    item["pending_name"] = None
+    item["pending_seen_at"] = None
+    item["pending_count"] = 0
+    if not first_run:
+        change_event(state, "mirror_name_changed", item, now,
+                     before=official, after=detected,
+                     detail="Nouveau nom confirmé par deux contrôles indépendants du site.")
+
+
 def summary_message(items, thread_name):
     lines = [
         f"🔎 **SUIVI DES SITES — {thread_name[:60].upper()}**",
@@ -120,7 +186,7 @@ def summary_message(items, thread_name):
     ]
     last = []
     for index, item in enumerate(items, 1):
-        label = str(item.get("label") or urlsplit(item["url"]).hostname)
+        label = str(item.get("site_name") or item.get("label") or urlsplit(item["url"]).hostname)
         label = label.replace("@", "@\u200b")
         label_status = STATUS.get(item.get("status"), STATUS["unknown"])
         lines.append(f"**{index}. {label[:48]}** — {label_status}")
@@ -131,6 +197,9 @@ def summary_message(items, thread_name):
         lines.append(f"   {item['url']}{code}{moment}")
         if checked:
             last.append(datetime.fromisoformat(checked).timestamp())
+        if item.get("pending_name"):
+            suspected = str(item["pending_name"]).replace("@", "@\u200b")
+            lines.append(f"   🟡 Changement de nom suspecté : {suspected[:50]} (confirmation au prochain contrôle)")
         if item.get("redirect_url"):
             lines.append(f"   ↪ {item['redirect_url']} (changement à confirmer)")
     if last:
@@ -222,6 +291,9 @@ def sync_thread(api, state, now=None):
         item = entries[source["url"]]
         if not is_checked_today(item.get("last_checked"), now):
             update_probe(item, check_site(item["url"]), now, state, first_run=is_first)
+            if item.get("status") == "online":
+                identity = probe_site_name(item["url"])
+                update_name(item, identity, now, state, first_run=is_first)
             checked += 1
 
     owner = str(thread.get("owner_id") or "")
@@ -253,7 +325,11 @@ def sync_thread(api, state, now=None):
         "urls": [source["url"] for source in sources],
         "last_synced": now.isoformat(timespec="seconds"),
     })
-    print("MIROIRS :", len(sources), "URL visibles ;", checked, "vérifiées aujourd'hui.")
+    known_names = sum(bool(entries[source["url"]].get("site_name")) for source in sources)
+    suspected_names = sum(bool(entries[source["url"]].get("pending_name")) for source in sources)
+    print("MIROIRS :", len(sources), "URL visibles ;", checked,
+          "vérifiées aujourd'hui ;", known_names, "noms identifiés ;",
+          suspected_names, "changements de nom suspects.")
     return "updated"
 
 
