@@ -129,10 +129,11 @@ class DiscordAPI:
                 for embed in message.get("embeds", []):
                     footer = embed.get("footer", {}).get("text", "")
                     if MARKER in footer:
-                        # Compatible avec les anciens marqueurs, meme si le pied
-                        # de page a ete rendu plus lisible dans la nouvelle UI.
                         marker = footer[footer.index(MARKER):].split()[0]
                         found[marker] = message
+                for component in message.get("components", []):
+                    if component.get("type") == 17 and component.get("id") is not None:
+                        found[f"v2id:{component['id']}"] = message
             before = page[-1]["id"]
         return found
 
@@ -363,51 +364,54 @@ def render(grouped):
 
 
 def publish(api: DiscordAPI, grouped):
+    """Migrer les embeds existants vers les cartes natives Components V2."""
+    from catalogue_v2 import (
+        FLAG_V2, render_categories, render_home, marker_id, normalize,
+    )
+
     me = str(api.call("GET", "/users/@me")["id"])
     existing = api.own_messages(CHANNEL_ID, me)
-    rendered = render(grouped)
-    wanted = set()
-    category_links = {}
+    categories = render_categories(grouped)
+    links, wanted = {}, set()
 
-    def upsert(marker, content, embed):
-        payload = {"content": content, "embeds": [embed], "allowed_mentions": {"parse": []}}
-        if marker in existing:
-            message = existing[marker]
-            old_embed = next(
-                (e for e in message.get("embeds", [])
-                 if MARKER in e.get("footer", {}).get("text", "")), {}
-            )
-            keys = ("description", "title", "color", "footer")
-            if (message.get("content") != content
-                    or any(old_embed.get(k) != embed.get(k) for k in keys)):
-                api.call("PATCH", f"/channels/{CHANNEL_ID}/messages/{message['id']}", json=payload)
-                print("Actualise", marker)
-            return str(message["id"])
-        result = api.call("POST", f"/channels/{CHANNEL_ID}/messages", json=payload)
-        print("Cree", marker)
-        return str(result["id"])
-
-    # D'abord les catégories : les liens de navigation pointent directement
-    # vers leurs messages Discord, sans message supplémentaire ni doublon.
-    for marker, content, embed in rendered[1:]:
+    def upsert(marker, components):
         wanted.add(marker)
-        message_id = upsert(marker, content, embed)
+        payload = {"flags": FLAG_V2, "components": components,
+                   "allowed_mentions": {"parse": []}}
+        found = existing.get(marker) or existing.get(f"v2id:{marker_id(marker)}")
+        if found:
+            if (not (found.get("flags", 0) & FLAG_V2)
+                    or normalize(found.get("components", [])) != normalize(components)):
+                # Convertir un ancien embed implique d'effacer son contenu/embeds.
+                converted = dict(payload)
+                if not (found.get("flags", 0) & FLAG_V2):
+                    converted.update({"content": None, "embeds": []})
+                api.call("PATCH",
+                         f"/channels/{CHANNEL_ID}/messages/{found['id']}",
+                         json=converted)
+                print("Carte V2 actualisee :", marker)
+            return str(found["id"])
+        created = api.call("POST", f"/channels/{CHANNEL_ID}/messages", json=payload)
+        print("Carte V2 creee :", marker)
+        return str(created["id"])
+
+    # Creer ou convertir les cartes de categories avant l'accueil : les boutons
+    # de l'accueil peuvent ensuite pointer vers le bon message Discord.
+    for marker, cat_id, components in categories:
+        message_id = upsert(marker, components)
         if marker.endswith(":1"):
-            cat_id = marker[len(f"{MARKER}cat:"):-2]
-            category_links[cat_id] = (
-                f"https://discord.com/channels/{GUILD_ID}/{CHANNEL_ID}/{message_id}"
-            )
+            links[cat_id] = f"https://discord.com/channels/{GUILD_ID}/{CHANNEL_ID}/{message_id}"
 
-    marker, content, _ = rendered[0]
-    wanted.add(marker)
-    upsert(marker, content, overview_embed(grouped, category_links))
+    upsert(f"{MARKER}index", render_home(grouped, links))
 
+    # Anciennes pages en embed seulement. Ne jamais effacer les fiches du serveur.
     for marker, message in existing.items():
-        if marker not in wanted:
-            # Ne supprime que les anciens messages d'index appartenant au bot.
+        if marker.startswith(MARKER) and marker not in wanted:
             api.call("DELETE", f"/channels/{CHANNEL_ID}/messages/{message['id']}")
-            print("Ancienne page d'index retiree", marker)
-    print(f"Termine : {len(rendered)} messages dans {len(grouped)} categories.")
+            print("Ancienne page du catalogue supprimee :", marker)
+
+    print(f"Termine : {len(categories) + 1} cartes V2, {len(grouped)} categories.")
+
 
 
 def main():
