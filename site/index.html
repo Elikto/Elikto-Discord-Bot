@@ -9,8 +9,8 @@
   <meta property="og:description" content="Un catalogue simple et rapide pour retrouver les ressources du serveur.">
   <title>Les notes d'Elikto · Catalogue</title>
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./styles.css?v=3">
-  <script type="module" src="./app.js?v=3"></script>
+  <link rel="stylesheet" href="./styles.css?v=4">
+  <script type="module" src="./app.js?v=4"></script>
 </head>
 <body>
   <div class="app-shell">
@@ -49,11 +49,43 @@
           <p class="lede">Les ressources du serveur, sans perdre de temps à chercher dans les salons.</p>
         </header>
 
+        <section class="monitor-panel" aria-labelledby="monitorTitle">
+          <div class="monitor-head">
+            <div><p class="listing-eyebrow">ÉTAT DU RÉSEAU</p><h2 id="monitorTitle">Surveillance des sites</h2></div>
+            <span class="monitor-frequency" id="lastControl">Contrôle des adresses toutes les 48 h</span>
+          </div>
+          <div class="monitor-stats">
+            <button class="monitor-stat" data-health="online" type="button" aria-label="Afficher les sites accessibles">
+              <span class="monitor-status-marker dot-online"></span><strong id="healthyCount">—</strong><small>Accessibles</small>
+            </button>
+            <button class="monitor-stat" data-health="incidents" type="button" aria-label="Afficher les sites à vérifier et inaccessibles">
+              <span class="monitor-status-marker dot-incident"></span><strong id="incidentCount">—</strong><small>Incidents</small>
+            </button>
+            <button class="monitor-stat" data-health="restricted" type="button" aria-label="Afficher les sites avec accès restreint">
+              <span class="monitor-status-marker dot-restricted"></span><strong id="restrictedCount">—</strong><small>Restreints</small>
+            </button>
+            <button class="monitor-stat" data-health="missing_url" type="button" aria-label="Afficher les fiches sans adresse identifiable">
+              <span class="monitor-status-marker dot-missing"></span><strong id="missingCount">—</strong><small>Sans adresse</small>
+            </button>
+          </div>
+          <div class="monitor-banner" id="monitorBanner" hidden></div>
+        </section>
+
         <section class="search-panel" aria-label="Recherche et classement">
           <label class="search-box" for="searchInput">
             <svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
             <input id="searchInput" type="search" placeholder="Rechercher une ressource, un forum…" autocomplete="off">
             <kbd class="shortcut" aria-hidden="true">/</kbd>
+          </label>
+          <label class="sort-box status-filter" for="healthSelect"><span>État</span>
+            <select id="healthSelect">
+              <option value="all">Tous les états</option>
+              <option value="online">Accessible</option>
+              <option value="incidents">Incidents</option>
+              <option value="restricted">Accès restreint</option>
+              <option value="missing_url">Sans adresse</option>
+              <option value="pending">En attente</option>
+            </select>
           </label>
           <label class="sort-box" for="sortSelect"><span>Trier</span><select id="sortSelect"><option value="az">A → Z</option><option value="za">Z → A</option><option value="category">Par catégorie</option></select></label>
         </section>
@@ -65,6 +97,15 @@
 
         <section id="resourceGrid" class="resource-grid" aria-label="Fiches de ressources" aria-live="polite">
           <div class="loading-state"><span class="spinner" aria-hidden="true"></span> Chargement des fiches Discord…</div>
+        </section>
+
+        <section class="history-section" id="historySection" aria-labelledby="historyTitle">
+          <div class="history-heading"><div><p class="listing-eyebrow">JOURNAL DE SURVEILLANCE</p><h2 id="historyTitle">Derniers changements</h2></div>
+            <span class="history-note">Historique conservé entre les synchronisations</span>
+          </div>
+          <div id="historyList" class="history-list">
+            <p class="history-empty">Aucun changement détecté pour le moment.</p>
+          </div>
         </section>
 
         <section class="discussion-section" id="discussionSection" aria-labelledby="discussionTitle" hidden>
