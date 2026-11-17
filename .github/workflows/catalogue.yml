@@ -13,6 +13,8 @@ on:
       - 'export_catalogue.py'
       - 'site_monitor.py'
       - 'thread_watch.py'
+      - 'mirror_watch.py'
+      - 'tests/test_mirror_watch.py'
       - 'tests/test_thread_watch.py'
       - 'site_probe.py'
       - 'tests/test_site_monitor.py'
@@ -67,10 +69,10 @@ jobs:
           else
             echo "Première surveillance, aucun historique distant"
           fi
-      - name: Mettre à jour le suivi nom et adresse dans le fil ciblé
+      - name: Vérifier quotidiennement toutes les URL du fil Streaming HD miroir
         env:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
-        run: python thread_watch.py
+        run: python mirror_watch.py
       - name: Surveiller les sites publics et alimenter l'historique
         env:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
