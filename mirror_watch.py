@@ -298,7 +298,7 @@ def summary_message(items, thread_name):
     lines = [
         f"🔎 **SITES ACTUELS — {thread_name[:60].upper()}**",
         MARKER,
-        f"**{len(items)} sites distincts** · contrôle quotidien",
+        f"**{len(items)} sites distincts** · vérification quotidienne",
         "",
     ]
     last = []
