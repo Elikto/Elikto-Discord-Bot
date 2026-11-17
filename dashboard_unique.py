@@ -26,6 +26,7 @@ def forum_link(url, label="Ouvrir"):
 def entries_for_forum(name, entries, cap):
     original = next((url for title, url in entries
                      if title == "Ouvrir le forum" or title.startswith("#")), None)
+    is_forum = any(title == "Ouvrir le forum" for title, _ in entries)
     entries = sorted(
         [(title, url) for title, url in entries
          if title != "Ouvrir le forum" and not title.startswith("#")],
@@ -35,8 +36,7 @@ def entries_for_forum(name, entries, cap):
     title = safe(name.replace("-", " ").replace("_", " ").upper())
     heading = f"**{icon(name)}  {title}**"
     if original:
-        has_forum = any(t == "Ouvrir le forum" for t, _ in entries)
-        heading += f"  ·  {forum_link(original, 'Forum' if has_forum else 'Salon')}"
+        heading += f"  ·  {forum_link(original, 'Forum' if is_forum else 'Salon')}"
     if count:
         visible = entries if cap is None else entries[:cap]
         link_lines = [
@@ -47,7 +47,7 @@ def entries_for_forum(name, entries, cap):
         hidden = count - len(visible)
         if hidden:
             body += f"\n-# +{hidden} fiches accessibles dans le forum ci-dessus"
-        return heading + f"  ·  {count} fiches\n" + body
+        return heading + f"  ·  {count} {'fiche' if count == 1 else 'fiches'}\n" + body
     return heading + ("\n-# Salon textuel" if original else "")
 
 
