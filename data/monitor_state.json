@@ -710,7 +710,7 @@
         "https://zinzov.com/",
         "https://didvip.com/"
       ],
-      "last_synced": "2026-11-17T22:46:54+00:00",
+      "last_synced": "2026-11-17T23:01:48+00:00",
       "target_states": {
         "https://nandov.com/": {
           "url": "https://nandov.com/",
@@ -759,6 +759,177 @@
           "redirect_url": null,
           "final_url": "https://timbov.com/",
           "name_attempted_at": "2026-11-17T22:40:07+00:00"
+        },
+        "https://bimdav.com/": {
+          "url": "https://bimdav.com/",
+          "label": "BIMDAV",
+          "site_name": "BIMDAV",
+          "status": "online",
+          "last_checked": "2026-11-17T23:01:48+00:00",
+          "http_status": 200,
+          "failures": 0,
+          "reason": null,
+          "redirect_url": null,
+          "final_url": "https://bimdav.com/",
+          "name_attempted_at": "2026-11-17T23:01:48+00:00"
+        },
+        "https://bintov.com/": {
+          "url": "https://bintov.com/",
+          "label": "BINTOV",
+          "site_name": "BINTOV",
+          "status": "online",
+          "last_checked": "2026-11-17T23:01:48+00:00",
+          "http_status": 200,
+          "failures": 0,
+          "reason": null,
+          "redirect_url": null,
+          "final_url": "https://bintov.com/",
+          "name_attempted_at": "2026-11-17T23:01:48+00:00"
+        },
+        "https://bodlav.com/": {
+          "url": "https://bodlav.com/",
+          "label": "BODLAV",
+          "site_name": "BODLAV",
+          "status": "online",
+          "last_checked": "2026-11-17T23:01:48+00:00",
+          "http_status": 200,
+          "failures": 0,
+          "reason": null,
+          "redirect_url": null,
+          "final_url": "https://bodlav.com/",
+          "name_attempted_at": "2026-11-17T23:01:48+00:00",
+          "name_last_checked": "2026-11-17T23:01:48+00:00",
+          "name_evidence": "title",
+          "pending_name": "bodlav bodlav.com",
+          "pending_seen_at": "2026-11-17T23:01:48+00:00",
+          "pending_count": 1
+        },
+        "https://limdav.com/": {
+          "url": "https://limdav.com/",
+          "label": "LIMDAV",
+          "site_name": "LIMDAV",
+          "status": "online",
+          "last_checked": "2026-11-17T23:01:48+00:00",
+          "http_status": 200,
+          "failures": 0,
+          "reason": null,
+          "redirect_url": null,
+          "final_url": "https://limdav.com/",
+          "name_attempted_at": "2026-11-17T23:01:48+00:00"
+        },
+        "https://padmov.com/": {
+          "url": "https://padmov.com/",
+          "label": "PADMOV",
+          "site_name": "PADMOV",
+          "status": "online",
+          "last_checked": "2026-11-17T23:01:48+00:00",
+          "http_status": 200,
+          "failures": 0,
+          "reason": null,
+          "redirect_url": null,
+          "final_url": "https://padmov.com/",
+          "name_attempted_at": "2026-11-17T23:01:48+00:00"
+        },
+        "https://pobram.com/": {
+          "url": "https://pobram.com/",
+          "label": "POBRAM",
+          "site_name": "POBRAM",
+          "status": "online",
+          "last_checked": "2026-11-17T23:01:48+00:00",
+          "http_status": 200,
+          "failures": 0,
+          "reason": null,
+          "redirect_url": null,
+          "final_url": "https://pobram.com/",
+          "name_attempted_at": "2026-11-17T23:01:48+00:00"
+        },
+        "https://rogzov.com/": {
+          "url": "https://rogzov.com/",
+          "label": "ROGZOV",
+          "site_name": "ROGZOV",
+          "status": "online",
+          "last_checked": "2026-11-17T23:01:48+00:00",
+          "http_status": 206,
+          "failures": 0,
+          "reason": null,
+          "redirect_url": null,
+          "final_url": "https://rogzov.com/",
+          "name_attempted_at": "2026-11-17T23:01:48+00:00",
+          "name_last_checked": "2026-11-17T23:01:48+00:00",
+          "name_evidence": "title",
+          "pending_name": "rogzov rogzov.com",
+          "pending_seen_at": "2026-11-17T23:01:48+00:00",
+          "pending_count": 1
+        },
+        "https://tiprov.com/": {
+          "url": "https://tiprov.com/",
+          "label": "TIPROV",
+          "site_name": "TIPROV",
+          "status": "online",
+          "last_checked": "2026-11-17T23:01:48+00:00",
+          "http_status": 200,
+          "failures": 0,
+          "reason": null,
+          "redirect_url": null,
+          "final_url": "https://tiprov.com/",
+          "name_attempted_at": "2026-11-17T23:01:48+00:00"
+        },
+        "https://trimav.com/": {
+          "url": "https://trimav.com/",
+          "label": "TRIMAV",
+          "site_name": "TRIMAV",
+          "status": "online",
+          "last_checked": "2026-11-17T23:01:48+00:00",
+          "http_status": 200,
+          "failures": 0,
+          "reason": null,
+          "redirect_url": null,
+          "final_url": "https://trimav.com/",
+          "name_attempted_at": "2026-11-17T23:01:48+00:00"
+        },
+        "https://varloz.com/": {
+          "url": "https://varloz.com/",
+          "label": "VARLOZ",
+          "site_name": "VARLOZ",
+          "status": "online",
+          "last_checked": "2026-11-17T23:01:48+00:00",
+          "http_status": 200,
+          "failures": 0,
+          "reason": null,
+          "redirect_url": null,
+          "final_url": "https://varloz.com/",
+          "name_attempted_at": "2026-11-17T23:01:48+00:00"
+        },
+        "https://watof.com/": {
+          "url": "https://watof.com/",
+          "label": "WATOF",
+          "site_name": "WATOF",
+          "status": "online",
+          "last_checked": "2026-11-17T23:01:48+00:00",
+          "http_status": 200,
+          "failures": 0,
+          "reason": null,
+          "redirect_url": null,
+          "final_url": "https://watof.com/",
+          "name_attempted_at": "2026-11-17T23:01:48+00:00",
+          "name_last_checked": "2026-11-17T23:01:48+00:00",
+          "name_evidence": "title",
+          "pending_name": "watof watof.com",
+          "pending_seen_at": "2026-11-17T23:01:48+00:00",
+          "pending_count": 1
+        },
+        "https://woovaz.com/": {
+          "url": "https://woovaz.com/",
+          "label": "WOOVAZ",
+          "site_name": "WOOVAZ",
+          "status": "online",
+          "last_checked": "2026-11-17T23:01:48+00:00",
+          "http_status": 200,
+          "failures": 0,
+          "reason": null,
+          "redirect_url": null,
+          "final_url": "https://woovaz.com/",
+          "name_attempted_at": "2026-11-17T23:01:48+00:00"
         }
       },
       "display_sites": [
@@ -829,8 +1000,304 @@
           "last_checked": "2026-11-17T22:37:26+00:00",
           "http_status": 200,
           "redirect_url": null
+        },
+        {
+          "url": "https://bimdav.com/",
+          "name": "BIMDAV",
+          "previous_names": [
+            "ILMIV",
+            "KOBIOM",
+            "GADROV"
+          ],
+          "source_urls": [],
+          "announced": false,
+          "pending": false,
+          "discovered": true,
+          "status": "online",
+          "last_checked": "2026-11-17T23:01:48+00:00",
+          "http_status": 200,
+          "redirect_url": null
+        },
+        {
+          "url": "https://bintov.com/",
+          "name": "BINTOV",
+          "previous_names": [
+            "MIVDIP"
+          ],
+          "source_urls": [],
+          "announced": false,
+          "pending": false,
+          "discovered": true,
+          "status": "online",
+          "last_checked": "2026-11-17T23:01:48+00:00",
+          "http_status": 200,
+          "redirect_url": null
+        },
+        {
+          "url": "https://bodlav.com/",
+          "name": "BODLAV",
+          "previous_names": [],
+          "source_urls": [],
+          "announced": false,
+          "pending": false,
+          "discovered": true,
+          "status": "online",
+          "last_checked": "2026-11-17T23:01:48+00:00",
+          "http_status": 200,
+          "redirect_url": null
+        },
+        {
+          "url": "https://limdav.com/",
+          "name": "LIMDAV",
+          "previous_names": [
+            "EVRIB",
+            "KORDOZ",
+            "IRAMIV"
+          ],
+          "source_urls": [],
+          "announced": false,
+          "pending": false,
+          "discovered": true,
+          "status": "online",
+          "last_checked": "2026-11-17T23:01:48+00:00",
+          "http_status": 200,
+          "redirect_url": null
+        },
+        {
+          "url": "https://padmov.com/",
+          "name": "PADMOV",
+          "previous_names": [
+            "NOPRAK",
+            "TARBOB",
+            "PADRAZ"
+          ],
+          "source_urls": [],
+          "announced": false,
+          "pending": false,
+          "discovered": true,
+          "status": "online",
+          "last_checked": "2026-11-17T23:01:48+00:00",
+          "http_status": 200,
+          "redirect_url": null
+        },
+        {
+          "url": "https://pobram.com/",
+          "name": "POBRAM",
+          "previous_names": [
+            "PIDOOV",
+            "KIDRAZ",
+            "PURWAZ"
+          ],
+          "source_urls": [],
+          "announced": false,
+          "pending": false,
+          "discovered": true,
+          "status": "online",
+          "last_checked": "2026-11-17T23:01:48+00:00",
+          "http_status": 200,
+          "redirect_url": null
+        },
+        {
+          "url": "https://rogzov.com/",
+          "name": "ROGZOV",
+          "previous_names": [],
+          "source_urls": [],
+          "announced": false,
+          "pending": false,
+          "discovered": true,
+          "status": "online",
+          "last_checked": "2026-11-17T23:01:48+00:00",
+          "http_status": 206,
+          "redirect_url": null
+        },
+        {
+          "url": "https://tiprov.com/",
+          "name": "TIPROV",
+          "previous_names": [
+            "DOMGRAV",
+            "IKROMI",
+            "APLOUF"
+          ],
+          "source_urls": [],
+          "announced": false,
+          "pending": false,
+          "discovered": true,
+          "status": "online",
+          "last_checked": "2026-11-17T23:01:48+00:00",
+          "http_status": 200,
+          "redirect_url": null
+        },
+        {
+          "url": "https://trimav.com/",
+          "name": "TRIMAV",
+          "previous_names": [
+            "TRIFAK",
+            "OKMAZ",
+            "YABLOM"
+          ],
+          "source_urls": [],
+          "announced": false,
+          "pending": false,
+          "discovered": true,
+          "status": "online",
+          "last_checked": "2026-11-17T23:01:48+00:00",
+          "http_status": 200,
+          "redirect_url": null
+        },
+        {
+          "url": "https://varloz.com/",
+          "name": "VARLOZ",
+          "previous_names": [
+            "PALKAD",
+            "VREDAP",
+            "SOPONOV"
+          ],
+          "source_urls": [],
+          "announced": false,
+          "pending": false,
+          "discovered": true,
+          "status": "online",
+          "last_checked": "2026-11-17T23:01:48+00:00",
+          "http_status": 200,
+          "redirect_url": null
+        },
+        {
+          "url": "https://watof.com/",
+          "name": "WATOF",
+          "previous_names": [],
+          "source_urls": [],
+          "announced": false,
+          "pending": false,
+          "discovered": true,
+          "status": "online",
+          "last_checked": "2026-11-17T23:01:48+00:00",
+          "http_status": 200,
+          "redirect_url": null
+        },
+        {
+          "url": "https://woovaz.com/",
+          "name": "WOOVAZ",
+          "previous_names": [],
+          "source_urls": [],
+          "announced": false,
+          "pending": false,
+          "discovered": true,
+          "status": "online",
+          "last_checked": "2026-11-17T23:01:48+00:00",
+          "http_status": 200,
+          "redirect_url": null
         }
-      ]
+      ],
+      "discovered_candidates": {
+        "https://tiprov.com/": {
+          "name": "TIPROV",
+          "previous_names": [
+            "DOMGRAV",
+            "IKROMI",
+            "APLOUF"
+          ],
+          "source": "relevés publics 10-12/11/2026",
+          "origin": "seed"
+        },
+        "https://trimav.com/": {
+          "name": "TRIMAV",
+          "previous_names": [
+            "TRIFAK",
+            "OKMAZ",
+            "YABLOM"
+          ],
+          "source": "relevés publics 10-12/11/2026",
+          "origin": "seed"
+        },
+        "https://varloz.com/": {
+          "name": "VARLOZ",
+          "previous_names": [
+            "PALKAD",
+            "VREDAP",
+            "SOPONOV"
+          ],
+          "source": "relevés publics 10-12/11/2026",
+          "origin": "seed"
+        },
+        "https://pobram.com/": {
+          "name": "POBRAM",
+          "previous_names": [
+            "PIDOOV",
+            "KIDRAZ",
+            "PURWAZ"
+          ],
+          "source": "relevés publics 10-12/11/2026",
+          "origin": "seed"
+        },
+        "https://bimdav.com/": {
+          "name": "BIMDAV",
+          "previous_names": [
+            "ILMIV",
+            "KOBIOM",
+            "GADROV"
+          ],
+          "source": "relevés publics 10-12/11/2026",
+          "origin": "seed"
+        },
+        "https://limdav.com/": {
+          "name": "LIMDAV",
+          "previous_names": [
+            "EVRIB",
+            "KORDOZ",
+            "IRAMIV"
+          ],
+          "source": "relevés publics 10-12/11/2026",
+          "origin": "seed"
+        },
+        "https://padmov.com/": {
+          "name": "PADMOV",
+          "previous_names": [
+            "NOPRAK",
+            "TARBOB",
+            "PADRAZ"
+          ],
+          "source": "relevés publics 10-12/11/2026",
+          "origin": "seed"
+        },
+        "https://bintov.com/": {
+          "name": "BINTOV",
+          "previous_names": [
+            "MIVDIP"
+          ],
+          "source": "relevés publics 10-12/11/2026",
+          "origin": "seed"
+        },
+        "https://watof.com/": {
+          "name": "WATOF",
+          "previous_names": [],
+          "source": "relevés publics 10-12/11/2026",
+          "origin": "seed"
+        },
+        "https://woovaz.com/": {
+          "name": "WOOVAZ",
+          "previous_names": [],
+          "source": "relevés publics 10-12/11/2026",
+          "origin": "seed"
+        },
+        "https://bodlav.com/": {
+          "name": "BODLAV",
+          "previous_names": [],
+          "source": "relevés publics 10-12/11/2026",
+          "origin": "seed"
+        },
+        "https://rogzov.com/": {
+          "name": "ROGZOV",
+          "previous_names": [],
+          "source": "relevés publics 10-12/11/2026",
+          "origin": "seed"
+        }
+      },
+      "last_internet_discovery": "2026-11-17T23:01:48+00:00",
+      "discovery_sources": {
+        "https://natchecker.com/fr/blog/domgrav-nouveau-nom": "lue",
+        "https://alexitauzin.com/top-50-meilleurs-sites-streaming-gratuits/": "lue",
+        "https://gtlf.fr/meilleurs-sites-streaming-gratuit/": "lue"
+      }
     }
   }
 }
