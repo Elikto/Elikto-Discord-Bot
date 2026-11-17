@@ -299,6 +299,8 @@ class MirrorWatchTests(unittest.TestCase):
         ]
         out = mirror_watch.summary_message(sites, "Streaming HD miroir")
         self.assertEqual(out, (
+            "🎬 Dernière sortie cinéma en HD **sans pub**, mais petit catalogue.\n"
+            "✨ **Gratuit - Illimité - Ajouts quotidiens - Zéro pub**\n\n"
             "## ✦ SITES ACTUELS\n\n"
             "### ✦ [DOTIVOZ](https://dotivoz.com/)\n"
             "-# ↳ Ancien : ZAKMAV, FOPOV\n\n"
