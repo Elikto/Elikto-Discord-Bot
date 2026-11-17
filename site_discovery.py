@@ -42,8 +42,8 @@ REFERENCE_PAGES = (
 # Une annonce de migration explicite, pas un simple lien ou résultat sponsorisé.
 MIGRATION = re.compile(
     r"(?i)\b([a-z][a-z0-9-]{3,29})\s+"
-    r"(?:devient|annonce\s+(?:directement\s+)?|a\s+renomm[ée]\s+(?:son\s+site\s+)?en\s+)"
-    r"(?:https?://)?([a-z][a-z0-9-]{3,29})\.com\b"
+    r"(?:devient|annonce(?:\s+directement)?|a\s+renomm[ée]\s+(?:son\s+site\s+)?en)"
+    r"\s+(?:https?://)?([a-z][a-z0-9-]{3,29})\.com\b"
 )
 MAX_CANDIDATES = 40
 
