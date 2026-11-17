@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "site": "Les notes d'Elikto",
+  "updated_at": null,
+  "categories": [],
+  "stats": {
+    "categories": 0,
+    "channels": 0,
+    "entries": 0
+  },
+  "visibility": "public_everyone_only"
+}
