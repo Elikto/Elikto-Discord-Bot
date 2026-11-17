@@ -9,8 +9,8 @@
   <meta property="og:description" content="Un catalogue simple et rapide pour retrouver les ressources du serveur.">
   <title>Les notes d'Elikto · Catalogue</title>
   <link rel="icon" href="./favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="./styles.css?v=6">
-  <script type="module" src="./app.js?v=6"></script>
+  <link rel="stylesheet" href="./styles.css?v=7">
+  <script type="module" src="./app.js?v=7"></script>
 </head>
 <body>
   <div class="app-shell">
@@ -52,7 +52,7 @@
         <section class="monitor-panel" aria-labelledby="monitorTitle">
           <div class="monitor-head">
             <div><p class="listing-eyebrow">ÉTAT DU RÉSEAU</p><h2 id="monitorTitle">Surveillance des sites</h2></div>
-            <span class="monitor-frequency" id="lastControl">Contrôle des adresses toutes les 48 h</span>
+            <span class="monitor-frequency" id="lastControl">Contrôle des adresses tous les jours</span>
           </div>
           <div class="monitor-stats">
             <button class="monitor-stat" data-health="online" type="button" aria-label="Afficher les sites accessibles">
@@ -69,6 +69,27 @@
             </button>
           </div>
           <div class="monitor-banner" id="monitorBanner" hidden></div>
+        </section>
+
+        <section class="server-sites-panel" id="serverSitesPanel" aria-labelledby="serverSitesTitle">
+          <div class="server-sites-heading">
+            <div>
+              <p class="listing-eyebrow">COUVERTURE QUOTIDIENNE</p>
+              <h2 id="serverSitesTitle">Tous les liens du serveur</h2>
+              <p class="server-sites-description">Sites trouvés dans les salons textuels, forums, fils publics et archives accessibles.</p>
+            </div>
+            <span class="server-sites-status" id="serverScanCoverage">Analyse non encore disponible</span>
+          </div>
+          <div class="server-sites-toolbar">
+            <div class="server-sites-count" id="serverSitesCount">— adresses suivies</div>
+            <label class="server-sites-search" for="serverSitesSearch">
+              <span aria-hidden="true">⌕</span>
+              <input id="serverSitesSearch" type="search" placeholder="Filtrer les adresses…" autocomplete="off">
+            </label>
+          </div>
+          <div id="serverSitesList" class="server-sites-list" aria-live="polite">
+            <p class="history-empty">En attente du premier contrôle du serveur.</p>
+          </div>
         </section>
 
         <section class="search-panel" aria-label="Recherche et classement">
