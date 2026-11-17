@@ -90,6 +90,25 @@ class DashboardTests(unittest.TestCase):
         titles = [x["components"][0]["content"] for x in components if x.get("type") == 17]
         self.assertIn("DISCUSSION", titles[-1])
 
+    def test_actual_server_categories_have_distinct_specific_emojis(self):
+        from catalogue_v2 import category_visuals, icon, ordered
+        names = ("Salons textuels", "Streaming", "Anti-pub",
+                 "Telechargement", "ressource", "Achat-Shopping",
+                 "Borne d'arcade")
+        data = {(str(i), name): {} for i, name in enumerate(names)}
+        appearances = category_visuals(data)
+        self.assertEqual(appearances[("5", "Achat-Shopping")][1], "🛍️")
+        self.assertEqual(appearances[("6", "Borne d'arcade")][1], "🕹️")
+        self.assertEqual(appearances[("4", "ressource")][1], "📚")
+        self.assertEqual(appearances[("0", "Salons textuels")][1], "🗨️")
+        self.assertEqual(ordered(data)[-1][0][1], "Salons textuels")
+        self.assertEqual(len({item[1] for item in appearances.values()}), 7)
+        self.assertEqual(icon("discussion"), "💬")
+        self.assertEqual(icon("extension-navigateur"), "🧩")
+        self.assertEqual(icon("comparateur-prix"), "🏷️")
+        self.assertEqual(icon("cashback"), "💰")
+        self.assertEqual(icon("transfert-de-fichiers"), "📤")
+
     def test_distinct_emojis_for_generic_categories(self):
         from catalogue_v2 import category_visuals
         data = {
