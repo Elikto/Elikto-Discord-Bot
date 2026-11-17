@@ -202,6 +202,7 @@ def extract_links(message):
 
 def find_server_links(api, *, existing=None):
     """Une analyse exhaustive, sans cacher les erreurs de permissions."""
+    bot_id = str(api.call("GET", "/users/@me")["id"])
     targets, failures = public_thread_locations(api)
     seen_urls = {}
     counts = defaultdict(int)
@@ -211,7 +212,7 @@ def find_server_links(api, *, existing=None):
             for message in all_messages(api, cid):
                 counts["messages_read"] += 1
                 author = message.get("author") or {}
-                if author.get("bot") or message.get("webhook_id"):
+                if str(author.get("id")) == bot_id:
                     continue
                 for url in extract_links(message):
                     rec = seen_urls.setdefault(url, {
@@ -256,7 +257,7 @@ def update_identity(state, record, observation, now, *, first_run):
         record["pending_name"] = None
         record["pending_name_at"] = None
         return
-    if record.get("pending_name", "").casefold() != name.casefold():
+    if (record.get("pending_name") or "").casefold() != name.casefold():
         record["pending_name"] = name
         record["pending_name_at"] = stamp(now)
         if not first_run:
@@ -275,6 +276,7 @@ def update_identity(state, record, observation, now, *, first_run):
 
 def watch_server_links(api, state, now=None, *, discover=find_server_links):
     now = now or datetime.now(timezone.utc)
+    started = len(state.get("events", []))
     discovered, scan_counts, errors = discover(api)
     records = state.setdefault("server_links", {})
     first_run = not records
@@ -312,7 +314,6 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
     # Si une lecture a échoué, préserver toutes les observations déjà connues.
     checked = 0
     identity_checks = 0
-    started = len(state.get("events", []))
     for rec in records.values():
         if not rec.get("active"):
             continue
@@ -342,7 +343,7 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
     print("SURVEILLANCE GLOBALE :", report)
     return report, [
         ev for ev in state.get("events", [])[started:]
-        if ev.get("alert") and ev.get("type", "").startswith("server_")
+        if ev.get("alert")
     ]
 
 
