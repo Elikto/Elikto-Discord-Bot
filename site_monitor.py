@@ -89,13 +89,24 @@ def read_starter_message(api, thread_id: str):
             return None
 
 
+DISCOVERY_COUNTS = {"unreadable": 0, "empty_message": 0, "readable": 0, "with_url": 0}
+
+
 def pick_site_url(api, thread_id: str, title: str) -> str | None:
     # Le corps du message de depart est prioritaire. Ne pas scanner des
     # conversations d'autres membres pour eviter de prendre un lien parasite.
     message = read_starter_message(api, thread_id)
+    if message is None:
+        DISCOVERY_COUNTS["unreadable"] += 1
+    elif not (message.get("content") or message.get("embeds")):
+        DISCOVERY_COUNTS["empty_message"] += 1
+    else:
+        DISCOVERY_COUNTS["readable"] += 1
     choices = extract_candidate_urls(message or {})
     if not choices:
         choices = extract_candidate_urls({"content": title})
+    if choices:
+        DISCOVERY_COUNTS["with_url"] += 1
     return choices[0] if choices else None
 
 
@@ -209,7 +220,11 @@ def watch_catalogue(api, catalogue: dict, state: dict, now=None) -> tuple[dict, 
                 record["discord_url"] = item["url"]
                 record["category"] = category["name"]
                 record["forum"] = channel["name"]
-                needs_discovery = due(record.get("last_discovery"), now)
+                # Reessayer au prochain lancement si aucun site n'a ete extrait :
+                # utile lorsque MESSAGE_CONTENT vient d'etre autorise.
+                needs_discovery = (
+                    not record.get("site_url") or due(record.get("last_discovery"), now)
+                )
                 if needs_discovery:
                     candidate = pick_site_url(api, thread_id, item["title"])
                     record["last_discovery"] = stamp(now)
@@ -369,6 +384,7 @@ def main():
         json.dumps(state, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
     notified = notify_discord(api, GUILD_ID, alerts)
+    print("Diagnostic lecture des fiches Discord (comptes uniquement) :", DISCOVERY_COUNTS)
     print(
         "Surveillance :",
         report["total"], "fiches,",
