@@ -82,6 +82,17 @@ class WebsiteTests(unittest.TestCase):
         self.assertIn("SITES ACTUELS", self.js)
         self.assertIn("mirror.name", self.js)
 
+    def test_global_server_site_links_are_visible_and_searchable(self):
+        for identifier in ("serverSitesPanel", "serverSitesSearch", "serverSitesList",
+                           "serverScanCoverage", "serverSitesCount"):
+            self.assertIn(identifier, self.parser.ids)
+        self.assertIn("function renderServerSites()", self.js)
+        self.assertIn("state.monitoring", self.js)
+        self.assertIn("server_sites", self.js)
+        self.assertIn("all_public_sources_scanned", self.js)
+        self.assertIn("server-site-card", self.css)
+        self.assertIn("Contrôle des adresses tous les jours", self.html)
+
     def test_mobile_reuses_the_same_menu(self):
         self.assertIn('id="menuButton"', self.html)
         self.assertIn('id="backdrop"', self.html)
@@ -91,7 +102,7 @@ class WebsiteTests(unittest.TestCase):
     def test_no_mock_content_in_public_html(self):
         self.assertNotIn("Movix", self.html)
         self.assertNotIn("WebFlix", self.html)
-        self.assertEqual(self.parser.scripts, ["./app.js?v=6"])
+        self.assertEqual(self.parser.scripts, ["./app.js?v=7"])
 
 
 if __name__ == "__main__":
