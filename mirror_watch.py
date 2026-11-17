@@ -363,7 +363,7 @@ def summary_message(items, thread_name):
     ]
     for item in items:
         name = str(item.get("name") or urlsplit(item["url"]).hostname)
-        name = name.replace("@", "@\\u200b").replace("]", "")
+        name = name.replace("@", "@\u200b").replace("]", "")
         # Les URL sont déjà nettoyées et contrôlées via clean_url.
         url = clean_url(item.get("url"))
         if not url:
@@ -371,11 +371,11 @@ def summary_message(items, thread_name):
         lines.append(f"### ✦ [{name[:48]}]({url})")
         old_names = item.get("previous_names") or []
         if old_names:
-            former = ", ".join(str(old) for old in old_names).replace("@", "@\\u200b")
+            former = ", ".join(str(old) for old in old_names).replace("@", "@\u200b")
             lines.append(f"-# ↳ Ancien : {former}")
         lines.append("")
 
-    content = "\\n".join(lines).rstrip()
+    content = "\n".join(lines).rstrip()
     if len(content) > 1950:
         raise ValueError("La liste des noms actuels dépasse Discord : aucun site masqué.")
     return content
