@@ -36,6 +36,15 @@ class DashboardTests(unittest.TestCase):
         self.assertLessEqual(total_components(components), 40)
         self.assertLessEqual(total_chars(components), 4000)
 
+    def test_web_button_points_to_live_catalogue(self):
+        components = render_dashboard(sample())
+        home = components[0]["components"]
+        links = [component.get("accessory") for component in home if component.get("type") == 9]
+        self.assertTrue(any(link.get("url") == "https://elikto.github.io/Elikto-Discord-Bot/"
+                            and link.get("label") == "Ouvrir le site"
+                            and link.get("style") == 5 for link in links))
+        self.assertLessEqual(total_components(components), 40)
+
     def test_all_public_fiches_linked_without_extra_messages(self):
         components = render_dashboard(sample())
         contents = " ".join(x.get("content", "")
