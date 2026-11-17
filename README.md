@@ -22,13 +22,13 @@ Le filtre est volontairement prudent : les salons visibles uniquement par des ro
 ## Configuration (une seule fois)
 
 1. Invite le bot **scan stream** sur le serveur `1430984645012357263`. Son Application ID est `1572061260231737395`.
-2. Dans Discord, cree un **salon textuel** `#catalogue` (pas un forum) dans la categorie de ton choix. Le bot doit pouvoir y voir l'historique et publier.
-3. Active le **Mode developpeur** de Discord ; clic droit sur `#catalogue` > **Copier l'identifiant**.
-4. Sur GitHub, ouvre **Settings > Secrets and variables > Actions**.
-5. Dans **Secrets**, cree `DISCORD_BOT_TOKEN` avec le jeton du bot recupere dans le Discord Developer Portal. **Ne publie jamais ce jeton dans un fichier, un commentaire ou une conversation.**
-6. Dans **Variables**, cree `CATALOG_CHANNEL_ID` avec l'identifiant du salon textuel catalogue.
-7. Facultatif : `EXCLUDED_CHANNEL_IDS` avec des identifiants de salons separes par des virgules.
-8. Ouvre **Actions > Synchroniser le catalogue Discord > Run workflow**, puis consulte les logs et le contenu de `#catalogue`.
+2. Reautorise le bot avec la permission **Gerer les salons** (`MANAGE_CHANNELS`) : elle est necessaire uniquement pour la creation initiale de `#catalogue`. Tu peux la retirer ensuite ; le bot retrouvera le salon via son marqueur.
+3. Dans GitHub, ouvre **Settings > Secrets and variables > Actions**.
+4. Dans **Secrets**, cree `DISCORD_BOT_TOKEN` avec le jeton du bot recupere dans le Discord Developer Portal. **Ne publie jamais ce jeton dans un fichier, un commentaire ou une conversation.**
+5. Facultatif : variable `EXCLUDED_CHANNEL_IDS` (liste d'identifiants separes par des virgules).
+6. Ouvre **Actions > Synchroniser le catalogue Discord > Run workflow**. Le bot cree automatiquement `#catalogue` a la racine du serveur, puis importe les publications visibles. Le salon sera reutilise aux executions suivantes.
+
+**Il n'est pas necessaire de creer le salon manuellement ni de renseigner `CATALOG_CHANNEL_ID`.** Si tu possedes deja un salon texte `#catalogue` cree manuellement, tu peux toutefois preciser son ID dans la variable facultative `CATALOG_CHANNEL_ID` pour le reutiliser. Le bot refusera de modifier un salon existant sans marqueur ou ID explicite.
 
 Le repo peut etre public, car **aucun secret n'est versionne**. Pour le rendre prive : **Settings > General > Danger Zone > Change repository visibility**.
 
@@ -38,6 +38,9 @@ Le repo peut etre public, car **aucun secret n'est versionne**. Pour le rendre p
 - Voir les anciens messages
 - Envoyer des messages
 - Integrer les liens
+- **Gerer les salons** pour creer automatiquement `#catalogue` (la permission peut etre retiree apres creation)
+
+La creation est idempotente : identification du canal par un marqueur dans son sujet ; aucune duplication aux controles suivants. Si la creation echoue faute de permission, le workflow s'arrete avec un message explicite.
 
 Pour de futurs modules, les permissions `Envoyer des messages dans les fils` et `Gerer les fils` pourront etre utiles. La permission `Administrateur` n'est pas necessaire.
 
