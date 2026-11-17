@@ -94,10 +94,13 @@ function catalogueEntries() {
         normalize(channel.name).includes(normalize(state.search));
 
       for (const item of channel.items || []) {
-        const status = item.monitor?.status || "missing_url";
+        const mirrorStatuses = (item.monitor?.mirrors || []).map((x) => x.status);
+        const statuses = mirrorStatuses.length ? mirrorStatuses :
+          [item.monitor?.status || "missing_url"];
         if (state.health !== "all" &&
-            !(state.health === "incidents" && ["offline", "suspect"].includes(status)) &&
-            state.health !== status) continue;
+            !(state.health === "incidents" &&
+              statuses.some((status) => ["offline", "suspect"].includes(status))) &&
+            !statuses.includes(state.health)) continue;
         const href = discordUrl(item.url);
         if (!href || visited.has(href)) continue;
         if (state.search && !scopeMatch &&
