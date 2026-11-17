@@ -33,6 +33,32 @@ Un site peut changer de domaine par redirection : le nouveau domaine est alors
 **signalé pour vérification**, sans remplacer automatiquement l'adresse officielle.
 Une réponse HTTP ne prouve pas que le site est sûr ou que son contenu est correct.
 
+### Suivi dédié : fil « Streaming HD miroir »
+
+Le fil public **1430988094374547559** dispose d'un suivi de nom et d'adresse
+spécifique (`thread_watch.py`), relancé toutes les six heures par GitHub
+Actions.
+
+- Quand **l'auteur du fil** renseigne une adresse valide dans son message ou
+  annonce clairement « Nouvelle adresse : https://… », le bot met à jour
+  **son propre message de suivi dans ce fil** (un seul message, jamais de doublon).
+- Si l'auteur écrit « Nouveau nom : … », le bot peut aussi corriger le **titre
+  du fil** lorsqu'il possède la permission **Gérer les fils**.
+- Les anciennes adresses et les modifications de nom sont historisées dans
+  `data/monitor_state.json` et présentées dans le tableau de bord.
+- Si une ancienne adresse redirige vers un domaine différent, le bot le
+  **signale sans supposer** qu'il s'agit du même site. Aucun changement de
+  nom n'est déduit automatiquement d'un simple nom de domaine.
+- Le bot **ne peut pas éditer le texte du message original d'un membre** :
+  seul son message de suivi est corrigé. Aucune écriture n'a lieu si le texte
+  source n'est pas lisible ou si plusieurs URL sont ambiguës.
+- Si l'auteur modifie directement le titre du fil, le bot reflète ce titre
+  lors de sa prochaine synchronisation.
+
+**Prérequis :** activer `Message Content Intent` pour que les URL des
+messages soient visibles au bot. Vérifier aussi `Écrire dans les fils` ;
+`Gérer les fils` est nécessaire pour renommer les fils créés par autrui.
+
 ### Autorisation Discord indispensable
 
 **Pour lire les URL des messages** (et non seulement leur titre), activer
