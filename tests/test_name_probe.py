@@ -23,6 +23,29 @@ class BrandDetectionTests(unittest.TestCase):
         self.assertEqual(name["name"], "NANDOV")
         self.assertEqual(name["evidence"], "application-name")
 
+    def test_french_announced_rename_extracts_both_names(self):
+        from name_probe import announced_rename
+        examples = (
+            ("momdax devient nandov.com", "MOMDAX", "NANDOV", "https://nandov.com/"),
+            ("zakmav devient dotivoz.com", "ZAKMAV", "DOTIVOZ", "https://dotivoz.com/"),
+            ("dovlip devient farsov.com", "DOVLIP", "FARSOV", "https://farsov.com/"),
+        )
+        for raw, before, after, domain in examples:
+            with self.subTest(raw=raw):
+                result = announced_rename(raw)
+                self.assertEqual(result["previous_name"], before)
+                self.assertEqual(result["name"], after)
+                self.assertEqual(result["announced_url"], domain)
+                name = parse_site_name("<title>" + raw + "</title>")
+                self.assertEqual(name["name"], after)
+                self.assertEqual(name["previous_name"], before)
+                self.assertEqual(name["evidence"], "title:rename")
+
+    def test_random_title_is_not_a_rename(self):
+        from name_probe import announced_rename
+        self.assertIsNone(announced_rename("NANDOV — Films et séries en HD"))
+        self.assertIsNone(announced_rename("MOMDAX devient MOMDAX.com"))
+
     def test_antibot_titles_do_not_create_false_renames(self):
         for title in ("Just a moment...", "Attention Required! | Cloudflare",
                       "Checking your browser before accessing", "Accès refusé",
