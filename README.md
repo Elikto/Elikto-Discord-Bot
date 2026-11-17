@@ -1,5 +1,28 @@
 # Elikto Discord Bot — catalogue global
 
+## Catalogue web (nouveau)
+
+Site web statique et responsive dans le dossier [site/](site/), avec :
+- recherche instantanée par nom, même sans accents ;
+- navigation par les **vraies catégories du serveur Discord** ;
+- fiches et forums avec liens cliquables, tri A–Z/Z–A/quantité et cartes dépliables ;
+- affichage sombre moderne, sur PC et téléphone ;
+- catégorie et salons **Discussion à la fin** ;
+- données régénérées toutes les six heures par GitHub Actions, sans NAS ni PC.
+
+Le workflow [catalogue.yml](.github/workflows/catalogue.yml) lit uniquement les salons et fils publics visibles par @everyone, produit temporairement le fichier JSON de la version web et déploie les fichiers statiques sur GitHub Pages. Le jeton du bot **ne figure jamais** dans le site ni dans les fichiers publiés.
+
+**Activation initiale nécessaire (une seule fois)** : sur GitHub, ouvrir
+**Settings → Pages → Build and deployment → Source : GitHub Actions**.
+Le jeton automatique GitHub Actions ne peut pas activer Pages à la place du propriétaire du dépôt (erreur 403). Une fois la source activée, ouvrir **Actions → Synchroniser Discord et publier le catalogue web → Run workflow**.
+
+Adresse attendue après un déploiement réussi :
+**https://elikto.github.io/Elikto-Discord-Bot/**
+
+Le site est **public** : il ne publie donc ni les salons privés ni le contenu des messages, seulement les noms et liens des ressources des forums publics. GitHub Pages ne nécessite pas de serveur personnel, et la synchronisation reste assurée par GitHub Actions.
+
+
+
 Catalogue automatique du serveur Discord **Les notes d'Elikto**.
 
 **Sans NAS ni PC allume :** le workflow GitHub Actions s'execute toutes les 6 heures (00:23, 06:23, 12:23, 18:23 UTC), au changement du programme ou manuellement. GitHub peut retarder ou ignorer certaines executions programmees.
