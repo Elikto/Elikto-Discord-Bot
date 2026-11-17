@@ -10,7 +10,7 @@ import os
 import re
 
 from site_probe import check_site, extract_candidate_urls, other_domain
-from name_probe import probe_site_name
+from name_probe import probe_site_name, announced_rename
 from site_monitor import event
 
 THREAD_ID = "1430988094374547559"
@@ -121,6 +121,30 @@ def identity_key(name):
     ).casefold())
 
 
+def migrate_legacy_title(item, now, state, first_run=False):
+    """Corriger les noms déjà enregistrés comme phrase 'X devient Y.com'.
+
+    Ne pas considérer toute la phrase comme un nom : enregistrer X comme
+    ancien nom connu et Y comme nouveau nom annoncé à confirmer.
+    """
+    announcement = announced_rename(item.get("site_name"))
+    if not announcement:
+        return False
+    previous = announcement["previous_name"]
+    proposed = announcement["name"]
+    item["site_name"] = previous
+    item["pending_name"] = proposed
+    item["pending_seen_at"] = now.isoformat(timespec="seconds")
+    item["pending_count"] = 1
+    item["announced_url"] = announcement.get("announced_url")
+    item["name_evidence"] = announcement["evidence"]
+    if not first_run:
+        change_event(state, "mirror_name_suspected", item, now,
+                     before=previous, after=proposed,
+                     detail="La page du site annonce un nouveau nom ou domaine ; à confirmer.")
+    return True
+
+
 def update_name(item, identity, now, state, first_run=False):
     """Une différence est suspecte au premier jour, confirmée au deuxième.
 
@@ -132,12 +156,25 @@ def update_name(item, identity, now, state, first_run=False):
     detected = identity["name"][:58]
     item["name_last_checked"] = now.isoformat(timespec="seconds")
     item["name_evidence"] = identity.get("evidence", "html")
+    if identity.get("announced_url"):
+        item["announced_url"] = identity["announced_url"]
     official = item.get("site_name")
     if not official:
-        item["site_name"] = detected
-        item["pending_name"] = None
-        item["pending_seen_at"] = None
-        item["pending_count"] = 0
+        if identity.get("previous_name"):
+            previous = identity["previous_name"]
+            item["site_name"] = previous
+            item["pending_name"] = detected
+            item["pending_seen_at"] = now.isoformat(timespec="seconds")
+            item["pending_count"] = 1
+            if not first_run:
+                change_event(state, "mirror_name_suspected", item, now,
+                             before=previous, after=detected,
+                             detail="Le site annonce explicitement un changement de nom ; à confirmer.")
+        else:
+            item["site_name"] = detected
+            item["pending_name"] = None
+            item["pending_seen_at"] = None
+            item["pending_count"] = 0
         return
     if identity_key(detected) == identity_key(official):
         item["pending_name"] = None
@@ -200,7 +237,9 @@ def summary_message(items, thread_name):
             last.append(datetime.fromisoformat(checked).timestamp())
         if item.get("pending_name"):
             suspected = str(item["pending_name"]).replace("@", "@\u200b")
-            lines.append(f"   🟡 Changement de nom suspecté : {suspected[:50]} (confirmation au prochain contrôle)")
+            lines.append(f"   🟡 Nouveau nom annoncé : {suspected[:50]} (à confirmer)")
+            if item.get("announced_url"):
+                lines.append(f"   🌐 Domaine annoncé : {item['announced_url']}")
         if item.get("redirect_url"):
             lines.append(f"   ↪ {item['redirect_url']} (changement à confirmer)")
     if last:
@@ -291,6 +330,7 @@ def sync_thread(api, state, now=None):
     names_checked = 0
     for source in sources:
         item = entries[source["url"]]
+        migrate_legacy_title(item, now, state, first_run=is_first)
         if not is_checked_today(item.get("last_checked"), now):
             update_probe(item, check_site(item["url"]), now, state, first_run=is_first)
             checked += 1
