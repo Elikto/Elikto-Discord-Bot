@@ -261,7 +261,7 @@ function resourceCard(item) {
 
   const mirrorsList = element("div", "mirrors-list");
   if (mirrors.length) {
-    mirrorsList.append(element("strong", "mirrors-title", "ADRESSES CONTRÔLÉES"));
+    mirrorsList.append(element("strong", "mirrors-title", "SITES ACTUELS — SANS DOUBLONS"));
     for (const mirror of mirrors) {
       const href = websiteUrl(mirror.url);
       if (!href) continue;
@@ -271,27 +271,22 @@ function resourceCard(item) {
       row.rel = "noopener noreferrer nofollow";
       const identity = element("span", "mirror-identity");
       identity.append(element("span", "mirror-name",
-        mirror.site_name || mirror.name || new URL(href).hostname));
-      if (mirror.site_name) {
-        identity.append(element("span", "mirror-domain", new URL(href).hostname));
+        mirror.name || mirror.site_name || new URL(href).hostname));
+      identity.append(element("span", "mirror-domain", new URL(href).hostname));
+      const previousNames = Array.isArray(mirror.previous_names) ?
+        mirror.previous_names.filter(Boolean) : [];
+      if (previousNames.length) {
+        identity.append(element("span", "mirror-domain",
+          "Anciennement : " + previousNames.join(", ")));
       }
-      if (mirror.pending_name) {
+      if (mirror.pending || mirror.pending_name) {
         identity.append(element("span", "mirror-rename-warning",
-          "🟡 Nouveau nom possible : " + mirror.pending_name + " — confirmation en cours"));
+          "🟡 Nouveau nom annoncé, vérification en cours"));
       }
       const health = healthLabels[mirror.status] || healthLabels.unknown;
       const healthNode = element("span", "mirror-status health-" + health[1], health[0]);
       row.append(identity, healthNode);
       mirrorsList.append(row);
-      const proposedHref = websiteUrl(mirror.announced_url);
-      if (proposedHref && mirror.pending_name) {
-        const proposed = element("a", "mirror-proposed",
-          "↪ Domaine annoncé : " + new URL(proposedHref).hostname + " (à confirmer)");
-        proposed.href = proposedHref;
-        proposed.target = "_blank";
-        proposed.rel = "noopener noreferrer nofollow";
-        mirrorsList.append(proposed);
-      }
     }
   }
 
