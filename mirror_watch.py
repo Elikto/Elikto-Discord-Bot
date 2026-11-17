@@ -9,7 +9,7 @@ import json
 import os
 import re
 
-from site_probe import check_site, extract_candidate_urls, other_domain
+from site_probe import check_site, extract_candidate_urls, other_domain, clean_url
 from name_probe import probe_site_name, announced_rename
 from site_monitor import event
 
@@ -214,40 +214,118 @@ def update_name(item, identity, now, state, first_run=False):
                      detail="Nouveau nom confirmé par deux contrôles indépendants du site.")
 
 
+def grouped_current_sites(items):
+    """Un site actuel par domaine annoncé, même si plusieurs anciens y mènent.
+
+    Les six URLs sources restent suivies séparément dans url_states. Cette
+    projection ne concerne que la liste publique du bot et du site web.
+    """
+    groups = {}
+    for item in items:
+        proposed_url = clean_url(item.get("announced_url")) if item.get("announced_url") else None
+        current_url = proposed_url or item["url"]
+        # www et non-www ne créent pas deux entrées pour le même site.
+        parsed = urlsplit(current_url)
+        host = (parsed.hostname or "").removeprefix("www.")
+        key = (host, parsed.path.rstrip("/") or "/")
+        displayed_name = (
+            item.get("pending_name") or item.get("site_name")
+            or item.get("label") or host
+        )
+        old_name = item.get("site_name") or item.get("label") or urlsplit(item["url"]).hostname
+        if key not in groups:
+            groups[key] = {
+                "url": current_url,
+                "name": str(displayed_name),
+                "previous_names": [],
+                "source_urls": [],
+                "announced": bool(proposed_url),
+                "pending": bool(item.get("pending_name")),
+                "status": item.get("status", "pending"),
+                "last_checked": item.get("last_checked"),
+                "http_status": item.get("http_status"),
+                "redirect_url": item.get("redirect_url"),
+            }
+        group = groups[key]
+        # Une annonce plus récente a priorité sur un simple libellé initial.
+        if item.get("pending_name"):
+            group["name"] = str(item["pending_name"])
+        group["announced"] = group["announced"] or bool(proposed_url)
+        group["pending"] = group["pending"] or bool(item.get("pending_name"))
+        if item["url"] not in group["source_urls"]:
+            group["source_urls"].append(item["url"])
+        if old_name and identity_key(old_name) != identity_key(group["name"]):
+            if identity_key(old_name) not in {identity_key(n) for n in group["previous_names"]}:
+                group["previous_names"].append(str(old_name))
+    return list(groups.values())
+
+
+def decorate_destinations(groups, source_items, target_states, now, state):
+    """Vérifier chaque NOUVEAU domaine une seule fois, pas chaque alias ancien."""
+    source_index = {item["url"]: item for item in source_items}
+    required = set()
+    for group in groups:
+        target = group["url"]
+        source = source_index.get(target)
+        if source:
+            observation = source
+        else:
+            required.add(target)
+            observation = target_states.get(target)
+            is_new = observation is None
+            if is_new:
+                observation = {
+                    "url": target, "label": group["name"], "status": "pending",
+                    "last_checked": None, "http_status": None, "failures": 0,
+                    "reason": None, "redirect_url": None, "final_url": None,
+                }
+                target_states[target] = observation
+            if not is_checked_today(observation.get("last_checked"), now):
+                update_probe(
+                    observation, check_site(target), now, state,
+                    first_run=is_new,
+                )
+        for field in ("status", "last_checked", "http_status", "redirect_url"):
+            group[field] = observation.get(field)
+    # Un domaine abandonné ne reste pas dans le tableau de bord.
+    for url in set(target_states) - required:
+        del target_states[url]
+    return groups
+
+
 def summary_message(items, thread_name):
+    """Afficher les N sites actuels, jamais N fois un même nom cible."""
     lines = [
-        f"🔎 **SUIVI DES SITES — {thread_name[:60].upper()}**",
+        f"🔎 **SITES ACTUELS — {thread_name[:60].upper()}**",
         MARKER,
-        f"**{len(items)} adresses** · vérification **quotidienne** · "
-        f"**{sum(bool(i.get('site_name')) for i in items)} noms reconnus**",
+        f"**{len(items)} sites distincts** · contrôle quotidien",
         "",
     ]
     last = []
     for index, item in enumerate(items, 1):
-        label = str(item.get("site_name") or item.get("label") or urlsplit(item["url"]).hostname)
-        label = label.replace("@", "@\u200b")
-        label_status = STATUS.get(item.get("status"), STATUS["unknown"])
-        lines.append(f"**{index}. {label[:48]}** — {label_status}")
+        name = str(item.get("name") or urlsplit(item["url"]).hostname).replace("@", "@\u200b")
+        status = STATUS.get(item.get("status"), STATUS["unknown"])
+        lines.append(f"**{index}. {name[:48]}** — {status}")
         code = f" · HTTP {item['http_status']}" if item.get("http_status") else ""
         checked = item.get("last_checked")
         moment = (f" · <t:{int(datetime.fromisoformat(checked).timestamp())}:R>"
-                  if checked else " · non contrôlée")
+                  if checked else " · non contrôlé")
         lines.append(f"   {item['url']}{code}{moment}")
         if checked:
             last.append(datetime.fromisoformat(checked).timestamp())
-        if item.get("pending_name"):
-            suspected = str(item["pending_name"]).replace("@", "@\u200b")
-            lines.append(f"   🟡 Nouveau nom annoncé : {suspected[:50]} (à confirmer)")
-            if item.get("announced_url"):
-                lines.append(f"   🌐 Domaine annoncé : {item['announced_url']}")
+        old_names = item.get("previous_names") or []
+        if old_names:
+            lines.append("   ↳ Anciennement : " + ", ".join(old_names))
+        if item.get("pending"):
+            lines.append("   🟡 Nouveau nom annoncé, confirmation en cours")
         if item.get("redirect_url"):
-            lines.append(f"   ↪ {item['redirect_url']} (changement à confirmer)")
+            lines.append(f"   ↪ Redirection : {item['redirect_url']} (à confirmer)")
     if last:
         lines.extend(["", f"🕒 Dernier contrôle : <t:{int(max(last))}:f>"])
-    lines.append("ℹ️ Une réponse HTTP ne garantit pas que le site fonctionne entièrement.")
+    lines.append("ℹ️ Les anciennes adresses restent suivies sans être affichées en double.")
     content = "\n".join(lines)
     if len(content) > 1950:
-        raise ValueError("Trop de liens pour un message Discord ; aucune URL ne sera masquée.")
+        raise ValueError("Le catalogue des sites actuels dépasse Discord : pas de liens masqués.")
     return content
 
 
@@ -360,7 +438,11 @@ def sync_thread(api, state, now=None):
                 except RuntimeError:
                     print("MIROIRS : impossible de renommer le fil (permission requise).")
 
-    summary = summary_message([entries[source["url"]] for source in sources], thread_name)
+    source_items = [entries[source["url"]] for source in sources]
+    sites = grouped_current_sites(source_items)
+    target_states = tracked.setdefault("target_states", {})
+    decorate_destinations(sites, source_items, target_states, now, state)
+    summary = summary_message(sites, thread_name)
     try:
         message_id = upsert_bot_message(api, tracked, bot_id, summary)
     except RuntimeError:
@@ -370,14 +452,16 @@ def sync_thread(api, state, now=None):
         "name": thread_name,
         "message_id": message_id,
         "urls": [source["url"] for source in sources],
+        "display_sites": sites,
         "last_synced": now.isoformat(timespec="seconds"),
     })
     known_names = sum(bool(entries[source["url"]].get("site_name")) for source in sources)
     suspected_names = sum(bool(entries[source["url"]].get("pending_name")) for source in sources)
-    print("MIROIRS :", len(sources), "URL visibles ;", checked,
-          "vérifications HTTP ;", names_checked, "recherches de nom ;",
-          known_names, "noms identifiés ;",
-          suspected_names, "changements de nom suspects.")
+    print("MIROIRS :", len(sources), "adresses source ;", len(sites),
+          "sites actuels distincts ;", checked, "vérifications HTTP sources ;",
+          names_checked, "recherches de nom ;", known_names,
+          "noms identifiés ;", suspected_names,
+          "changements de nom suspects.")
     return "updated"
 
 
