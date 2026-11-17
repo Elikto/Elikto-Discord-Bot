@@ -170,6 +170,9 @@ class MonitorTests(unittest.TestCase):
                 "urls": urls,
                 "url_states": {
                     urls[0]: {"url": urls[0], "label": "Un", "status": "online",
+                              "site_name": "MOMDAX", "pending_name": "NANDOV",
+                              "name_evidence": "og:site_name",
+                              "name_last_checked": self.now.isoformat(),
                               "last_checked": self.now.isoformat(), "http_status": 200},
                     urls[1]: {"url": urls[1], "label": "Deux", "status": "offline",
                               "last_checked": self.now.isoformat(), "http_status": 503}
@@ -192,6 +195,10 @@ class MonitorTests(unittest.TestCase):
         self.assertEqual(report["status_counts"], {"online": 1, "offline": 1})
         self.assertEqual(len(catalog["categories"][0]["channels"][0]["items"][0]["monitor"]["mirrors"]), 2)
         self.assertEqual(len(report["sites"][0]["mirrors"]), 2)
+        mirror = report["sites"][0]["mirrors"][0]
+        self.assertEqual(mirror["site_name"], "MOMDAX")
+        self.assertEqual(mirror["pending_name"], "NANDOV")
+        self.assertEqual(mirror["name_evidence"], "og:site_name")
         self.assertEqual(alerts, [])
 
     def test_title_change_creates_history_event(self):
