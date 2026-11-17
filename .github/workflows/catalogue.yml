@@ -13,6 +13,7 @@ on:
       - 'export_catalogue.py'
       - 'site/**'
       - 'tests/test_web_export.py'
+      - 'tests/test_website.py'
       - '.github/workflows/catalogue.yml'
 
 concurrency:
