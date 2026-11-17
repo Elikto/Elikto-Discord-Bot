@@ -770,7 +770,7 @@
         "https://zinzov.com/",
         "https://didvip.com/"
       ],
-      "last_synced": "2026-11-17T23:51:49+00:00",
+      "last_synced": "2026-11-17T23:53:49+00:00",
       "target_states": {
         "https://nandov.com/": {
           "url": "https://nandov.com/",
@@ -1455,7 +1455,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1485,7 +1485,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 503,
       "reason": null,
@@ -1509,7 +1509,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1539,7 +1539,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1569,7 +1569,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1599,7 +1599,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1624,7 +1624,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1649,7 +1649,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1679,7 +1679,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1709,7 +1709,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1739,7 +1739,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": null,
       "reason": "TimeoutError",
@@ -1763,7 +1763,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1793,7 +1793,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 451,
       "reason": null,
@@ -1817,7 +1817,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1847,7 +1847,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 404,
       "reason": null,
@@ -1871,7 +1871,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1901,7 +1901,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 206,
       "reason": null,
@@ -1926,7 +1926,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1956,7 +1956,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1986,7 +1986,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2016,7 +2016,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 403,
       "reason": null,
@@ -2040,7 +2040,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": null,
       "reason": "gaierror",
@@ -2064,7 +2064,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2094,7 +2094,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2124,7 +2124,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 206,
       "reason": null,
@@ -2154,7 +2154,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2184,7 +2184,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2214,7 +2214,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2244,7 +2244,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2274,7 +2274,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2304,7 +2304,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 403,
       "reason": null,
@@ -2328,7 +2328,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2358,7 +2358,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": null,
       "reason": "OSError",
@@ -2382,7 +2382,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-17T23:51:50+00:00",
+      "last_seen": "2026-11-17T23:53:50+00:00",
       "active": true,
       "http_status": null,
       "reason": "OSError",
@@ -2391,7 +2391,7 @@
     }
   },
   "server_scan": {
-    "at": "2026-11-17T23:51:50+00:00",
+    "at": "2026-11-17T23:53:50+00:00",
     "counts": {
       "messages_read": 47,
       "locations_scanned": 37,
@@ -2402,7 +2402,7 @@
     },
     "errors": [],
     "all_public_sources_scanned": true,
-    "new_http_checks": 34,
-    "new_name_checks": 25
+    "new_http_checks": 0,
+    "new_name_checks": 0
   }
 }
