@@ -1,0 +1,33 @@
+name: Synchroniser le catalogue Discord
+
+on:
+  schedule:
+    - cron: '23 */6 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: elikto-catalogue
+  cancel-in-progress: false
+
+jobs:
+  synchroniser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Installer les dependances
+        run: python -m pip install -r requirements.txt
+      - name: Tester le projet
+        run: python -m unittest discover -s tests -v
+      - name: Importer et actualiser le catalogue
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_GUILD_ID: '1430984645012357263'
+          CATALOG_CHANNEL_ID: ${{ vars.CATALOG_CHANNEL_ID }}
+          EXCLUDED_CHANNEL_IDS: ${{ vars.EXCLUDED_CHANNEL_IDS }}
+        run: python sync_catalogue.py
