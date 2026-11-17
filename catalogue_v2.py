@@ -22,7 +22,10 @@ def marker_id(marker):
 
 def style(name):
     n = fold(name)
-    if any(x in n for x in ("stream", "film", "serie")):
+    # Les espaces de discussion sont toujours apres les ressources.
+    if any(token in n for token in ("discussion", "blabla", "bavardage", "general-chat")):
+        return (999, "💬", 0x64748B, "Échanges et discussions")
+    if "stream" in n or "film" in n or "serie" in n:
         return (0, "🎬", 0x9C84F7, "Films, séries et plateformes")
     if "iptv" in n or "television" in n:
         return (1, "📺", 0x45B5D9, "Télévision et chaînes")
@@ -32,13 +35,72 @@ def style(name):
         return (3, "📥", 0x5F9CF0, "Téléchargements et ressources")
     if "anti" in n and ("pub" in n or "publicit" in n):
         return (4, "🛡️", 0x52CDAA, "Bloqueurs de publicité")
-    if any(x in n for x in ("android", "application", "mobile")):
+    if any(x in n for x in ("android", "application", "mobile", "smartphone")):
         return (5, "📱", 0x8ACB73, "Applications et outils")
-    if any(x in n for x in ("jeu", "game")):
+    if any(x in n for x in ("jeu", "game", "gaming", "console")):
         return (6, "🎮", 0xF0B96A, "Jeux et ressources")
-    if "livre" in n or "comic" in n:
+    if "livre" in n or "comic" in n or "lecture" in n:
         return (7, "📖", 0xD5A1FC, "Livres et lecture")
-    return (100, "📁", 0x8493AA, "Ressources du serveur")
+    if any(x in n for x in ("informatique", "ordinateur", "windows", "pc-", "logiciel")):
+        return (8, "💻", 0x73B5E9, "Informatique et logiciels")
+    if "musique" in n or "audio" in n or "son" == n:
+        return (9, "🎵", 0xD2A7FD, "Musique et audio")
+    if "video" in n or "youtube" in n:
+        return (10, "📹", 0xF38F8F, "Vidéos et médias")
+    if "vpn" in n or "securit" in n or "cyber" in n or "confidential" in n:
+        return (11, "🔐", 0x7DCBB4, "Sécurité et confidentialité")
+    if "intelligence artificielle" in n or n == "ia" or "intelligence-artificielle" in n:
+        return (12, "🤖", 0x92A5F8, "Intelligence artificielle")
+    if "reseau" in n or "internet" in n or "web" in n:
+        return (13, "🌐", 0x64C1CA, "Internet et réseaux")
+    if "tutoriel" in n or "guide" in n or "aide" in n:
+        return (14, "🧭", 0xE6B56B, "Guides et tutoriels")
+    if "bot" in n or "automatis" in n:
+        return (15, "⚙️", 0xA5A9F2, "Automatisation")
+    if "projet" in n or "developp" in n or "code" in n:
+        return (16, "🚀", 0xEBAC75, "Projets et développement")
+    if "outil" in n or "utilitaire" in n:
+        return (17, "🧰", 0xB6BF77, "Outils et utilitaires")
+    if "astuce" in n or "conseil" in n:
+        return (18, "💡", 0xD4B86D, "Astuces et conseils")
+    return (100, "🧩", 0x8493AA, "Ressources du serveur")
+
+
+def is_discussion(name):
+    n = fold(name).replace("_", "-").replace(" ", "-")
+    return any(token in n for token in
+               ("discussion", "blabla", "bavardage", "general-chat")) or n in (
+                   "general", "chat", "salon-general", "salon-discussion"
+               )
+
+
+def salon_sort(item):
+    return (1 if is_discussion(item[0]) else 0, fold(item[0]))
+
+
+def category_visuals(grouped):
+    """Une icone differente pour chaque categorie, y compris les generiques."""
+    extras = [
+        ("🧩", 0x8493AA), ("💡", 0xD9B06D), ("🛠️", 0x71BFC5),
+        ("🗂️", 0xB69DED), ("🧪", 0x6DCBB1), ("🎨", 0xE694B5),
+        ("🧭", 0x8AC1E5), ("📦", 0xD2A47A), ("🔍", 0xA7BFC4),
+        ("🚀", 0xA5A8E5), ("🛰️", 0x8EB4E0), ("🔖", 0xC1A0C7),
+        ("🔮", 0xA994E8), ("🖥️", 0x85A7CB), ("🧱", 0xC0AC88),
+    ]
+    used = set()
+    output = {}
+    for key, forums in ordered(grouped):
+        rank, emoji, color, description = style(key[1])
+        if rank == 100 or emoji in used:
+            # Allocation stable dans l'ordre du catalogue, sans répétition
+            # dans les categories affichées simultanement.
+            emoji, color = next(
+                ((e, c) for e, c in extras if e not in used),
+                (emoji, color),
+            )
+        used.add(emoji)
+        output[key] = (rank, emoji, color, description)
+    return output
 
 def icon(name):
     n = fold(name)
