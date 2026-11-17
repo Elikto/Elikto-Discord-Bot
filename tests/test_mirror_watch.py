@@ -52,11 +52,24 @@ class FakeAPI:
             self.name = kwargs["json"]["name"]
             return {"name": self.name}
         if method == "PATCH" and path.endswith("/messages/500"):
-            self.bot_messages[0]["content"] = kwargs["json"]["content"]
+            payload = kwargs["json"]
+            self.bot_messages[0]["components"] = payload.get("components", [])
+            self.bot_messages[0]["flags"] = payload.get("flags", 0)
+            self.bot_messages[0]["content"] = (
+                "\n".join(mirror_watch.component_text(payload["components"]))
+                if payload.get("components") else payload.get("content")
+            )
             return self.bot_messages[0]
         if method == "POST" and path.endswith("/messages"):
+            payload = kwargs["json"]
+            text_content = (
+                "\n".join(mirror_watch.component_text(payload["components"]))
+                if payload.get("components") else payload.get("content")
+            )
             message = {"id": "500", "author": {"id": "333", "bot": True},
-                       "content": kwargs["json"]["content"]}
+                       "content": text_content,
+                       "components": payload.get("components", []),
+                       "flags": payload.get("flags", 0)}
             self.bot_messages.append(message)
             return message
         raise AssertionError((method, path))
@@ -412,10 +425,51 @@ class MirrorWatchTests(unittest.TestCase):
         self.assertEqual(len(api.bot_messages), 1)
         self.assertEqual(len(s["tracked_threads"][mirror_watch.THREAD_ID]["urls"]), 5)
         content = api.bot_messages[0]["content"]
-        self.assertIn("🎬 Dernière sortie cinéma en HD **sans pub**", content)
+        self.assertIn("Dernière sortie cinéma en HD **sans pub**", content)
         self.assertIn("✨ **Gratuit - Illimité - Ajouts quotidiens - Zéro pub**", content)
         for url in URLS:
             self.assertIn(url, content)
+
+    def test_v2_cards_are_colored_and_keep_original_message_id(self):
+        api = FakeAPI([human_message()])
+        state = {"tracked_threads": {
+            mirror_watch.THREAD_ID: {"message_id": "500", "url_states": {}}
+        }, "records": {}, "events": [], "event_sequence": 0}
+        api.bot_messages.append({
+            "id": "500", "author": {"id": "333", "bot": True},
+            "content": "## ✦ SITES ACTUELS", "components": [], "flags": 0
+        })
+        with patch("mirror_watch.check_site", side_effect=lambda u: response(url=u)):
+            self.assertEqual(mirror_watch.sync_thread(api, state, self.now), "updated")
+        self.assertEqual(len(api.bot_messages), 1)
+        msg = api.bot_messages[0]
+        self.assertEqual(msg["id"], "500")
+        self.assertEqual(msg["flags"], 32768)
+        self.assertEqual(len(msg["components"]), 6)
+        self.assertTrue(all(comp["type"] == 17 for comp in msg["components"]))
+        self.assertTrue(all(comp["components"][0]["type"] == 10
+                            for comp in msg["components"]))
+        self.assertEqual(msg["components"][1]["accent_color"], mirror_watch.CARD_ACCENT)
+        self.assertIn("### ✦ [", msg["components"][1]["components"][0]["content"])
+        api.calls.clear()
+        with patch("mirror_watch.check_site"):
+            self.assertEqual(
+                mirror_watch.sync_thread(api, state, self.now + timedelta(hours=2)),
+                "updated",
+            )
+        self.assertFalse(any(method in ("POST", "PATCH") for method, _, _ in api.calls))
+
+    def test_cards_support_many_sites_without_hiding_them(self):
+        sites = [
+            {"name": "NAME" + str(i), "url": "https://example" + str(i) + ".org/",
+             "previous_names": ["OLD" + str(i)]}
+            for i in range(40)
+        ]
+        components = mirror_watch.render_site_cards(sites, "Streaming HD miroir")
+        self.assertLessEqual(len(components) * 2, 40)
+        all_text = "\n".join(mirror_watch.component_text(components))
+        self.assertEqual(all_text.count("### ✦ [NAME"), 40)
+        self.assertEqual(all_text.count("-# ↳ Ancien : OLD"), 40)
 
     def test_initial_five_urls_are_all_checked_and_shown_in_one_message(self):
         api = FakeAPI([human_message()])
@@ -428,7 +482,7 @@ class MirrorWatchTests(unittest.TestCase):
         rendered = api.bot_messages[0]["content"]
         for url in URLS:
             self.assertIn(url, rendered)
-        self.assertIn("## ✦ SITES ACTUELS", rendered)
+        self.assertIn("## 🎬 CINÉMA HD · SITES ACTUELS", rendered)
         self.assertEqual(s["events"], [])
 
     def test_no_double_check_on_same_paris_calendar_day(self):
