@@ -45,11 +45,7 @@ EXCLUDE_EXTENSIONS = (
 # Naked domains are supported too, even without https://.
 BARE_DOMAIN = re.compile(
     r"(?<![@\w./:-])(?:[a-z0-9][a-z0-9-]{0,62}\.)+"
-    r"[a-z]{2,24}(?:/[\w.%~!BARE_DOMAIN = re.compile(
-    r"(?<![@\w./:-])(?:www\.)?([a-z0-9][a-z0-9-]{1,62}\."
-    r"(?:[a-z]{2,24}))(?:/[\w.%~!$&'()+,;=:@/-]*)?(?![\w.-])",
-    re.I,
-)'()+,;=:@/-]*)?(?![\w.-])",
+    r"[a-z]{2,24}(?:/[\w.%~!$&'()+,;=:@/-]*)?(?![\w.-])",
     re.I,
 )
 
