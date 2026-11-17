@@ -82,6 +82,9 @@ jobs:
           git add data/monitor_state.json
           if ! git diff --staged --quiet; then
             git commit -m "Données de surveillance : mise à jour automatique [skip ci]"
+            # Les JSON du site sont deja deployes dans l'artifact Pages.
+            # Restaurer ces modifications de la copie de travail pour rebaser.
+            git restore -- site/catalogue.json
             git pull --rebase origin main
             git push origin HEAD:main
             echo "Historique enregistré dans data/monitor_state.json"
