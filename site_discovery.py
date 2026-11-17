@@ -21,19 +21,24 @@ from name_probe import fetch_html_page
 # Candidats identifiés dans les relevés publics datés du 10-12 novembre 2026.
 # Ces observations ne prouvent ni affiliation, ni droits de diffusion.
 SEEDS = {
-    "tiprov.com": ("TIPROV", ["DOMGRAV", "IKROMI", "APLOUF"]),
-    "trimav.com": ("TRIMAV", ["TRIFAK", "OKMAZ", "YABLOM"]),
-    "varloz.com": ("VARLOZ", ["PALKAD", "VREDAP", "SOPONOV"]),
-    "pobram.com": ("POBRAM", ["PIDOOV", "KIDRAZ", "PURWAZ"]),
-    "bimdav.com": ("BIMDAV", ["ILMIV", "KOBIOM", "GADROV"]),
+    "tiprov.com": ("TIPROV", ["DOMGRAV", "IKROMI", "APLOUF", "FARLIZ", "GOZMAP", "WADROX"]),
+    "timbov.com": ("TIMBOV", ["MINZIV", "XATAF", "WIFRAD", "YAKLAP", "VOGFO", "YOSKOV", "ZINZOV"]),
+    "trimav.com": ("TRIMAV", ["TRIFAK", "OKMAZ", "YABLOM", "ROLZIO", "VATRAB"]),
+    "varloz.com": ("VARLOZ", ["PALKAD", "VREDAP", "SOPONOV", "XAMOZ", "VADBAK"]),
+    "pobram.com": ("POBRAM", ["PIDOOV", "KIDRAZ", "PURWAZ", "TOKRAV", "SORLAV"]),
+    "bimdav.com": ("BIMDAV", ["ILMIV", "KOBIOM", "GADROV", "AVOBIV", "IMBRAV"]),
+    "nandov.com": ("NANDOV", ["IPDRO", "KOVLIV", "NOKRAF", "VOZGOV"]),
     "limdav.com": ("LIMDAV", ["EVRIB", "KORDOZ", "IRAMIV"]),
+    "dotivoz.com": ("DOTIVOZ", ["ZAKMAV", "GOZIRAV", "ZOMATOP"]),
     "padmov.com": ("PADMOV", ["NOPRAK", "TARBOB", "PADRAZ"]),
+    "farsov.com": ("FARSOV", ["DOVLIP"]),
     "bintov.com": ("BINTOV", ["MIVDIP"]),
     "watof.com": ("WATOF", []),
     "woovaz.com": ("WOOVAZ", []),
     "bodlav.com": ("BODLAV", []),
     "rogzov.com": ("ROGZOV", []),
 }
+
 REFERENCE_PAGES = (
     "https://natchecker.com/fr/blog/domgrav-nouveau-nom",
     "https://alexitauzin.com/top-50-meilleurs-sites-streaming-gratuits/",
@@ -44,6 +49,13 @@ MIGRATION = re.compile(
     r"(?i)\b([a-z][a-z0-9-]{3,29})\s+"
     r"(?:devient|annonce(?:\s+directement)?|a\s+renomm[ée]\s+(?:son\s+site\s+)?en)"
     r"\s+(?:https?://)?([a-z][a-z0-9-]{3,29})\.com\b"
+)
+# Les listes « Annoncé par X.com, Y.com et Z.com » contiennent le
+# véritable historique que l'utilisateur veut afficher sous le nouveau nom.
+DOMAIN_TOKEN = r"[a-z][a-z0-9-]{2,29}\\.com"
+ANNOUNCED_BY = re.compile(
+    rf"(?i)\\b(?P<current>{DOMAIN_TOKEN})\\s+Annonc[ée]\\s+par\\s+"
+    rf"(?P<former>{DOMAIN_TOKEN}(?:\\s*(?:,|et)\\s*{DOMAIN_TOKEN})*)"
 )
 MAX_CANDIDATES = 40
 
@@ -84,6 +96,23 @@ def extract_migrations(page_html: str) -> list[dict]:
     parser.feed(page_html[:150000])
     text = parser.text()
     result = {}
+    for match in ANNOUNCED_BY.finditer(text):
+        current = match.group("current")
+        url = clean_url("https://" + current.lower() + "/")
+        if not url:
+            continue
+        old_names = [
+            domain.rsplit(".", 1)[0].upper()
+            for domain in re.findall(DOMAIN_TOKEN, match.group("former"), flags=re.I)
+        ]
+        current_name = current.rsplit(".", 1)[0].upper()
+        entry = result.setdefault(url, {
+            "url": url, "name": current_name, "previous_names": [],
+        })
+        for name in old_names:
+            if name != current_name and name not in entry["previous_names"]:
+                entry["previous_names"].append(name)
+
     for former, successor in MIGRATION.findall(text):
         former, successor = former.upper(), successor.upper()
         if former == successor:
@@ -122,7 +151,10 @@ def update_candidates(tracked: dict, now: datetime, fetcher=fetch_html_page) -> 
         })
         # Conserver les noms appris lors d'autres vérifications.
         existing.setdefault("name", name)
-        existing.setdefault("previous_names", list(history))
+        aliases = existing.setdefault("previous_names", [])
+        for former in history:
+            if former not in aliases:
+                aliases.append(former)
 
     if _day_is_current(tracked.get("last_internet_discovery"), now):
         return candidates
@@ -162,7 +194,7 @@ def update_candidates(tracked: dict, now: datetime, fetcher=fetch_html_page) -> 
             "origin": "web", "source": " ; ".join(sorted(finding["sources"])),
         })
         for old in sorted(finding["previous_names"]):
-            if old not in current["previous_names"] and len(current["previous_names"]) < 5:
+            if old not in current["previous_names"] and len(current["previous_names"]) < 30:
                 current["previous_names"].append(old)
         current["last_observed"] = now.isoformat(timespec="seconds")
     print("DÉCOUVERTE WEB : ", len(candidates), "candidats distincts ;",
