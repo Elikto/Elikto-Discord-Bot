@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 from catalogue_v2 import (
     MARKER, FLAG_V2, marker_id, style, category_visuals, salon_sort,
-    icon, safe, fold, ordered, count_items, text, sep, container,
+    icon, safe, fold, ordered, count_items, text, sep, section, container,
     total_components, total_chars, normalize,
 )
 
@@ -69,6 +69,13 @@ def build(grouped, *, max_entries=None, now=None):
             text(
                 f"**📁 {len(grouped)} catégories**   ·   **📚 {count} fiches**\n"
                 f"-# Actualisé le <t:{updated}:f> · Prochaine vérification automatique sous 6 h"
+            ),
+            sep(),
+            section(
+                "### 🌐 Catalogue web interactif\n"
+                "-# Recherche instantanée, catégories et fiches avec liens directs.",
+                "https://elikto.github.io/Elikto-Discord-Bot/",
+                "Ouvrir le site",
             ),
         ],
     )
