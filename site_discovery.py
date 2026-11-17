@@ -52,10 +52,10 @@ MIGRATION = re.compile(
 )
 # Les listes « Annoncé par X.com, Y.com et Z.com » contiennent le
 # véritable historique que l'utilisateur veut afficher sous le nouveau nom.
-DOMAIN_TOKEN = r"[a-z][a-z0-9-]{2,29}\\.com"
+DOMAIN_TOKEN = r"[a-z][a-z0-9-]{2,29}\.com"
 ANNOUNCED_BY = re.compile(
-    rf"(?i)\\b(?P<current>{DOMAIN_TOKEN})\\s+Annonc[ée]\\s+par\\s+"
-    rf"(?P<former>{DOMAIN_TOKEN}(?:\\s*(?:,|et)\\s*{DOMAIN_TOKEN})*)"
+    rf"(?i)\b(?P<current>{DOMAIN_TOKEN})\s+Annonc[ée]\s+par\s+"
+    rf"(?P<former>{DOMAIN_TOKEN}(?:\s*(?:,|et)\s*{DOMAIN_TOKEN})*)"
 )
 MAX_CANDIDATES = 40
 
