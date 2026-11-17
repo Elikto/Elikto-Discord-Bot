@@ -78,7 +78,8 @@ def build(grouped, *, max_entries=None, now=None):
             for name, entries in sorted(forums.items(), key=lambda item: fold(item[0]))
         ]
         body = "\n\n".join(blocks) or "-# Aucun forum référencé."
-        body = body[:3400]  # L'abrege global prend le relais si le serveur grossit.
+        # Ne jamais couper une adresse au milieu : le mode compact choisira
+        # combien de fiches montrer si la limite Discord est depassee.
         parts.extend(container(
             f"{MARKER}dashboard:{cat_id}", color,
             [
