@@ -177,6 +177,7 @@ def public_mirrors(state: dict, thread_id: str) -> list[dict]:
             "name": entry.get("label"),
             "site_name": entry.get("site_name"),
             "pending_name": entry.get("pending_name"),
+            "announced_url": entry.get("announced_url"),
             "name_evidence": entry.get("name_evidence"),
             "name_last_checked": entry.get("name_last_checked"),
             "status": entry.get("status", "pending"),
