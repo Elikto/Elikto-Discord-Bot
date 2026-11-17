@@ -170,6 +170,24 @@ def record_check(state: dict, record: dict, observation: dict, now: datetime) ->
 def public_mirrors(state: dict, thread_id: str) -> list[dict]:
     """Liste publique des adresses distinctes déjà vérifiées pour un fil."""
     tracked = state.get("tracked_threads", {}).get(str(thread_id), {})
+    # Le catalogue web et le message Discord réutilisent exactement la même
+    # vue dédoublonnée. Les anciens liens restent stockés dans url_states.
+    if "display_sites" in tracked:
+        return [
+            {
+                "url": site["url"],
+                "name": site.get("name"),
+                "previous_names": site.get("previous_names", []),
+                "source_urls": site.get("source_urls", []),
+                "announced": bool(site.get("announced")),
+                "pending": bool(site.get("pending")),
+                "status": site.get("status", "pending"),
+                "last_checked": site.get("last_checked"),
+                "http_status": site.get("http_status"),
+                "redirect_url": site.get("redirect_url"),
+            }
+            for site in tracked["display_sites"]
+        ]
     observed = tracked.get("url_states", {})
     return [
         {
