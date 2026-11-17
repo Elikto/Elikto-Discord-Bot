@@ -146,15 +146,15 @@ def container(marker, color, children):
 
 def count_items(forums):
     return sum(1 for entries in forums.values() for name, _ in entries
-               if name != "Ouvrir le forum" and not name.startswith("#"))
+               if name not in ("Ouvrir le forum", "Ouvrir le salon"))
 
 def ordered(grouped):
     return sorted(grouped.items(), key=lambda e: (style(e[0][1])[0], fold(e[0][1])))
 
 def split_forum(name, entries):
-    url = next((u for t, u in entries if t == "Ouvrir le forum" or t.startswith("#")), None)
+    url = next((u for t, u in entries if t in ("Ouvrir le forum", "Ouvrir le salon")), None)
     is_forum = any(t == "Ouvrir le forum" for t, _ in entries)
-    items = [(t, u) for t, u in entries if t != "Ouvrir le forum" and not t.startswith("#")]
+    items = [(t, u) for t, u in entries if t not in ("Ouvrir le forum", "Ouvrir le salon")]
     items.sort(key=lambda x: fold(x[0]))
     head = f"### {icon(name)}  {safe(name.replace('-', ' ').replace('_', ' ').upper())}\n"
     head += (f"-# {len(items)} fiches · Liens directs vers les publications\n"
