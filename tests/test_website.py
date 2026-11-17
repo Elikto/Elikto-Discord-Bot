@@ -78,6 +78,9 @@ class WebsiteTests(unittest.TestCase):
         self.assertIn("mirror-status", self.js)
         self.assertIn("mirrorStatuses", self.js)
         self.assertIn("mirror-row", self.css)
+        self.assertIn("previous_names", self.js)
+        self.assertIn("SITES ACTUELS", self.js)
+        self.assertIn("mirror.name", self.js)
 
     def test_mobile_reuses_the_same_menu(self):
         self.assertIn('id="menuButton"', self.html)
@@ -88,7 +91,7 @@ class WebsiteTests(unittest.TestCase):
     def test_no_mock_content_in_public_html(self):
         self.assertNotIn("Movix", self.html)
         self.assertNotIn("WebFlix", self.html)
-        self.assertEqual(self.parser.scripts, ["./app.js?v=5"])
+        self.assertEqual(self.parser.scripts, ["./app.js?v=6"])
 
 
 if __name__ == "__main__":
