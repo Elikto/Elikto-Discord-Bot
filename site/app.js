@@ -32,6 +32,10 @@ const ui = {
   lastControl: byId("lastControl"),
   monitorBanner: byId("monitorBanner"),
   historyList: byId("historyList"),
+  serverSitesList: byId("serverSitesList"),
+  serverSitesSearch: byId("serverSitesSearch"),
+  serverSitesCount: byId("serverSitesCount"),
+  serverScanCoverage: byId("serverScanCoverage"),
 };
 
 function normalize(value) {
@@ -319,7 +323,7 @@ function updateHealthSummary() {
   ui.restrictedCount.textContent = String(counts.restricted || 0);
   ui.missingCount.textContent = String(counts.missing_url || 0);
   ui.lastControl.textContent = info.updated_at ?
-    "Synthèse du " + formatDate(info.updated_at).replace("Mis à jour le ", "") :
+    "Contrôle quotidien · " + formatDate(info.updated_at).replace("Mis à jour le ", "") :
     "Aucun contrôle publié pour le moment";
   const missing = counts.missing_url || 0;
   const incident = (counts.offline || 0) + (counts.suspect || 0);
@@ -330,6 +334,78 @@ function updateHealthSummary() {
   ui.monitorBanner.hidden = !explanation;
   ui.monitorBanner.textContent = explanation;
 }
+
+function renderServerSites() {
+  const data = state.monitoring || {};
+  const sites = Array.isArray(data.server_sites) ? data.server_sites : [];
+  const scan = data.server_scan || {};
+  const count = sites.length;
+  const query = normalize(ui.serverSitesSearch.value);
+  const filtered = sites.filter((site) =>
+    !query ||
+    normalize(site.title).includes(query) ||
+    normalize(site.url).includes(query) ||
+    (site.sources || []).some((source) => normalize(source.channel).includes(query))
+  ).sort((a, b) => collator.compare(a.title || a.url, b.title || b.url));
+
+  ui.serverSitesCount.textContent = count + " " +
+    (count === 1 ? "adresse suivie" : "adresses suivies");
+  if (scan.at) {
+    const errors = (scan.errors || []).length;
+    ui.serverScanCoverage.textContent = scan.all_public_sources_scanned ?
+      "✓ Tous les espaces publics accessibles analysés" :
+      "⚠ " + errors + " espace(s) non analysé(s) — couverture partielle";
+  } else {
+    ui.serverScanCoverage.textContent = "Premier recensement non encore disponible";
+  }
+
+  if (!filtered.length) {
+    ui.serverSitesList.replaceChildren(element("p", "history-empty",
+      count ? "Aucun site ne correspond à ta recherche." :
+        "Aucun lien externe recensé dans les espaces publics accessibles."));
+    return;
+  }
+
+  const nodes = filtered.map((site) => {
+    const card = element("article", "server-site-card");
+    const badge = healthLabels[site.status] || healthLabels.unknown;
+    const header = element("div", "server-site-card-header");
+    const title = element("strong", "server-site-title", site.title || site.url);
+    const health = element("span", "health-badge health-" + badge[1], badge[0]);
+    header.append(title, health);
+
+    const url = websiteUrl(site.url);
+    const links = element("div", "server-site-links");
+    if (url) {
+      const website = element("a", "", new URL(url).hostname + " ↗");
+      website.href = url;
+      website.target = "_blank";
+      website.rel = "noopener noreferrer nofollow";
+      links.append(website);
+    }
+    const source = (site.sources || []).find((item) => discordUrl(item.url));
+    if (source) {
+      const origin = element("a", "", "📍 " + source.channel + " ↗");
+      origin.href = discordUrl(source.url);
+      origin.target = "_blank";
+      origin.rel = "noopener noreferrer";
+      links.append(origin);
+    }
+    if (site.source_count > 1) {
+      links.append(element("span", "", site.source_count + " mentions"));
+    }
+    const checked = element("span", "server-site-checked", site.last_checked ?
+      formatDate(site.last_checked) : "Contrôle en attente");
+    card.append(header, links, checked);
+    if (site.pending_name) {
+      card.append(element("p", "server-site-name-alert",
+        "Nouveau nom potentiel : " + site.pending_name));
+    }
+    return card;
+  });
+  ui.serverSitesList.replaceChildren(...nodes);
+}
+
 
 function renderHistory() {
   const events = (state.monitoring?.events || []).slice(0, 16);
@@ -352,7 +428,11 @@ function renderHistory() {
     mirror_offline: "🔴 Adresse miroir inaccessible",
     mirror_recovered: "🟢 Adresse miroir rétablie",
     mirror_name_suspected: "🟡 Changement de nom à confirmer",
-    mirror_name_changed: "🔄 Changement de nom confirmé"
+    mirror_name_changed: "🔄 Changement de nom confirmé",
+    server_site_added: "🆕 Nouveau site découvert dans le serveur",
+    server_site_removed: "➖ Site retiré du serveur",
+    server_name_suspected: "🟡 Changement de nom à confirmer",
+    server_name_changed: "✅ Nouveau nom confirmé"
   };
   const cards = events.map((entry) => {
     const row = element("article", "history-event");
@@ -460,6 +540,7 @@ function bindEvents() {
     render();
   }));
   ui.clear.addEventListener("click", resetFilters);
+  ui.serverSitesSearch.addEventListener("input", renderServerSites);
   ui.menuButton.addEventListener("click", () => {
     const open = !ui.sidebar.classList.contains("is-open");
     ui.sidebar.classList.toggle("is-open", open);
@@ -492,6 +573,7 @@ async function start() {
     ui.syncDate.textContent = formatDate(data.updated_at);
     updateHealthSummary();
     renderHistory();
+    renderServerSites();
     refreshSidebar();
     render();
   } catch (error) {
