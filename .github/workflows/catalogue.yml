@@ -11,6 +11,9 @@ on:
       - 'catalogue_v2.py'
       - 'dashboard_unique.py'
       - 'export_catalogue.py'
+      - 'site_monitor.py'
+      - 'site_probe.py'
+      - 'tests/test_site_monitor.py'
       - 'site/**'
       - 'tests/test_web_export.py'
       - 'tests/test_website.py'
@@ -26,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
-      contents: read
+      contents: write
       pages: write
       id-token: write
     environment:
@@ -49,9 +52,15 @@ jobs:
           DISCORD_GUILD_ID: '1430984645012357263'
           EXCLUDED_CHANNEL_IDS: ${{ vars.EXCLUDED_CHANNEL_IDS }}
         run: python sync_catalogue.py
+      - name: Surveiller les sites publics et alimenter l'historique
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_GUILD_ID: '1430984645012357263'
+        run: python site_monitor.py
       - name: Verifier le catalogue web genere
         run: |
           python -c "import json; d=json.load(open('site/catalogue.json', encoding='utf-8')); assert d['visibility']=='public_everyone_only'; assert len(d['categories'])>0; print('Fiches publiques:', d['stats']['entries'])"
+          python -c "import json; m=json.load(open('site/monitoring.json',encoding='utf-8')); assert m['total']>0; print('Sites sous surveillance:',m['monitored'],'/',m['total'])"
       - name: Configurer GitHub Pages
         uses: actions/configure-pages@v5
         with:
@@ -63,3 +72,19 @@ jobs:
       - name: Mettre le catalogue en ligne
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Conserver l'historique entre les exécutions
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/monitor_state.json
+          if ! git diff --staged --quiet; then
+            git commit -m "Données de surveillance : mise à jour automatique [skip ci]"
+            git pull --rebase origin main
+            git push origin HEAD:main
+            echo "Historique enregistré dans data/monitor_state.json"
+          else
+            echo "Historique inchangé"
+          fi
