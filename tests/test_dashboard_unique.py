@@ -41,9 +41,11 @@ class DashboardTests(unittest.TestCase):
         contents = " ".join(x.get("content", "")
                             for container in components if container.get("type") == 17
                             for x in container.get("components", []))
-        for ref in ("<#111>", "<#112>", "<#113>", "<#114>", "<#115>"):
-            self.assertIn(ref, contents)
-        self.assertIn("<#102>", contents)
+        for name in ("Movix", "French Stream", "Webflix", "Jeu A", "Blocage"):
+            self.assertIn("[" + name + "](", contents)
+        self.assertIn("[Forum](https://discord.com/channels/1/102)", contents)
+        self.assertNotIn("<#", contents)
+        self.assertNotIn("#inconnu", contents)
 
     def test_long_server_falls_back_to_forum_links(self):
         data = {
@@ -65,7 +67,38 @@ class DashboardTests(unittest.TestCase):
         self.assertIn("STREAMING", components[1]["components"][0]["content"])
         self.assertIn("TÉLÉCHARGEMENT", components[2]["components"][0]["content"])
 
-    def test_channel_mention_is_short_clickable_link(self):
+    def test_named_clickable_link_without_unknown_mentions(self):
         self.assertEqual(
-            forum_link("https://discord.com/channels/123/456"), "<#456>"
+            forum_link("https://discord.com/channels/123/456", "Movix"),
+            "[Movix](https://discord.com/channels/123/456)"
         )
+
+    def test_discussion_category_and_salon_are_last(self):
+        from catalogue_v2 import ordered, salon_sort
+        data = {
+            ("2", "Discussion"): {"discussion": [("#discussion", "https://discord.com/channels/1/10")]},
+            ("1", "Streaming"): {
+                "discussion": [("#discussion", "https://discord.com/channels/1/11")],
+                "films": [("Ouvrir le forum", "https://discord.com/channels/1/12")]},
+        }
+        self.assertEqual(ordered(data)[-1][0][1], "Discussion")
+        self.assertEqual(
+            list(sorted(data[("1", "Streaming")].items(), key=salon_sort))[-1][0],
+            "discussion"
+        )
+        components = render_dashboard(data)
+        titles = [x["components"][0]["content"] for x in components if x.get("type") == 17]
+        self.assertIn("DISCUSSION", titles[-1])
+
+    def test_distinct_emojis_for_generic_categories(self):
+        from catalogue_v2 import category_visuals
+        data = {
+            (str(i), name): {"infos": [("#infos", f"https://discord.com/channels/1/{i+40}")]}
+            for i, name in enumerate(
+                ("Archives", "Divers", "Favoris", "Ressources", "Logiciels", "Discussion")
+            )
+        }
+        appearances = category_visuals(data)
+        icons = [value[1] for value in appearances.values()]
+        self.assertEqual(len(icons), len(set(icons)))
+        self.assertEqual(appearances[("5", "Discussion")][1], "💬")
