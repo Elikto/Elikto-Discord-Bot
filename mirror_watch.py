@@ -384,31 +384,128 @@ def summary_message(items, thread_name):
     return content
 
 
+COMPONENTS_V2 = 32768
+CARD_ACCENT = 0x6174C6
+HEADER_ACCENT = 0xA17AFF
+
+
+def render_site_cards(items, thread_name):
+    """Cartes Discord V2 : bordure colorée et liens bleus cliquables.
+
+    Un contenant par site tant que le budget Discord le permet ; au-delà,
+    plusieurs fiches partagent une carte afin de ne rien masquer.
+    """
+    header = (
+        "## 🎬 CINÉMA HD · SITES ACTUELS\n"
+        "Dernière sortie cinéma en HD **sans pub**, mais petit catalogue.\n"
+        "✨ **Gratuit - Illimité - Ajouts quotidiens - Zéro pub**"
+    )
+    cards = []
+    for site in items:
+        url = clean_url(site.get("url"))
+        if not url:
+            continue
+        name = str(site.get("name") or urlsplit(url).hostname).strip()
+        name = name.replace("@", "@\u200b").replace("]", "").replace("[", "")[:48]
+        old_names = []
+        for raw in site.get("previous_names", []):
+            old = str(raw).replace("@", "@\u200b")[:40]
+            if old and old not in old_names:
+                old_names.append(old)
+        content = f"### ✦ [{name}]({url})"
+        if old_names:
+            content += "\n-# ↳ Ancien : " + ", ".join(old_names)
+        cards.append(content)
+
+    card_groups = (
+        [[content] for content in cards] if len(cards) <= 18
+        else [cards[i:i + 3] for i in range(0, len(cards), 3)]
+    )
+    components = [
+        {"type": 17, "accent_color": HEADER_ACCENT,
+         "components": [{"type": 10, "content": header}]}
+    ]
+    for group in card_groups:
+        components.append({
+            "type": 17, "accent_color": CARD_ACCENT,
+            "components": [{"type": 10, "content": "\n\n".join(group)}],
+        })
+    total = len(components) * 2
+    if total > 40:
+        raise ValueError("Trop de composants Discord : la liste ne sera pas tronquée.")
+    if sum(len(card) for card in cards) + len(header) > 3900:
+        raise ValueError("La liste dépasse la limite de texte Discord : aucune fiche masquée.")
+    return components
+
+
+def component_signature(components):
+    """Comparer le rendu, en ignorant les identifiants ajoutés par Discord."""
+    return tuple(
+        (entry.get("type"), entry.get("accent_color"),
+         entry.get("content"),
+         component_signature(entry.get("components") or []))
+        for entry in (components or [])
+    )
+
+
+def component_text(components):
+    texts = []
+    for part in components or []:
+        if part.get("type") == 10:
+            texts.append(str(part.get("content") or ""))
+        texts.extend(component_text(part.get("components") or []))
+    return texts
+
+
 def upsert_bot_message(api, tracked, bot_id, content):
+    """Migrer l'ancien message texte vers les cartes, puis éditer sans doublon."""
+    is_v2 = isinstance(content, list)
+    if is_v2:
+        payload = {
+            "content": None, "embeds": [], "flags": COMPONENTS_V2,
+            "components": content, "allowed_mentions": {"parse": []},
+        }
+    else:
+        payload = {"content": content, "allowed_mentions": {"parse": []}}
+
+    def update_if_needed(message):
+        if is_v2:
+            existing = component_signature(message.get("components") or [])
+            expected = component_signature(content)
+            if existing != expected:
+                api.call(
+                    "PATCH", f"/channels/{THREAD_ID}/messages/{message['id']}",
+                    json=payload,
+                )
+        elif (message.get("content") or "") != content:
+            api.call(
+                "PATCH", f"/channels/{THREAD_ID}/messages/{message['id']}",
+                json=payload,
+            )
+        return str(message["id"])
+
     known = tracked.get("message_id")
     if known:
-        try:
-            old = api.call("GET", f"/channels/{THREAD_ID}/messages/{known}")
-            if str(old.get("author", {}).get("id")) == bot_id:
-                if old.get("content") != content:
-                    api.call("PATCH", f"/channels/{THREAD_ID}/messages/{known}",
-                             json={"content": content, "allowed_mentions": {"parse": []}})
-                return str(known)
-        except RuntimeError:
-            pass
+        old = api.call("GET", f"/channels/{THREAD_ID}/messages/{known}")
+        if str(old.get("author", {}).get("id")) == bot_id:
+            return update_if_needed(old)
+        raise ValueError("Le message connu n'appartient pas au bot")
+
     messages = api.call("GET", f"/channels/{THREAD_ID}/messages", params={"limit": 100})
     for msg in messages:
         if str(msg.get("author", {}).get("id")) != bot_id:
             continue
-        if (MARKER in (msg.get("content") or "") or
-                "[elikto-suivi-fil:v1]" in (msg.get("content") or "") or
-                (msg.get("content") or "").startswith("## ✦ SITES ACTUELS")):
-            if msg.get("content") != content:
-                api.call("PATCH", f"/channels/{THREAD_ID}/messages/{msg['id']}",
-                         json={"content": content, "allowed_mentions": {"parse": []}})
-            return str(msg["id"])
-    created = api.call("POST", f"/channels/{THREAD_ID}/messages",
-                       json={"content": content, "allowed_mentions": {"parse": []}})
+        prior = msg.get("content") or ""
+        v2_text = "\n".join(component_text(msg.get("components") or []))
+        if (
+            MARKER in prior or "[elikto-suivi-fil:v1]" in prior
+            or prior.startswith("## ✦ SITES ACTUELS")
+            or prior.startswith("🎬 Dernière sortie cinéma")
+            or "CINÉMA HD · SITES ACTUELS" in v2_text
+        ):
+            return update_if_needed(msg)
+
+    created = api.call("POST", f"/channels/{THREAD_ID}/messages", json=payload)
     return str(created["id"])
 
 
@@ -418,8 +515,15 @@ def sync_thread(api, state, now=None):
     if str(thread.get("guild_id")) != GUILD_ID or thread.get("type") != 11:
         raise ValueError("Fil public attendu sur le serveur")
     bot_id = str(api.call("GET", "/users/@me")["id"])
-    messages = api.call("GET", f"/channels/{THREAD_ID}/messages", params={"limit": 100})
     tracked = state.setdefault("tracked_threads", {}).setdefault(THREAD_ID, {})
+    try:
+        messages = api.call("GET", f"/channels/{THREAD_ID}/messages", params={"limit": 100})
+    except RuntimeError:
+        if tracked.get("url_states"):
+            messages = []
+            print("MIROIRS : lecture momentanément indisponible ; état conservé.")
+        else:
+            raise
     entries = tracked.setdefault("url_states", {})
     readable = any(
         m.get("content") or m.get("embeds")
@@ -521,9 +625,9 @@ def sync_thread(api, state, now=None):
         site for site in sites
         if site.get("source_urls") or site.get("status") == "online"
     ]
-    summary = summary_message(sites, thread_name)
+    cards = render_site_cards(sites, thread_name)
     try:
-        message_id = upsert_bot_message(api, tracked, bot_id, summary)
+        message_id = upsert_bot_message(api, tracked, bot_id, cards)
     except RuntimeError:
         print("MIROIRS : autorisation d'écrire dans le fil manquante.")
         return "permission_denied"
