@@ -269,10 +269,19 @@ function resourceCard(item) {
       row.href = href;
       row.target = "_blank";
       row.rel = "noopener noreferrer nofollow";
-      const name = element("span", "mirror-name", mirror.name || new URL(href).hostname);
+      const identity = element("span", "mirror-identity");
+      identity.append(element("span", "mirror-name",
+        mirror.site_name || mirror.name || new URL(href).hostname));
+      if (mirror.site_name) {
+        identity.append(element("span", "mirror-domain", new URL(href).hostname));
+      }
+      if (mirror.pending_name) {
+        identity.append(element("span", "mirror-rename-warning",
+          "🟡 Nouveau nom possible : " + mirror.pending_name + " — confirmation en cours"));
+      }
       const health = healthLabels[mirror.status] || healthLabels.unknown;
       const healthNode = element("span", "mirror-status health-" + health[1], health[0]);
-      row.append(name, healthNode);
+      row.append(identity, healthNode);
       mirrorsList.append(row);
     }
   }
@@ -337,7 +346,9 @@ function renderHistory() {
     mirror_renamed: "✏️ Nom d'adresse modifié",
     mirror_redirect: "🔀 Redirection d'un miroir",
     mirror_offline: "🔴 Adresse miroir inaccessible",
-    mirror_recovered: "🟢 Adresse miroir rétablie"
+    mirror_recovered: "🟢 Adresse miroir rétablie",
+    mirror_name_suspected: "🟡 Changement de nom à confirmer",
+    mirror_name_changed: "🔄 Changement de nom confirmé"
   };
   const cards = events.map((entry) => {
     const row = element("article", "history-event");
