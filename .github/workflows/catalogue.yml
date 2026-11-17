@@ -30,7 +30,7 @@ jobs:
       id-token: write
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -42,9 +42,9 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Synchroniser les forums Discord et exporter les fiches publiques
         env:
-          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           DISCORD_GUILD_ID: '1430984645012357263'
-          EXCLUDED_CHANNEL_IDS: ${{ vars.EXCLUDED_CHANNEL_IDS }
+          EXCLUDED_CHANNEL_IDS: ${{ vars.EXCLUDED_CHANNEL_IDS }}
         run: python sync_catalogue.py
       - name: Verifier le catalogue web genere
         run: |
