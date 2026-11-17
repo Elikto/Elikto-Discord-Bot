@@ -251,3 +251,19 @@ h1 span { color: #bdaaff; }
  .history-list { grid-template-columns:minmax(0,1fr); }
  .history-note {text-align:left;}
 }
+
+/* État individuel des adresses d'une fiche multi-miroirs */
+.mirrors-list {display:flex;flex-direction:column;gap:7px;margin-top:16px;}
+.mirrors-title {font-size:10px;letter-spacing:1px;color:#9fabc0;margin-bottom:3px;}
+.mirror-row {display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:9px 10px;border:1px solid #30394b;background:#1b2432;border-radius:8px;
+  min-width:0;transition:background .15s,border-color .15s;}
+.mirror-row:hover {background:#293347;border-color:#666487;}
+.mirror-name {font-size:11px;font-weight:720;color:#e0e4f0;overflow-wrap:anywhere;min-width:0;}
+.mirror-status {flex:none;white-space:nowrap;font-size:9px;padding:4px 6px;border:1px solid #4d5464;
+ border-radius:99px;}
+.mirror-status.health-online {color:#88dab4;border-color:#356d55;}
+.mirror-status.health-restricted {color:#e5c68d;border-color:#6e603e;}
+.mirror-status.health-suspect {color:#edb582;border-color:#74543c;}
+.mirror-status.health-offline {color:#f6a49b;border-color:#854442;}
+@media (max-width:550px) {.mirror-row {padding:9px 8px;}.mirror-status {font-size:9px;}}
