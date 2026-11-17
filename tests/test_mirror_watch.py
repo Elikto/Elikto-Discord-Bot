@@ -211,8 +211,8 @@ class MirrorWatchTests(unittest.TestCase):
         self.assertEqual(dotivoz["previous_names"], ["ZAKMAV", "FOPOV"])
         self.assertEqual(farsov["previous_names"], ["DOVLIP", "DIDVIP"])
         message = api.bot_messages[0]["content"]
-        self.assertIn("### ✦ [DOTIVOZ](https://dotivoz.com/)\\n-# ↳ Ancien : ZAKMAV, FOPOV", message)
-        self.assertIn("### ✦ [FARSOV](https://farsov.com/)\\n-# ↳ Ancien : DOVLIP, DIDVIP", message)
+        self.assertIn("### ✦ [DOTIVOZ](https://dotivoz.com/)\n-# ↳ Ancien : ZAKMAV, FOPOV", message)
+        self.assertIn("### ✦ [FARSOV](https://farsov.com/)\n-# ↳ Ancien : DOVLIP, DIDVIP", message)
         self.assertNotIn("HTTP", message)
         self.assertNotIn("🟡", message)
         self.assertNotIn("Accessible", message)
@@ -242,10 +242,10 @@ class MirrorWatchTests(unittest.TestCase):
         ]
         out = mirror_watch.summary_message(sites, "Streaming HD miroir")
         self.assertEqual(out, (
-            "## ✦ SITES ACTUELS\\n\\n"
-            "### ✦ [DOTIVOZ](https://dotivoz.com/)\\n"
-            "-# ↳ Ancien : ZAKMAV, FOPOV\\n\\n"
-            "### ✦ [TIMBOV](https://timbov.com/)\\n"
+            "## ✦ SITES ACTUELS\n\n"
+            "### ✦ [DOTIVOZ](https://dotivoz.com/)\n"
+            "-# ↳ Ancien : ZAKMAV, FOPOV\n\n"
+            "### ✦ [TIMBOV](https://timbov.com/)\n"
             "-# ↳ Ancien : ZINZOV"
         ))
         self.assertNotIn("HTTP", out)
