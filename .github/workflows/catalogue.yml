@@ -88,10 +88,6 @@ jobs:
         uses: actions/upload-pages-artifact@v4
         with:
           path: site
-      - name: Mettre le catalogue en ligne
-        id: deployment
-        uses: actions/deploy-pages@v4
-
       - name: Conserver l'historique entre les exécutions
         shell: bash
         run: |
@@ -110,3 +106,7 @@ jobs:
           else
             echo "Historique inchangé"
           fi
+      - name: Mettre le catalogue en ligne
+        id: deployment
+        uses: actions/deploy-pages@v4
+
