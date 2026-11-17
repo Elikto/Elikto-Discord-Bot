@@ -65,6 +65,108 @@ class FakeAPI:
 class MirrorWatchTests(unittest.TestCase):
     def setUp(self):
         self.now = datetime(2026, 11, 17, 13, tzinfo=timezone.utc)
+        # Aucun accès réseau pendant les tests : un test distinct injecte
+        # les noms HTML observés.
+        no_html = patch("mirror_watch.probe_site_name", return_value=None)
+        no_html.start()
+        self.addCleanup(no_html.stop)
+
+    def test_first_html_scan_creates_a_baseline_without_false_rename(self):
+        api = FakeAPI([human_message()])
+        s = state()
+        with patch("mirror_watch.check_site", side_effect=lambda u: response(url=u)), patch(
+            "mirror_watch.probe_site_name", return_value={
+                "name": "MOMDAX", "confidence": "strong", "evidence": "og:site_name"
+            }
+        ) as identity:
+            mirror_watch.sync_thread(api, s, self.now)
+        self.assertEqual(identity.call_count, 5)
+        entries = s["tracked_threads"][mirror_watch.THREAD_ID]["url_states"]
+        self.assertEqual(entries[URLS[0]]["site_name"], "MOMDAX")
+        self.assertEqual(s["events"], [])
+        self.assertIn("MOMDAX", api.bot_messages[0]["content"])
+
+    def test_detects_real_site_rename_over_two_independent_days(self):
+        api = FakeAPI([human_message()])
+        s = state()
+        with patch("mirror_watch.check_site", side_effect=lambda u: response(url=u)), patch(
+            "mirror_watch.probe_site_name", return_value={
+                "name": "MOMDAX", "confidence": "strong", "evidence": "og:site_name"
+            }
+        ):
+            mirror_watch.sync_thread(api, s, self.now)
+        with patch("mirror_watch.check_site", side_effect=lambda u: response(url=u)), patch(
+            "mirror_watch.probe_site_name", return_value={
+                "name": "NANDOV", "confidence": "strong", "evidence": "og:site_name"
+            }
+        ):
+            mirror_watch.sync_thread(api, s, self.now + timedelta(days=1))
+        tracked = s["tracked_threads"][mirror_watch.THREAD_ID]["url_states"][URLS[0]]
+        self.assertEqual(tracked["site_name"], "MOMDAX")
+        self.assertEqual(tracked["pending_name"], "NANDOV")
+        self.assertIn("Changement de nom suspecté", api.bot_messages[0]["content"])
+        self.assertEqual(len([e for e in s["events"] if e["type"] == "mirror_name_suspected"]), 5)
+        with patch("mirror_watch.check_site", side_effect=lambda u: response(url=u)), patch(
+            "mirror_watch.probe_site_name", return_value={
+                "name": "NANDOV", "confidence": "strong", "evidence": "og:site_name"
+            }
+        ):
+            mirror_watch.sync_thread(api, s, self.now + timedelta(days=2))
+        self.assertEqual(tracked["site_name"], "NANDOV")
+        self.assertIsNone(tracked["pending_name"])
+        confirmed = [e for e in s["events"] if e["type"] == "mirror_name_changed"]
+        self.assertEqual(len(confirmed), 5)
+        self.assertEqual(confirmed[0]["previous"], "MOMDAX")
+        self.assertEqual(confirmed[0]["current"], "NANDOV")
+        self.assertEqual(api.name, "Streaming HD miroir")
+        self.assertEqual(len(api.bot_messages), 1)
+
+    def test_antibot_page_or_failed_request_never_renames(self):
+        api = FakeAPI([human_message()])
+        s = state()
+        with patch("mirror_watch.check_site", side_effect=lambda u: response(url=u)), patch(
+            "mirror_watch.probe_site_name", return_value={
+                "name": "MOMDAX", "confidence": "medium", "evidence": "title"
+            }
+        ):
+            mirror_watch.sync_thread(api, s, self.now)
+        with patch("mirror_watch.check_site", side_effect=lambda u: response(url=u)), patch(
+            "mirror_watch.probe_site_name", return_value=None
+        ):
+            mirror_watch.sync_thread(api, s, self.now + timedelta(days=1))
+        tracked = s["tracked_threads"][mirror_watch.THREAD_ID]["url_states"][URLS[0]]
+        self.assertEqual(tracked["site_name"], "MOMDAX")
+        self.assertNotIn("pending_name", tracked)
+        self.assertFalse(any(e["type"].startswith("mirror_name") for e in s["events"]))
+
+    def test_same_name_different_case_or_accents_is_not_a_rename(self):
+        api = FakeAPI([human_message()])
+        s = state()
+        with patch("mirror_watch.check_site", side_effect=lambda u: response(url=u)), patch(
+            "mirror_watch.probe_site_name", return_value={"name": "FénoV", "evidence": "title"}
+        ):
+            mirror_watch.sync_thread(api, s, self.now)
+        with patch("mirror_watch.check_site", side_effect=lambda u: response(url=u)), patch(
+            "mirror_watch.probe_site_name", return_value={"name": "FENOV", "evidence": "title"}
+        ):
+            mirror_watch.sync_thread(api, s, self.now + timedelta(days=1))
+        tracked = s["tracked_threads"][mirror_watch.THREAD_ID]["url_states"][URLS[0]]
+        self.assertFalse(tracked.get("pending_name"))
+        self.assertEqual(tracked["site_name"], "FénoV")
+
+    def test_candidate_cleared_if_old_name_returns(self):
+        api = FakeAPI([human_message()])
+        s = state()
+        with patch("mirror_watch.check_site", side_effect=lambda u: response(url=u)):
+            for day, name in [(0, "MOMDAX"), (1, "NANDOV"), (2, "MOMDAX")]:
+                with patch("mirror_watch.probe_site_name", return_value={
+                    "name": name, "evidence": "og:site_name"
+                }):
+                    mirror_watch.sync_thread(api, s, self.now + timedelta(days=day))
+        tracked = s["tracked_threads"][mirror_watch.THREAD_ID]["url_states"][URLS[0]]
+        self.assertEqual(tracked["site_name"], "MOMDAX")
+        self.assertFalse(tracked["pending_name"])
+        self.assertFalse(any(e["type"] == "mirror_name_changed" for e in s["events"]))
 
     def test_initial_five_urls_are_all_checked_and_shown_in_one_message(self):
         api = FakeAPI([human_message()])
