@@ -4,19 +4,27 @@ Catalogue automatique du serveur Discord **Les notes d'Elikto**.
 
 **Sans NAS ni PC allume :** le workflow GitHub Actions s'execute toutes les 6 heures (00:23, 06:23, 12:23, 18:23 UTC), au changement du programme ou manuellement. GitHub peut retarder ou ignorer certaines executions programmees.
 
-## Présentation native Discord Components V2
+## Présentation : un seul message dans Discord
 
-Le catalogue utilise désormais les **Components V2** de Discord : cartes avec bordure colorée, blocs visuels, véritables séparateurs, titres plus lisibles, compteurs et **boutons-lien** pour ouvrir directement les catégories et forums. Le bot convertit les anciens embeds en cartes natives sans recréer les publications d'origine.
+Le salon `#catalogue` contient **un seul tableau de bord** avec une carte d'accueil et des cartes de categories colorees. Les fiches sont regroupees sous leurs forums et sont accessibles directement depuis ce meme message via des mentions/liens Discord. Aucun lien de fiche n'est modifie dans le forum d'origine.
 
-Les boutons de liens fonctionnent sans serveur permanent. Les onglets interactifs et menus de sélection avec réponse immédiate nécessiteraient en revanche un gestionnaire d'interactions actif et ne sont pas disponibles avec GitHub Actions seul.
+- **Un seul message de catalogue**, plutot que 8 messages separes.
+- Une carte coloree par categorie (Streaming, Telechargement, Anti-pub, etc.).
+- Compteurs et sous-rubriques classes alphabetiquement.
+- Liens courts directs vers les fiches et vers les forums.
+- Mise a jour automatique par GitHub Actions sans hebergement permanent.
+- Si trop de fiches depassent la limite Discord (**4 000 caracteres de texte et 40 composants par message**), la page affiche un apercu et donne acces au reste par les liens des forums. Ce repli est affiche explicitement.
+- Les anciennes cartes individuelles du bot sont retirees **apres** confirmation de la publication du tableau de bord unique. Les fiches et messages originaux des membres ne sont jamais modifies.
+
+Les onglets interactifs sans navigation exigeraient un service de reponse aux interactions Discord ; un systeme reposant uniquement sur GitHub Actions ne peut pas repondre en temps reel aux clics de ces controles.
 
 ## Fonctions de cette premiere version
 
 - Lit les categories et les salons textuels accessibles publiquement.
 - Indexe les forums et leurs publications actives **et archivees**.
-- Affiche un accueil soigne : navigation directe vers les messages des categories, compteurs, heure de synchronisation et couleurs/emoji par rubrique.\n- Regroupe les fiches par forum et les trie par ordre alphabetique, avec pagination lorsque le contenu est volumineux.\n- Classe les categories principales dans un ordre naturel : Streaming, IPTV, Anime, Telechargement, Anti-pub, Android, Jeux, Livres, puis les autres rubriques par ordre alphabetique.
+- Affiche un accueil soigne, une seule page avec compteurs, heure de synchronisation et couleurs/emoji par rubrique.\n- Regroupe les fiches par forum et les trie par ordre alphabetique, en privilegiant un index compact quand le contenu devient volumineux.\n- Classe les categories principales dans un ordre naturel : Streaming, IPTV, Anime, Telechargement, Anti-pub, Android, Jeux, Livres, puis les autres rubriques par ordre alphabetique.
 - Cree un catalogue dans un salon textuel `#catalogue` avec des liens vers les fiches d'origine.
-- Actualise ses propres messages sans doublons, et supprime uniquement ses propres anciennes pages de catalogue devenues inutiles.
+- Actualise son unique message sans doublons et retire les anciennes pages du bot devenues inutiles.
 - N'efface, ne deplace et ne modifie **aucune publication originale**.
 - Exclut les salons NSFW, ceux dont la categorie ou le salon est masque a `@everyone`, et les identifiants indiques dans `EXCLUDED_CHANNEL_IDS`.
 - S'arrete en cas d'erreur de lecture des archives plutot que de publier un catalogue incomplet.
@@ -63,4 +71,4 @@ python -m unittest discover -s tests -v
 
 Les messages d'origine restent dans leurs forums. Le catalogue reference les titres et liens, pas les descriptions completes. Un salon prive ne doit jamais etre mentionne dans un catalogue public. GitHub Actions execute le code programme en tant que bot avec les permissions Discord que tu lui as attribuees ; n'attribue pas de permissions inutiles.
 
-Le message d'accueil peut etre epingle manuellement dans Discord pour rester visible en haut du salon. Les messages du catalogue sont reutilises et actualises, sans supprimer les publications originales.\n\nCette premiere version ne garantit pas l'acces a tous les forums historiques si Discord limite la lecture d'un forum ou si ses permissions empechent l'acces du bot. Le rapport d'execution doit etre verifie apres le premier lancement.
+Tu peux epingler manuellement le tableau de bord unique dans Discord. Il est reutilise et actualise sans supprimer les publications originales.\n\nCette premiere version ne garantit pas l'acces a tous les forums historiques si Discord limite la lecture d'un forum ou si ses permissions empechent l'acces du bot. Le rapport d'execution doit etre verifie apres le premier lancement.
