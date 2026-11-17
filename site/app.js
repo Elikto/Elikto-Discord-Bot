@@ -283,6 +283,15 @@ function resourceCard(item) {
       const healthNode = element("span", "mirror-status health-" + health[1], health[0]);
       row.append(identity, healthNode);
       mirrorsList.append(row);
+      const proposedHref = websiteUrl(mirror.announced_url);
+      if (proposedHref && mirror.pending_name) {
+        const proposed = element("a", "mirror-proposed",
+          "↪ Domaine annoncé : " + new URL(proposedHref).hostname + " (à confirmer)");
+        proposed.href = proposedHref;
+        proposed.target = "_blank";
+        proposed.rel = "noopener noreferrer nofollow";
+        mirrorsList.append(proposed);
+      }
     }
   }
 
