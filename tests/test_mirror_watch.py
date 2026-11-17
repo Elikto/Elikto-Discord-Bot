@@ -451,7 +451,7 @@ class MirrorWatchTests(unittest.TestCase):
         entry = s["tracked_threads"][mirror_watch.THREAD_ID]["url_states"][URLS[0]]
         self.assertEqual(entry["url"], URLS[0])
         self.assertEqual(entry["redirect_url"], "https://other.example.org/")
-        self.assertIn("à confirmer", api.bot_messages[0]["content"])
+        self.assertNotIn("à confirmer", api.bot_messages[0]["content"])  # détails réservés au monitoring
 
     def test_restricted_does_not_count_as_failure(self):
         api = FakeAPI([human_message()])
