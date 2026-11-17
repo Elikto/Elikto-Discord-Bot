@@ -6,6 +6,43 @@ from sync_catalogue import (VIEW_CHANNEL, public_channel, chunks, render,
 
 
 class CatalogueTests(unittest.TestCase):
+    def test_import_public_numbered_thread_movix(self):
+        """A thread named '#1 Movix' must not be confused with a text-channel marker."""
+        class FakeAPI:
+            def call(self, method, path, **kwargs):
+                if path.endswith("/threads/active"):
+                    return {"threads": [{
+                        "id": "1430991985572839547",
+                        "name": "#1 Movix", "type": 11,
+                        "parent_id": "20",
+                    }]}
+                if path.endswith("/channels"):
+                    return [
+                        {"id": "10", "type": 4, "name": "Streaming"},
+                        {"id": "20", "type": 15, "name": "films-et-series", "parent_id": "10"},
+                        {"id": "30", "type": 0, "name": "discussion", "parent_id": "10"},
+                    ]
+                if path.endswith("/guilds/" + sync_catalogue.GUILD_ID):
+                    return {"roles": [{
+                        "id": sync_catalogue.GUILD_ID,
+                        "permissions": str(VIEW_CHANNEL)
+                    }]}
+                raise AssertionError(path)
+
+            def archived(self, forum_id):
+                return iter(())
+
+        grouped = sync_catalogue.get_items(FakeAPI())
+        forum = grouped[("10", "Streaming")]["films-et-series"]
+        self.assertIn(
+            ("#1 Movix",
+             "https://discord.com/channels/" +
+             sync_catalogue.GUILD_ID + "/1430991985572839547"),
+            forum
+        )
+        salon = grouped[("10", "Streaming")]["discussion"]
+        self.assertEqual(salon[0][0], "Ouvrir le salon")
+
     def test_private_forum_excluded(self):
         cat = {"id": "10", "type": 4, "permission_overwrites": [
             {"id": "1", "type": 0, "allow": "0", "deny": str(VIEW_CHANNEL)}]}
