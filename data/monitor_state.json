@@ -591,9 +591,57 @@
       "current": "Streaming HD",
       "detail": "Nom de fiche changé sur Discord (sans preuve de changement du site).",
       "alert": true
+    },
+    {
+      "id": 9,
+      "type": "redirect_detected",
+      "at": "2026-11-17T23:51:50+00:00",
+      "thread_id": "1565895933374496890",
+      "title": "ww3-workino.officiel.cc",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1565895933374496890/1565895933374496890",
+      "previous": "https://ww3-workino.officiel.cc/",
+      "current": "https://www.workino.ws/",
+      "detail": "Domaine final différent : correspondance à vérifier manuellement.",
+      "alert": true
+    },
+    {
+      "id": 10,
+      "type": "redirect_detected",
+      "at": "2026-11-17T23:51:50+00:00",
+      "thread_id": "1565895933374496890",
+      "title": "ww3-oxtorrent.officiel.cc",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1565895933374496890/1565895933374496890",
+      "previous": "https://ww3-oxtorrent.officiel.cc/",
+      "current": "https://www.oxtorrent.ws/",
+      "detail": "Domaine final différent : correspondance à vérifier manuellement.",
+      "alert": true
+    },
+    {
+      "id": 11,
+      "type": "redirect_detected",
+      "at": "2026-11-17T23:51:50+00:00",
+      "thread_id": "1565895933374496890",
+      "title": "torrent9.to",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1565895933374496890/1565895933374496890",
+      "previous": "https://torrent9.to/",
+      "current": "https://www7.torrent9.to/",
+      "detail": "Domaine final différent : correspondance à vérifier manuellement.",
+      "alert": true
+    },
+    {
+      "id": 12,
+      "type": "redirect_detected",
+      "at": "2026-11-17T23:51:50+00:00",
+      "thread_id": "1430989114265571459",
+      "title": "witv.football",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1430989114265571459/1430989114265571459",
+      "previous": "https://witv.football/",
+      "current": "https://witv-trouver-nouvelle-adresse.store/",
+      "detail": "Domaine final différent : correspondance à vérifier manuellement.",
+      "alert": true
     }
   ],
-  "event_sequence": 8,
+  "event_sequence": 12,
   "tracked_threads": {
     "1430988094374547559": {
       "url_states": {
@@ -722,7 +770,7 @@
         "https://zinzov.com/",
         "https://didvip.com/"
       ],
-      "last_synced": "2026-11-17T23:36:05+00:00",
+      "last_synced": "2026-11-17T23:51:49+00:00",
       "target_states": {
         "https://nandov.com/": {
           "url": "https://nandov.com/",
@@ -1388,5 +1436,973 @@
         "https://gtlf.fr/meilleurs-sites-streaming-gratuit/": "lue"
       }
     }
+  },
+  "server_links": {
+    "https://reseam.app/download/": {
+      "thread_id": "1568377736723173376",
+      "title": "reseam.app",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1568377736723173376/1568377736723173376",
+      "site_url": "https://reseam.app/download/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "online",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1568377736723173376/1568377736723173376",
+          "channel": "Reseam Manager",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 200,
+      "reason": null,
+      "final_url": "https://reseam.app/download/",
+      "redirect_url": null,
+      "name_attempted_at": "2026-11-17T23:51:50+00:00",
+      "name_checked_at": "2026-11-17T23:51:50+00:00",
+      "name_evidence": "og:site_name",
+      "site_name": "Reseam",
+      "pending_name": null,
+      "pending_name_at": null
+    },
+    "https://fr.z-library.ec/": {
+      "thread_id": "1431059243968233632",
+      "title": "fr.z-library.ec",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1431059243968233632/1431059243968233632",
+      "site_url": "https://fr.z-library.ec/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "suspect",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 1,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1431059243968233632/1431059243968233632",
+          "channel": "Z-library",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 503,
+      "reason": null,
+      "final_url": "https://fr.z-library.ec/",
+      "redirect_url": null
+    },
+    "https://sponsor.ajay.app/": {
+      "thread_id": "1431053281693532251",
+      "title": "sponsor.ajay.app",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1431053281693532251/1431053281693532251",
+      "site_url": "https://sponsor.ajay.app/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "online",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1431053281693532251/1431053281693532251",
+          "channel": "SponsorBlock",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 200,
+      "reason": null,
+      "final_url": "https://sponsor.ajay.app/",
+      "redirect_url": null,
+      "name_attempted_at": "2026-11-17T23:51:50+00:00",
+      "name_checked_at": "2026-11-17T23:51:50+00:00",
+      "name_evidence": "title",
+      "site_name": "SponsorBlock",
+      "pending_name": null,
+      "pending_name_at": null
+    },
+    "https://tracker.teamflix.cc/": {
+      "thread_id": "1565898044518568187",
+      "title": "tracker.teamflix.cc",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1565898044518568187/1565898044518568187",
+      "site_url": "https://tracker.teamflix.cc/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "online",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1565898044518568187/1565898044518568187",
+          "channel": "Teamflix",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 200,
+      "reason": null,
+      "final_url": "https://tracker.teamflix.cc/login",
+      "redirect_url": null,
+      "name_attempted_at": "2026-11-17T23:51:50+00:00",
+      "name_checked_at": "2026-11-17T23:51:50+00:00",
+      "name_evidence": "og:site_name",
+      "site_name": "TeamFlix",
+      "pending_name": null,
+      "pending_name_at": null
+    },
+    "https://www7.torrent9.to/": {
+      "thread_id": "1565895933374496890",
+      "title": "www7.torrent9.to",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1565895933374496890/1565895933374496890",
+      "site_url": "https://www7.torrent9.to/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "online",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1565895933374496890/1565895933374496890",
+          "channel": "Torrent 9",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 200,
+      "reason": null,
+      "final_url": "https://www7.torrent9.to/",
+      "redirect_url": null,
+      "name_attempted_at": "2026-11-17T23:51:50+00:00",
+      "name_checked_at": "2026-11-17T23:51:50+00:00",
+      "name_evidence": "title",
+      "site_name": "Torrent9.to",
+      "pending_name": null,
+      "pending_name_at": null
+    },
+    "https://ww3-workino.officiel.cc/": {
+      "thread_id": "1565895933374496890",
+      "title": "ww3-workino.officiel.cc",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1565895933374496890/1565895933374496890",
+      "site_url": "https://ww3-workino.officiel.cc/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "online",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1565895933374496890/1565895933374496890",
+          "channel": "Torrent 9",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 200,
+      "reason": null,
+      "final_url": "https://www.workino.ws/",
+      "redirect_url": "https://www.workino.ws/",
+      "name_attempted_at": "2026-11-17T23:51:50+00:00"
+    },
+    "https://ww3-oxtorrent.officiel.cc/": {
+      "thread_id": "1565895933374496890",
+      "title": "ww3-oxtorrent.officiel.cc",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1565895933374496890/1565895933374496890",
+      "site_url": "https://ww3-oxtorrent.officiel.cc/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "online",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1565895933374496890/1565895933374496890",
+          "channel": "Torrent 9",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 200,
+      "reason": null,
+      "final_url": "https://www.oxtorrent.ws/",
+      "redirect_url": "https://www.oxtorrent.ws/",
+      "name_attempted_at": "2026-11-17T23:51:50+00:00"
+    },
+    "https://torrent9.to/": {
+      "thread_id": "1565895933374496890",
+      "title": "torrent9.to",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1565895933374496890/1565895933374496890",
+      "site_url": "https://torrent9.to/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "online",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1565895933374496890/1565895933374496890",
+          "channel": "Torrent 9",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 200,
+      "reason": null,
+      "final_url": "https://www7.torrent9.to/",
+      "redirect_url": "https://www7.torrent9.to/",
+      "name_attempted_at": "2026-11-17T23:51:50+00:00",
+      "name_checked_at": "2026-11-17T23:51:50+00:00",
+      "name_evidence": "title",
+      "site_name": "Torrent9.to",
+      "pending_name": null,
+      "pending_name_at": null
+    },
+    "https://v3x.club/": {
+      "thread_id": "1565895227619803287",
+      "title": "v3x.club",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1565895227619803287/1565895227619803287",
+      "site_url": "https://v3x.club/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "online",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1565895227619803287/1565895227619803287",
+          "channel": "V3X",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 200,
+      "reason": null,
+      "final_url": "https://v3x.club/",
+      "redirect_url": null,
+      "name_attempted_at": "2026-11-17T23:51:50+00:00",
+      "name_checked_at": "2026-11-17T23:51:50+00:00",
+      "name_evidence": "title",
+      "site_name": "V3X",
+      "pending_name": null,
+      "pending_name_at": null
+    },
+    "https://astratorrent.la/": {
+      "thread_id": "1565889701225832448",
+      "title": "astratorrent.la",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1565889701225832448/1565889701225832448",
+      "site_url": "https://astratorrent.la/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "online",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1565889701225832448/1565889701225832448",
+          "channel": "Astratorrent",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 200,
+      "reason": null,
+      "final_url": "https://astratorrent.la/login.php",
+      "redirect_url": null,
+      "name_attempted_at": "2026-11-17T23:51:50+00:00",
+      "name_checked_at": "2026-11-17T23:51:50+00:00",
+      "name_evidence": "og:site_name",
+      "site_name": "AstraTorrent 2026",
+      "pending_name": null,
+      "pending_name_at": null
+    },
+    "https://draupnirr.xyz/": {
+      "thread_id": "1565888855159341147",
+      "title": "draupnirr.xyz",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1565888855159341147/1565888855159341147",
+      "site_url": "https://draupnirr.xyz/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "suspect",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 1,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1565888855159341147/1565888855159341147",
+          "channel": "Draupnirr",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": null,
+      "reason": "TimeoutError",
+      "final_url": "https://draupnirr.xyz/",
+      "redirect_url": null
+    },
+    "https://yggreborn.org/": {
+      "thread_id": "1430996722745606224",
+      "title": "yggreborn.org",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1430996722745606224/1430996722745606224",
+      "site_url": "https://yggreborn.org/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "online",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1430996722745606224/1430996722745606224",
+          "channel": "YGG Torrent",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 200,
+      "reason": null,
+      "final_url": "https://www.yggreborn.org/login",
+      "redirect_url": null,
+      "name_attempted_at": "2026-11-17T23:51:50+00:00",
+      "name_checked_at": "2026-11-17T23:51:50+00:00",
+      "name_evidence": "title",
+      "site_name": "YggReborn",
+      "pending_name": null,
+      "pending_name_at": null
+    },
+    "https://webflix.art/": {
+      "thread_id": "1562067560856289411",
+      "title": "webflix.art",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1562067560856289411/1562067560856289411",
+      "site_url": "https://webflix.art/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "unknown",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1562067560856289411/1562067560856289411",
+          "channel": "WebFlix",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 451,
+      "reason": null,
+      "final_url": "https://webflix.art/",
+      "redirect_url": null
+    },
+    "https://webflixfr.github.io/": {
+      "thread_id": "1562067560856289411",
+      "title": "webflixfr.github.io",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1562067560856289411/1562067560856289411",
+      "site_url": "https://webflixfr.github.io/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "online",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1562067560856289411/1562067560856289411",
+          "channel": "WebFlix",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 200,
+      "reason": null,
+      "final_url": "https://webflixfr.github.io/",
+      "redirect_url": null,
+      "name_attempted_at": "2026-11-17T23:51:50+00:00",
+      "name_checked_at": "2026-11-17T23:51:50+00:00",
+      "name_evidence": "title",
+      "site_name": "Webflix",
+      "pending_name": null,
+      "pending_name_at": null
+    },
+    "https://movix.club/Site": {
+      "thread_id": "1430991985572839547",
+      "title": "movix.club",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1430991985572839547/1430991985572839547",
+      "site_url": "https://movix.club/Site",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "suspect",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 1,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1430991985572839547/1430991985572839547",
+          "channel": "#1 Movix",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 404,
+      "reason": null,
+      "final_url": "https://movix.club/Site",
+      "redirect_url": null
+    },
+    "https://purstream.wiki/": {
+      "thread_id": "1430989583746732223",
+      "title": "purstream.wiki",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1430989583746732223/1430989583746732223",
+      "site_url": "https://purstream.wiki/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "online",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1430989583746732223/1430989583746732223",
+          "channel": "PurStream --Xalaflix--",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 200,
+      "reason": null,
+      "final_url": "https://purstream.wiki/",
+      "redirect_url": null,
+      "name_attempted_at": "2026-11-17T23:51:50+00:00",
+      "name_checked_at": "2026-11-17T23:51:50+00:00",
+      "name_evidence": "og:site_name",
+      "site_name": "Purstream Wiki",
+      "pending_name": null,
+      "pending_name_at": null
+    },
+    "https://flemmix.mom/": {
+      "thread_id": "1430989114265571459",
+      "title": "flemmix.mom",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1430989114265571459/1430989114265571459",
+      "site_url": "https://flemmix.mom/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "online",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1430989114265571459/1430989114265571459",
+          "channel": "Flemmix",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 206,
+      "reason": null,
+      "final_url": "https://flemmix.mom/",
+      "redirect_url": null,
+      "name_attempted_at": "2026-11-17T23:51:50+00:00"
+    },
+    "https://witv.football/": {
+      "thread_id": "1430989114265571459",
+      "title": "witv.football",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1430989114265571459/1430989114265571459",
+      "site_url": "https://witv.football/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "online",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1430989114265571459/1430989114265571459",
+          "channel": "Flemmix",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 200,
+      "reason": null,
+      "final_url": "https://witv-trouver-nouvelle-adresse.store/",
+      "redirect_url": "https://witv-trouver-nouvelle-adresse.store/",
+      "name_attempted_at": "2026-11-17T23:51:50+00:00",
+      "name_checked_at": "2026-11-17T23:51:50+00:00",
+      "name_evidence": "title",
+      "site_name": "WITV",
+      "pending_name": null,
+      "pending_name_at": null
+    },
+    "https://ww1.wiflix-adresses.fun/": {
+      "thread_id": "1430989114265571459",
+      "title": "ww1.wiflix-adresses.fun",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1430989114265571459/1430989114265571459",
+      "site_url": "https://ww1.wiflix-adresses.fun/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "online",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1430989114265571459/1430989114265571459",
+          "channel": "Flemmix",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 200,
+      "reason": null,
+      "final_url": "https://ww1.wiflix-adresses.fun/",
+      "redirect_url": null,
+      "name_attempted_at": "2026-11-17T23:51:50+00:00",
+      "name_checked_at": "2026-11-17T23:51:50+00:00",
+      "name_evidence": "title",
+      "site_name": "Flemmix",
+      "pending_name": null,
+      "pending_name_at": null
+    },
+    "https://fstream.info/": {
+      "thread_id": "1431085822903455744",
+      "title": "fstream.info",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1431085822903455744/1431085822903455744",
+      "site_url": "https://fstream.info/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "online",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1431085822903455744/1431085822903455744",
+          "channel": "French Stream",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 200,
+      "reason": null,
+      "final_url": "https://fstream.info/",
+      "redirect_url": null,
+      "name_attempted_at": "2026-11-17T23:51:50+00:00",
+      "name_checked_at": "2026-11-17T23:51:50+00:00",
+      "name_evidence": "title",
+      "site_name": "French Stream",
+      "pending_name": null,
+      "pending_name_at": null
+    },
+    "https://cinezzz.club/": {
+      "thread_id": "1431079041015742574",
+      "title": "cinezzz.club",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1431079041015742574/1431079041015742574",
+      "site_url": "https://cinezzz.club/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "restricted",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1431079041015742574/1431079041015742574",
+          "channel": "Cinezzz",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 403,
+      "reason": null,
+      "final_url": "https://cinezzz.club/",
+      "redirect_url": null
+    },
+    "https://coflix.boo/": {
+      "thread_id": "1430989234264870912",
+      "title": "coflix.boo",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1430989234264870912/1430989234264870912",
+      "site_url": "https://coflix.boo/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "suspect",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 1,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1430989234264870912/1430989234264870912",
+          "channel": "Coflix",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": null,
+      "reason": "gaierror",
+      "final_url": "https://coflix.boo/",
+      "redirect_url": null
+    },
+    "https://c411.org/": {
+      "thread_id": "1543963384339239032",
+      "title": "c411.org",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1543963384339239032/1543963384339239032",
+      "site_url": "https://c411.org/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "online",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1543963384339239032/1543963384339239032",
+          "channel": "C411",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 200,
+      "reason": null,
+      "final_url": "https://c411.org/login",
+      "redirect_url": null,
+      "name_attempted_at": "2026-11-17T23:51:50+00:00",
+      "name_checked_at": "2026-11-17T23:51:50+00:00",
+      "name_evidence": "og:site_name",
+      "site_name": "C411",
+      "pending_name": null,
+      "pending_name_at": null
+    },
+    "https://adnauseam.io/": {
+      "thread_id": "1431052564262162524",
+      "title": "adnauseam.io",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1431052564262162524/1431052564262162524",
+      "site_url": "https://adnauseam.io/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "online",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1431052564262162524/1431052564262162524",
+          "channel": "AdNauseam",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 200,
+      "reason": null,
+      "final_url": "https://adnauseam.io/",
+      "redirect_url": null,
+      "name_attempted_at": "2026-11-17T23:51:50+00:00",
+      "name_checked_at": "2026-11-17T23:51:50+00:00",
+      "name_evidence": "title",
+      "site_name": "AdNauseam",
+      "pending_name": null,
+      "pending_name_at": null
+    },
+    "https://privacybadger.org/": {
+      "thread_id": "1431056283565424650",
+      "title": "privacybadger.org",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1431056283565424650/1431056283565424650",
+      "site_url": "https://privacybadger.org/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "online",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1431056283565424650/1431056283565424650",
+          "channel": "Privacy Badger",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 206,
+      "reason": null,
+      "final_url": "https://privacybadger.org/",
+      "redirect_url": null,
+      "name_attempted_at": "2026-11-17T23:51:50+00:00",
+      "name_checked_at": "2026-11-17T23:51:50+00:00",
+      "name_evidence": "og:site_name",
+      "site_name": "Privacy Badger",
+      "pending_name": null,
+      "pending_name_at": null
+    },
+    "https://fitgirl-repacks.site/": {
+      "thread_id": "1431054520477024297",
+      "title": "fitgirl-repacks.site",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1431054520477024297/1431054520477024297",
+      "site_url": "https://fitgirl-repacks.site/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "online",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1431054520477024297/1431054520477024297",
+          "channel": "Fitgirl repacks",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 200,
+      "reason": null,
+      "final_url": "https://fitgirl-repacks.site/",
+      "redirect_url": null,
+      "name_attempted_at": "2026-11-17T23:51:50+00:00",
+      "name_checked_at": "2026-11-17T23:51:50+00:00",
+      "name_evidence": "og:site_name",
+      "site_name": "FitGirl Repacks",
+      "pending_name": null,
+      "pending_name_at": null
+    },
+    "https://skidrowreloaded.com/": {
+      "thread_id": "1431054323852378264",
+      "title": "skidrowreloaded.com",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1431054323852378264/1431054323852378264",
+      "site_url": "https://skidrowreloaded.com/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "online",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1431054323852378264/1431054323852378264",
+          "channel": "Skidrow reloaded",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 200,
+      "reason": null,
+      "final_url": "https://www.skidrowreloaded.com/",
+      "redirect_url": null,
+      "name_attempted_at": "2026-11-17T23:51:50+00:00",
+      "name_checked_at": "2026-11-17T23:51:50+00:00",
+      "name_evidence": "title",
+      "site_name": "Skidrow & Reloaded Games",
+      "pending_name": null,
+      "pending_name_at": null
+    },
+    "https://swisstransfer.com/fr-fr": {
+      "thread_id": "1431057935034744865",
+      "title": "swisstransfer.com",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1431057935034744865/1431057935034744865",
+      "site_url": "https://swisstransfer.com/fr-fr",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "online",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1431057935034744865/1431057935034744865",
+          "channel": "SwissTransfer",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 200,
+      "reason": null,
+      "final_url": "https://www.swisstransfer.com/fr",
+      "redirect_url": null,
+      "name_attempted_at": "2026-11-17T23:51:50+00:00",
+      "name_checked_at": "2026-11-17T23:51:50+00:00",
+      "name_evidence": "og:site_name",
+      "site_name": "SwissTransfer",
+      "pending_name": null,
+      "pending_name_at": null
+    },
+    "https://annas-archive.cc/": {
+      "thread_id": "1432848239517765632",
+      "title": "annas-archive.cc",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1432848239517765632/1432848239517765632",
+      "site_url": "https://annas-archive.cc/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "online",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1432848239517765632/1432848239517765632",
+          "channel": "Annas-archive",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 200,
+      "reason": null,
+      "final_url": "https://annas-archive.cc/",
+      "redirect_url": null,
+      "name_attempted_at": "2026-11-17T23:51:50+00:00",
+      "name_checked_at": "2026-11-17T23:51:50+00:00",
+      "name_evidence": "application-name",
+      "site_name": "Anna’s Archive",
+      "pending_name": null,
+      "pending_name_at": null
+    },
+    "https://1001ebooks.app/": {
+      "thread_id": "1431060081784655974",
+      "title": "1001ebooks.app",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1431060081784655974/1431060081784655974",
+      "site_url": "https://1001ebooks.app/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "online",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1431060081784655974/1431060081784655974",
+          "channel": "1001 Ebooks",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 200,
+      "reason": null,
+      "final_url": "https://1001ebooks.app/",
+      "redirect_url": null,
+      "name_attempted_at": "2026-11-17T23:51:50+00:00",
+      "name_checked_at": "2026-11-17T23:51:50+00:00",
+      "name_evidence": "og:site_name",
+      "site_name": "1001Ebooks",
+      "pending_name": null,
+      "pending_name_at": null
+    },
+    "https://www7.bookys-ebooks.com/magazines/new": {
+      "thread_id": "1431060780584796270",
+      "title": "www7.bookys-ebooks.com",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1431060780584796270/1431060780584796270",
+      "site_url": "https://www7.bookys-ebooks.com/magazines/new",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "restricted",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1431060780584796270/1431060780584796270",
+          "channel": "Bookys Ebooks",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 403,
+      "reason": null,
+      "final_url": "https://www7.bookys-ebooks.com/magazines/new",
+      "redirect_url": null
+    },
+    "https://ledenicheur.fr/": {
+      "thread_id": "1432836342093578306",
+      "title": "ledenicheur.fr",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1432836342093578306/1432836342093578306",
+      "site_url": "https://ledenicheur.fr/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "online",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1432836342093578306/1432836342093578306",
+          "channel": "Le denicheur",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": 200,
+      "reason": null,
+      "final_url": "https://ledenicheur.fr/",
+      "redirect_url": null,
+      "name_attempted_at": "2026-11-17T23:51:50+00:00",
+      "name_checked_at": "2026-11-17T23:51:50+00:00",
+      "name_evidence": "og:site_name",
+      "site_name": "leDénicheur",
+      "pending_name": null,
+      "pending_name_at": null
+    },
+    "https://idealo.fr/": {
+      "thread_id": "1432836242453827704",
+      "title": "idealo.fr",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1432836242453827704/1432836242453827704",
+      "site_url": "https://idealo.fr/",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "suspect",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 1,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1432836242453827704/1432836242453827704",
+          "channel": "Idealo",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": null,
+      "reason": "OSError",
+      "final_url": "https://idealo.fr/",
+      "redirect_url": null
+    },
+    "https://hellojoko.app.link/tyX38HoTyP": {
+      "thread_id": "1432841164574167070",
+      "title": "hellojoko.app.link",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1432841164574167070/1432841164574167070",
+      "site_url": "https://hellojoko.app.link/tyX38HoTyP",
+      "first_seen": "2026-11-17T23:51:50+00:00",
+      "status": "suspect",
+      "last_checked": "2026-11-17T23:51:50+00:00",
+      "consecutive_failures": 1,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1432841164574167070/1432841164574167070",
+          "channel": "Joko",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-17T23:51:50+00:00",
+      "active": true,
+      "http_status": null,
+      "reason": "OSError",
+      "final_url": "https://hellojoko.app.link/tyX38HoTyP",
+      "redirect_url": null
+    }
+  },
+  "server_scan": {
+    "at": "2026-11-17T23:51:50+00:00",
+    "counts": {
+      "messages_read": 47,
+      "locations_scanned": 37,
+      "links_found": 34,
+      "locations_discovered": 37,
+      "unique_urls": 34,
+      "scan_failures": 0
+    },
+    "errors": [],
+    "all_public_sources_scanned": true,
+    "new_http_checks": 34,
+    "new_name_checks": 25
   }
 }
