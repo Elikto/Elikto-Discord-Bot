@@ -272,3 +272,6 @@ h1 span { color: #bdaaff; }
 .mirror-identity {display:flex;flex-direction:column;min-width:0;flex:1;gap:3px;}
 .mirror-domain {font-size:10px;color:#96a0b5;overflow-wrap:anywhere;}
 .mirror-rename-warning {color:#e6b97e;font-size:10px;line-height:1.45;overflow-wrap:anywhere;}
+
+.mirror-proposed {font-size:10px;color:#d7bf95;padding:1px 10px 6px;line-height:1.4;overflow-wrap:anywhere;}
+.mirror-proposed:hover {color:#fae4b5;text-decoration:underline;}
