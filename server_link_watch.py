@@ -10,7 +10,7 @@ Ne copie jamais le texte des messages, les tokens ou les paramètres d'URL.
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urlunsplit
 from zoneinfo import ZoneInfo
 from collections import defaultdict
 import json
@@ -171,16 +171,25 @@ def message_fragments(message):
         yield from visit_component(comp)
 
 
+def normalize_site_url(value):
+    url = clean_url(value)
+    if not url:
+        return None
+    p = urlsplit(url)
+    hostname = (p.hostname or "").removeprefix("www.")
+    return urlunsplit((p.scheme, hostname, p.path or "/", "", ""))
+
+
 def link_from_text(fragment):
     found = set()
     for raw in RE_URL.findall(fragment):
-        value = clean_url(raw.rstrip(".,;!?<>)]}\"'"))
+        value = normalize_site_url(raw.rstrip(".,;!?<>)]}\"'"))
         if value:
             found.add(value)
             yield value
     remaining = RE_URL.sub(" ", fragment)
     for match in BARE_DOMAIN.finditer(remaining):
-        value = clean_url("https://" + match.group(0).rstrip(".,;!?<>)]}\"'"))
+        value = normalize_site_url("https://" + match.group(0).rstrip(".,;!?<>)]}\"'"))
         if value and value not in found:
             found.add(value)
             yield value
