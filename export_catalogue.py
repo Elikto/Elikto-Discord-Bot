@@ -24,13 +24,13 @@ def serialize(grouped, now=None):
                 (url for title, url in entries if title == "Ouvrir le forum"), None
             )
             text_url = next(
-                (url for title, url in entries if title.startswith("#")), None
+                (url for title, url in entries if title == "Ouvrir le salon"), None
             )
             items = sorted(
                 [
                     {"title": title, "url": url}
                     for title, url in entries
-                    if title != "Ouvrir le forum" and not title.startswith("#")
+                    if title not in ("Ouvrir le forum", "Ouvrir le salon")
                 ],
                 key=lambda item: item["title"].casefold(),
             )
