@@ -7,6 +7,7 @@ from __future__ import annotations
 import html
 from html.parser import HTMLParser
 import re
+import unicodedata
 from urllib.parse import urljoin, urlsplit
 
 from site_probe import (
@@ -66,7 +67,8 @@ def sanitized_name(value):
         return None
     value = re.split(r"\s+[|—–]\s+|\s+-\s+|\s+:\s+", value, maxsplit=1)[0]
     value = re.sub(r"\s+", " ", value).strip().strip("|:—–-•·*_# ")
-    normalized = value.casefold()
+    normalized = unicodedata.normalize("NFKD", value.casefold())
+    normalized = "".join(ch for ch in normalized if not unicodedata.combining(ch))
     if not 3 <= len(value) <= 58:
         return None
     if normalized in GENERIC_NAMES:
