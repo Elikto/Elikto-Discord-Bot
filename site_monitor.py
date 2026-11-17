@@ -248,6 +248,7 @@ def watch_catalogue(api, catalogue: dict, state: dict, now=None) -> tuple[dict, 
                                 ev.get("type") == "address_changed"
                                 and ev.get("thread_id") == thread_id
                                 and ev.get("current") == candidate
+                                and not due(ev.get("at"), now, timedelta(hours=1))
                                 for ev in state.get("events", [])[-30:]
                             )
                             if not already_recorded:
