@@ -70,6 +70,10 @@ class MirrorWatchTests(unittest.TestCase):
         no_html = patch("mirror_watch.probe_site_name", return_value=None)
         no_html.start()
         self.addCleanup(no_html.stop)
+        # Éviter tout accès au Web depuis les tests existants.
+        no_discovery = patch("mirror_watch.candidate_groups", return_value=[])
+        no_discovery.start()
+        self.addCleanup(no_discovery.stop)
 
     def test_first_html_scan_creates_a_baseline_without_false_rename(self):
         api = FakeAPI([human_message()])
@@ -228,6 +232,59 @@ class MirrorWatchTests(unittest.TestCase):
         with patch("mirror_watch.check_site") as second_probe:
             mirror_watch.sync_thread(api, s, self.now + timedelta(hours=2))
         second_probe.assert_not_called()
+        self.assertEqual(len(api.bot_messages), 1)
+
+    def test_found_similar_sites_join_existing_four_without_duplicates(self):
+        """La découverte ajoute les domaines valides, pas les alias répétés."""
+        originals = [
+            ("momdax.com", "MOMDAX", "NANDOV", "nandov.com"),
+            ("zakmav.com", "ZAKMAV", "DOTIVOZ", "dotivoz.com"),
+            ("fopov.com", "FOPOV", "DOTIVOZ", "dotivoz.com"),
+        ]
+        api = FakeAPI([human_message([
+            "https://" + domain + "/" for domain, _, _, _ in originals
+        ])])
+        s = state()
+        entries = {}
+        for domain, old, new, target in originals:
+            url = "https://" + domain + "/"
+            entries[url] = {
+                "url": url, "label": domain, "site_name": old,
+                "pending_name": new, "announced_url": "https://" + target + "/",
+                "status": "online", "last_checked": self.now.isoformat(),
+                "name_attempted_at": self.now.isoformat(), "failures": 0,
+            }
+        s["tracked_threads"] = {
+            mirror_watch.THREAD_ID: {"url_states": entries, "urls": list(entries)}
+        }
+        external = [
+            {"url": "https://tiprov.com/", "name": "TIPROV",
+             "previous_names": ["DOMGRAV", "IKROMI"], "source_urls": [],
+             "discovered": True},
+            {"url": "https://dotivoz.com/", "name": "DOTIVOZ",
+             "previous_names": ["GOZIRAV"], "source_urls": [],
+             "discovered": True},
+            {"url": "https://unreachable.com/", "name": "UNREACHABLE",
+             "previous_names": [], "source_urls": [], "discovered": True},
+        ]
+        def probe(url):
+            if url == "https://unreachable.com/":
+                return response("failed", 404, url)
+            return response(url=url)
+        with patch("mirror_watch.candidate_groups", return_value=external), patch(
+            "mirror_watch.check_site", side_effect=probe
+        ):
+            mirror_watch.sync_thread(api, s, self.now + timedelta(hours=2))
+        groups = s["tracked_threads"][mirror_watch.THREAD_ID]["display_sites"]
+        self.assertEqual(len(groups), 3)  # NANDOV, DOTIVOZ, TIPROV
+        self.assertEqual({g["name"] for g in groups}, {"NANDOV", "DOTIVOZ", "TIPROV"})
+        self.assertEqual(
+            next(x for x in groups if x["name"] == "DOTIVOZ")["previous_names"],
+            ["ZAKMAV", "FOPOV", "GOZIRAV"],
+        )
+        self.assertEqual(api.bot_messages[0]["content"].count("[DOTIVOZ]"), 1)
+        self.assertIn("[TIPROV](https://tiprov.com/)", api.bot_messages[0]["content"])
+        self.assertNotIn("UNREACHABLE", api.bot_messages[0]["content"])
         self.assertEqual(len(api.bot_messages), 1)
 
     def test_minimal_summary_only_new_name_and_former_names(self):
