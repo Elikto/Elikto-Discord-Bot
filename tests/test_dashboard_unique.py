@@ -56,7 +56,7 @@ class DashboardTests(unittest.TestCase):
         self.assertNotIn("<#", contents)
         self.assertNotIn("#inconnu", contents)
 
-    def test_long_server_falls_back_to_forum_links(self):
+    def test_never_silently_hide_sites_if_exceeding_discord_limit(self):
         data = {
             (str(i), f"Catégorie {i}"): {
                 "forum": [
@@ -65,11 +65,47 @@ class DashboardTests(unittest.TestCase):
                        for j in range(70)]}
             for i in range(7)
         }
+        with self.assertRaisesRegex(ValueError, "Aucune fiche ne sera masquee"):
+            render_dashboard(data)
+
+    def test_real_28_fiches_are_all_visible_in_one_message(self):
+        """Regression sur les vrais 28 noms du serveur, sans contenu prive."""
+        from pathlib import Path
+        import json
+        source = Path(__file__).resolve().parents[1] / "data" / "monitor_state.json"
+        if not source.exists():
+            self.skipTest("Le premier état de surveillance n'a pas encore été exporté.")
+        state = json.loads(source.read_text(encoding="utf-8"))
+        records = state.get("records", {})
+        if len(records) < 28:
+            self.skipTest("Ce serveur n'a pas encore ses 28 fiches de référence.")
+        data = {}
+        for record in records.values():
+            category = (record.get("category", "?"), record.get("forum", "?"))
+            cat_key = ("cat_" + category[0], category[0])
+            forums = data.setdefault(cat_key, {})
+            if category[1] not in forums:
+                forums[category[1]] = [
+                    ("Ouvrir le forum",
+                     "https://discord.com/channels/1430984645012357263/1234567890123456789")
+                ]
+            forums[category[1]].append((record["title"], record["discord_url"]))
+        data[("empty_arcade", "Borne d'arcade")] = {}
+        data[("empty_salons", "Salons textuels")] = {
+            "discussion": [("#discussion", "https://discord.com/channels/1430984645012357263/1234567890123456789")]
+        }
         components = render_dashboard(data)
-        self.assertLessEqual(total_components(components), 40)
+        content = "\\n".join(
+            child.get("content", "")
+            for root in components if root.get("type") == 17
+            for child in root.get("components", [])
+        )
+        for rec in records.values():
+            self.assertIn(rec["discord_url"], content, rec["title"])
+        self.assertNotIn("fiches accessibles dans le forum", content)
+        self.assertEqual(len(components), len(data))
         self.assertLessEqual(total_chars(components), 4000)
-        content = str(components)
-        self.assertIn("fiches accessibles dans le forum", content)
+        self.assertLessEqual(total_components(components), 40)
 
     def test_categorized_not_blended(self):
         components = render_dashboard(sample())
