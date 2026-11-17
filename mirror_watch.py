@@ -181,7 +181,8 @@ def summary_message(items, thread_name):
     lines = [
         f"🔎 **SUIVI DES SITES — {thread_name[:60].upper()}**",
         MARKER,
-        f"**{len(items)} adresses** · vérification **quotidienne**",
+        f"**{len(items)} adresses** · vérification **quotidienne** · "
+        f"**{sum(bool(i.get('site_name')) for i in items)} noms reconnus**",
         "",
     ]
     last = []
@@ -287,14 +288,20 @@ def sync_thread(api, state, now=None):
                          detail="URL absente des messages du fil.")
 
     checked = 0
+    names_checked = 0
     for source in sources:
         item = entries[source["url"]]
         if not is_checked_today(item.get("last_checked"), now):
             update_probe(item, check_site(item["url"]), now, state, first_run=is_first)
-            if item.get("status") == "online":
-                identity = probe_site_name(item["url"])
-                update_name(item, identity, now, state, first_run=is_first)
             checked += 1
+        # Analyser les noms dès l'installation sans refaire les tests HTTP
+        # déjà effectués dans la journée.
+        if (item.get("status") == "online" and
+                not is_checked_today(item.get("name_attempted_at"), now)):
+            item["name_attempted_at"] = now.isoformat(timespec="seconds")
+            identity = probe_site_name(item["url"])
+            update_name(item, identity, now, state, first_run=is_first)
+            names_checked += 1
 
     owner = str(thread.get("owner_id") or "")
     proposed_names = []
@@ -328,7 +335,8 @@ def sync_thread(api, state, now=None):
     known_names = sum(bool(entries[source["url"]].get("site_name")) for source in sources)
     suspected_names = sum(bool(entries[source["url"]].get("pending_name")) for source in sources)
     print("MIROIRS :", len(sources), "URL visibles ;", checked,
-          "vérifiées aujourd'hui ;", known_names, "noms identifiés ;",
+          "vérifications HTTP ;", names_checked, "recherches de nom ;",
+          known_names, "noms identifiés ;",
           suspected_names, "changements de nom suspects.")
     return "updated"
 
