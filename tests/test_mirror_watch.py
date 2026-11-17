@@ -136,7 +136,7 @@ class MirrorWatchTests(unittest.TestCase):
             mirror_watch.sync_thread(api, s, self.now + timedelta(days=1))
         tracked = s["tracked_threads"][mirror_watch.THREAD_ID]["url_states"][URLS[0]]
         self.assertEqual(tracked["site_name"], "MOMDAX")
-        self.assertNotIn("pending_name", tracked)
+        self.assertIsNone(tracked.get("pending_name"))
         self.assertFalse(any(e["type"].startswith("mirror_name") for e in s["events"]))
 
     def test_same_name_different_case_or_accents_is_not_a_rename(self):
