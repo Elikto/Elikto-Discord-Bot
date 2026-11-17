@@ -11,6 +11,7 @@ import re
 
 from site_probe import check_site, extract_candidate_urls, other_domain, clean_url
 from name_probe import probe_site_name, announced_rename
+from site_discovery import candidate_groups
 from site_monitor import event
 
 THREAD_ID = "1430988094374547559"
@@ -491,9 +492,18 @@ def sync_thread(api, state, now=None):
                     print("MIROIRS : impossible de renommer le fil (permission requise).")
 
     source_items = [entries[source["url"]] for source in sources]
-    sites = grouped_current_sites(source_items)
+    original_sites = grouped_current_sites(source_items)
+    internet_sites = candidate_groups(tracked, now)
     target_states = tracked.setdefault("target_states", {})
-    sites = decorate_destinations(sites, source_items, target_states, now, state)
+    sites = decorate_destinations(
+        original_sites + internet_sites, source_items, target_states, now, state
+    )
+    # Seuls les candidats supplémentaires réellement joignables sont
+    # publiés. Les anciens sites suivis depuis Discord restent affichés.
+    sites = [
+        site for site in sites
+        if site.get("source_urls") or site.get("status") == "online"
+    ]
     summary = summary_message(sites, thread_name)
     try:
         message_id = upsert_bot_message(api, tracked, bot_id, summary)
@@ -510,7 +520,8 @@ def sync_thread(api, state, now=None):
     known_names = sum(bool(entries[source["url"]].get("site_name")) for source in sources)
     suspected_names = sum(bool(entries[source["url"]].get("pending_name")) for source in sources)
     print("MIROIRS :", len(sources), "adresses source ;", len(sites),
-          "sites actuels distincts ;", checked, "vérifications HTTP sources ;",
+          "sites affichés dont", len(internet_sites), "candidats Internet ;",
+          checked, "vérifications HTTP sources ;",
           names_checked, "recherches de nom ;", known_names,
           "noms identifiés ;", suspected_names,
           "changements de nom suspects.")
