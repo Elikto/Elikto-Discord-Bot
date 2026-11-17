@@ -1,0 +1,223 @@
+"""Tests du contrôle complet du serveur sans accéder à Discord ou Internet."""
+import unittest
+from datetime import datetime, timedelta, timezone
+from unittest.mock import patch
+
+import server_link_watch as watch
+from sync_catalogue import VIEW_CHANNEL
+
+NOW = datetime(2026, 11, 18, 9, 30, tzinfo=timezone.utc)
+
+
+def human(mid, content, **extra):
+    return {"id": str(mid), "content": content, "author": {"id": "77", "bot": False},
+            "embeds": [], **extra}
+
+
+class FakeDiscord:
+    def __init__(self):
+        self.calls = []
+        self.channels = [
+            {"id": "10", "type": 4, "name": "Public"},
+            {"id": "11", "type": 0, "name": "discussion", "parent_id": "10"},
+            {"id": "12", "type": 15, "name": "liens", "parent_id": "10"},
+            {"id": "13", "type": 5, "name": "annonces", "parent_id": "10"},
+            {"id": "14", "type": 16, "name": "medias", "parent_id": "10"},
+            {"id": "15", "type": 0, "name": "interdit", "parent_id": "10",
+             "permission_overwrites": [{"id": watch.GUILD_ID, "type": 0,
+                                         "deny": str(VIEW_CHANNEL), "allow": "0"}]},
+            {"id": "16", "type": 0, "name": "nsfw", "parent_id": "10", "nsfw": True},
+        ]
+        self.threads = [
+            {"id": "21", "type": 11, "parent_id": "12", "name": "Site Film"},
+            {"id": "22", "type": 11, "parent_id": "11", "name": "Fil de discussion"},
+            {"id": "23", "type": 12, "parent_id": "12", "name": "Secret"},
+            {"id": "24", "type": 11, "parent_id": "15", "name": "Thread privé parent"},
+        ]
+        self.archive = {
+            "12": [{"id": "25", "type": 11, "parent_id": "12", "name": "Ancien site"}],
+            "11": [{"id": "26", "type": 11, "parent_id": "11", "name": "Ancien lien"}],
+        }
+        self.messages = {
+            "11": [human(101, "https://alpha.example.org https://beta.example.org")],
+            "13": [human(103, "Ancienne annonce www.gamma.example.org/page")],
+            "21": [human(201, "Le film : alpha.example.org puis https://delta.example.org")],
+            "22": [human(202, "https://epsilon.example.org")],
+            "25": [human(205, "https://zeta.example.org")],
+            "26": [human(206, "https://eta.example.org")],
+            "15": [human(150, "https://secret.example.org")],
+            "23": [human(230, "https://private.example.org")],
+            "24": [human(240, "https://hidden.example.org")],
+            "16": [human(160, "https://nsfw.example.org")],
+        }
+
+    def call(self, method, path, *, params=None, json=None):
+        self.calls.append((method, path, params))
+        if path == "/users/@me":
+            return {"id": "999"}
+        if path == f"/guilds/{watch.GUILD_ID}":
+            return {"roles": [{"id": watch.GUILD_ID,
+                               "permissions": str(VIEW_CHANNEL)}]}
+        if path == f"/guilds/{watch.GUILD_ID}/channels":
+            return self.channels
+        if path == f"/guilds/{watch.GUILD_ID}/threads/active":
+            return {"threads": self.threads}
+        if "/messages" in path:
+            ch = path.split("/")[2]
+            messages = self.messages.get(ch, [])
+            if params and params.get("before"):
+                messages = [m for m in messages if int(m["id"]) < int(params["before"])]
+            return list(sorted(messages, key=lambda m: int(m["id"]), reverse=True))[:100]
+        raise AssertionError(path)
+
+    def archived(self, forum_id):
+        yield from self.archive.get(forum_id, [])
+
+
+def state():
+    return {"version": 1, "records": {}, "events": [], "event_sequence": 0}
+
+
+def response(url, result="online"):
+    return {"result": result, "http_status": 200 if result == "online" else 503,
+            "final_url": url, "reason": None}
+
+
+class ServerWatchTests(unittest.TestCase):
+    def test_scans_all_public_channels_forums_archives_and_text_threads(self):
+        api = FakeDiscord()
+        result, counts, errors = watch.find_server_links(api)
+        urls = set(result)
+        for url in ("https://alpha.example.org/", "https://beta.example.org/",
+                    "https://gamma.example.org/page", "https://delta.example.org/",
+                    "https://epsilon.example.org/", "https://zeta.example.org/",
+                    "https://eta.example.org/"):
+            self.assertIn(url, urls, url)
+        self.assertEqual(len(urls), 7)
+        self.assertEqual(counts["locations_discovered"], 7)
+        self.assertEqual(errors, [])
+        for forbidden in ("secret", "private", "hidden", "nsfw"):
+            self.assertFalse(any(forbidden in x for x in urls))
+        self.assertFalse(any("/channels/15/messages" in path for _, path, _ in api.calls))
+        self.assertFalse(any("/channels/23/messages" in path for _, path, _ in api.calls))
+
+    def test_extracts_embeds_components_bare_domains_and_multiple_links(self):
+        msg = human(10, "plain-sample.org https://site.test.xyz/abc")
+        msg["embeds"] = [
+            {"description": "https://embed.example.org/", "fields": [
+                {"value": "www.field-site.org/path"}]}
+        ]
+        msg["components"] = [{
+            "type": 1, "components": [{"type": 2, "style": 5,
+                                      "url": "https://button-site.org/"}]
+        }]
+        urls = set(watch.extract_links(msg))
+        self.assertIn("https://plain-sample.org/", urls)
+        self.assertIn("https://site.test.xyz/abc", urls)
+        self.assertIn("https://embed.example.org/", urls)
+        self.assertIn("https://field-site.org/path", urls)
+        self.assertIn("https://button-site.org/", urls)
+
+    def test_ignores_discord_links_and_media_assets(self):
+        msg = human(10, "https://discord.com/channels/1/2 "
+                    "https://discord.gg/invite https://example.org/logo.png "
+                    "https://example.org/ https://example.org/")
+        self.assertEqual(list(watch.extract_links(msg)), ["https://example.org/"])
+
+    def test_scans_past_first_hundred_messages_and_deduplicates(self):
+        api = FakeDiscord()
+        api.messages["11"] = [human(1000+i, "https://alpha.example.org/")
+                              for i in range(125)]
+        api.messages["11"][0]["content"] += " https://buried.example.org/"
+        found, counts, errors = watch.find_server_links(api)
+        self.assertIn("https://buried.example.org/", found)
+        self.assertEqual(found["https://alpha.example.org/"]["source_count"], 125)
+        self.assertEqual(errors, [])
+        self.assertGreaterEqual(counts["messages_read"], 125)
+
+    def test_daily_schedule_respects_paris_calendar_and_minimum_20h(self):
+        checked = datetime(2026, 11, 17, 22, tzinfo=timezone.utc)
+        self.assertFalse(watch.due_daily(checked.isoformat(), checked + timedelta(hours=2)))
+        self.assertTrue(watch.due_daily(checked.isoformat(), checked + timedelta(hours=21)))
+        self.assertFalse(watch.due_daily(checked.isoformat(), checked + timedelta(hours=10)))
+
+    def test_all_websites_checked_daily_and_no_repeat_on_same_day(self):
+        api = FakeDiscord()
+        s = state()
+        with patch("server_link_watch.check_site",
+                   side_effect=lambda url: response(url)) as probe, patch(
+            "server_link_watch.probe_site_name", return_value=None
+        ):
+            report, alerts = watch.watch_server_links(api, s, NOW)
+            self.assertTrue(report["complete"])
+            self.assertEqual(report["sites"], 7)
+            self.assertEqual(probe.call_count, 7)
+            self.assertEqual(alerts, [])
+            probe.reset_mock()
+            watch.watch_server_links(api, s, NOW + timedelta(hours=5))
+            probe.assert_not_called()
+            watch.watch_server_links(api, s, NOW + timedelta(days=1))
+            self.assertEqual(probe.call_count, 7)
+
+    def test_failure_in_one_channel_preserves_old_discoveries(self):
+        api = FakeDiscord()
+        s = state()
+        with patch("server_link_watch.check_site", side_effect=lambda u: response(u)), patch(
+            "server_link_watch.probe_site_name", return_value=None
+        ):
+            watch.watch_server_links(api, s, NOW)
+        prior = len(s["server_links"])
+        original_call = api.call
+        def fail_one(method, path, **kwargs):
+            if path == "/channels/12/messages":
+                raise RuntimeError("Discord GET /channels/12/messages : HTTP 403")
+            return original_call(method, path, **kwargs)
+        api.call = fail_one
+        with patch("server_link_watch.check_site", side_effect=lambda u: response(u)), patch(
+            "server_link_watch.probe_site_name", return_value=None
+        ):
+            report, _ = watch.watch_server_links(api, s, NOW + timedelta(days=1))
+        self.assertFalse(report["complete"])
+        self.assertEqual(len(s["server_links"]), prior)
+        self.assertTrue(any(x["reason"] == "messages_inaccessibles"
+                            for x in s["server_scan"]["errors"]))
+
+    def test_new_site_in_public_channel_notifies_once(self):
+        api = FakeDiscord()
+        s = state()
+        with patch("server_link_watch.check_site", side_effect=lambda u: response(u)), patch(
+            "server_link_watch.probe_site_name", return_value=None
+        ):
+            watch.watch_server_links(api, s, NOW)
+            api.messages["11"].append(human(300, "https://new.example.org/"))
+            report, alerts = watch.watch_server_links(
+                api, s, NOW + timedelta(days=1)
+            )
+            self.assertEqual(report["sites"], 8)
+            self.assertEqual(len([e for e in alerts
+                                  if e["type"] == "server_site_added"]), 1)
+
+    def test_change_of_site_name_requires_two_daily_checks(self):
+        api = FakeDiscord()
+        s = state()
+        with patch("server_link_watch.check_site", side_effect=lambda u: response(u)), patch(
+            "server_link_watch.probe_site_name",
+            return_value={"name": "FIRST", "evidence": "og:site_name"}
+        ):
+            watch.watch_server_links(api, s, NOW)
+        with patch("server_link_watch.check_site", side_effect=lambda u: response(u)), patch(
+            "server_link_watch.probe_site_name",
+            return_value={"name": "SECOND", "evidence": "og:site_name"}
+        ):
+            _, alerts = watch.watch_server_links(api, s, NOW + timedelta(days=1))
+            self.assertEqual(len([x for x in alerts
+                                  if x["type"] == "server_name_suspected"]), 7)
+            _, alerts2 = watch.watch_server_links(api, s, NOW + timedelta(days=2))
+        self.assertEqual(len([x for x in alerts2
+                              if x["type"] == "server_name_changed"]), 7)
+        self.assertEqual(s["server_links"]["https://alpha.example.org/"]["site_name"],
+                         "SECOND")
+
+
+if __name__ == "__main__":
+    unittest.main()
