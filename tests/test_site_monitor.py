@@ -122,6 +122,40 @@ class MonitorTests(unittest.TestCase):
                             self.now + timedelta(hours=48))
             self.assertEqual(p.call_count, 2)  # Deux fiches, un contrôle chacune à 48 h
 
+    def test_tracked_thread_address_overrides_stale_starter_url(self):
+        """L'adresse annoncée dans le fil ciblé pilote aussi la supervision HTTP."""
+        class FakeAPI: pass
+        track_id = "1430988094374547559"
+        catalog = {"categories": [{"id": "1", "name": "Streaming",
+            "channels": [{"name": "films", "kind": "forum",
+                "items": [{"title": "Streaming HD miroir",
+                    "url": "https://discord.com/channels/1/" + track_id}]}]}]}
+        current_state = state()
+        current_state["records"][track_id] = {
+            "thread_id": track_id, "title": "Streaming HD miroir",
+            "discord_url": "https://discord.com/channels/1/" + track_id,
+            "site_url": "https://old.example.org/",
+            "status": "online", "last_checked": self.now.isoformat(),
+            "last_discovery": self.now.isoformat(),
+            "consecutive_failures": 0,
+        }
+        current_state["tracked_threads"] = {
+            track_id: {"address": "https://new.example.org/"}
+        }
+        with patch("site_monitor.pick_site_url") as discover, patch(
+            "site_monitor.check_site", return_value={
+                "result": "online", "http_status": 200,
+                "final_url": "https://new.example.org/", "reason": None
+            }
+        ) as check:
+            report, alerts = watch_catalogue(FakeAPI(), catalog, current_state, self.now)
+        discover.assert_not_called()
+        check.assert_called_once_with("https://new.example.org/")
+        self.assertEqual(current_state["records"][track_id]["site_url"],
+                         "https://new.example.org/")
+        self.assertEqual(report["monitored"], 1)
+        self.assertEqual(alerts[0]["type"], "address_changed")
+
     def test_title_change_creates_history_event(self):
         class FakeAPI: pass
         current_state = state()
