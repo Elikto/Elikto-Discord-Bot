@@ -130,7 +130,7 @@ def fetch_html_page(url, timeout=7):
                     return None
                 current = nxt
                 continue
-            if status != 200:
+            if status not in (200, 206):
                 return None
             content_type = (response.getheader("Content-Type") or "").lower()
             if "text/html" not in content_type and "application/xhtml+xml" not in content_type:
