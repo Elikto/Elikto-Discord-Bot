@@ -20,7 +20,7 @@
     },
     "1430988094374547559": {
       "thread_id": "1430988094374547559",
-      "title": "Streaming HD miroir",
+      "title": "Streaming HD",
       "discord_url": "https://discord.com/channels/1430984645012357263/1430988094374547559",
       "site_url": "https://momdax.com/",
       "status": "online",
@@ -579,9 +579,21 @@
       "current": "FARSOV",
       "detail": "La page du site annonce un nouveau nom ou domaine ; à confirmer.",
       "alert": true
+    },
+    {
+      "id": 8,
+      "type": "title_changed",
+      "at": "2026-11-17T23:36:07+00:00",
+      "thread_id": "1430988094374547559",
+      "title": "Streaming HD",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1430988094374547559",
+      "previous": "Streaming HD miroir",
+      "current": "Streaming HD",
+      "detail": "Nom de fiche changé sur Discord (sans preuve de changement du site).",
+      "alert": true
     }
   ],
-  "event_sequence": 7,
+  "event_sequence": 8,
   "tracked_threads": {
     "1430988094374547559": {
       "url_states": {
@@ -700,7 +712,7 @@
           "announced_url": "https://farsov.com/"
         }
       },
-      "name": "Streaming HD miroir",
+      "name": "Streaming HD",
       "message_id": "1572372318892597298",
       "urls": [
         "https://momdax.com/",
@@ -710,7 +722,7 @@
         "https://zinzov.com/",
         "https://didvip.com/"
       ],
-      "last_synced": "2026-11-17T23:27:44+00:00",
+      "last_synced": "2026-11-17T23:36:05+00:00",
       "target_states": {
         "https://nandov.com/": {
           "url": "https://nandov.com/",
@@ -937,7 +949,11 @@
           "url": "https://nandov.com/",
           "name": "NANDOV",
           "previous_names": [
-            "MOMDAX"
+            "MOMDAX",
+            "IPDRO",
+            "KOVLIV",
+            "NOKRAF",
+            "VOZGOV"
           ],
           "source_urls": [
             "https://momdax.com/"
@@ -954,7 +970,9 @@
           "name": "DOTIVOZ",
           "previous_names": [
             "ZAKMAV",
-            "FOPOV"
+            "FOPOV",
+            "GOZIRAV",
+            "ZOMATOP"
           ],
           "source_urls": [
             "https://zakmav.com/",
@@ -989,7 +1007,13 @@
           "url": "https://timbov.com/",
           "name": "TIMBOV",
           "previous_names": [
-            "ZINZOV"
+            "ZINZOV",
+            "MINZIV",
+            "XATAF",
+            "WIFRAD",
+            "YAKLAP",
+            "VOGFO",
+            "YOSKOV"
           ],
           "source_urls": [
             "https://zinzov.com/"
@@ -1007,7 +1031,9 @@
           "previous_names": [
             "ILMIV",
             "KOBIOM",
-            "GADROV"
+            "GADROV",
+            "AVOBIV",
+            "IMBRAV"
           ],
           "source_urls": [],
           "announced": false,
@@ -1086,7 +1112,9 @@
           "previous_names": [
             "PIDOOV",
             "KIDRAZ",
-            "PURWAZ"
+            "PURWAZ",
+            "TOKRAV",
+            "SORLAV"
           ],
           "source_urls": [],
           "announced": false,
@@ -1116,7 +1144,10 @@
           "previous_names": [
             "DOMGRAV",
             "IKROMI",
-            "APLOUF"
+            "APLOUF",
+            "FARLIZ",
+            "GOZMAP",
+            "WADROX"
           ],
           "source_urls": [],
           "announced": false,
@@ -1133,7 +1164,9 @@
           "previous_names": [
             "TRIFAK",
             "OKMAZ",
-            "YABLOM"
+            "YABLOM",
+            "ROLZIO",
+            "VATRAB"
           ],
           "source_urls": [],
           "announced": false,
@@ -1150,7 +1183,9 @@
           "previous_names": [
             "PALKAD",
             "VREDAP",
-            "SOPONOV"
+            "SOPONOV",
+            "XAMOZ",
+            "VADBAK"
           ],
           "source_urls": [],
           "announced": false,
@@ -1194,7 +1229,10 @@
           "previous_names": [
             "DOMGRAV",
             "IKROMI",
-            "APLOUF"
+            "APLOUF",
+            "FARLIZ",
+            "GOZMAP",
+            "WADROX"
           ],
           "source": "relevés publics 10-12/11/2026",
           "origin": "seed"
@@ -1204,7 +1242,9 @@
           "previous_names": [
             "TRIFAK",
             "OKMAZ",
-            "YABLOM"
+            "YABLOM",
+            "ROLZIO",
+            "VATRAB"
           ],
           "source": "relevés publics 10-12/11/2026",
           "origin": "seed"
@@ -1214,7 +1254,9 @@
           "previous_names": [
             "PALKAD",
             "VREDAP",
-            "SOPONOV"
+            "SOPONOV",
+            "XAMOZ",
+            "VADBAK"
           ],
           "source": "relevés publics 10-12/11/2026",
           "origin": "seed"
@@ -1224,7 +1266,9 @@
           "previous_names": [
             "PIDOOV",
             "KIDRAZ",
-            "PURWAZ"
+            "PURWAZ",
+            "TOKRAV",
+            "SORLAV"
           ],
           "source": "relevés publics 10-12/11/2026",
           "origin": "seed"
@@ -1234,7 +1278,9 @@
           "previous_names": [
             "ILMIV",
             "KOBIOM",
-            "GADROV"
+            "GADROV",
+            "AVOBIV",
+            "IMBRAV"
           ],
           "source": "relevés publics 10-12/11/2026",
           "origin": "seed"
@@ -1288,6 +1334,49 @@
         "https://rogzov.com/": {
           "name": "ROGZOV",
           "previous_names": [],
+          "source": "relevés publics 10-12/11/2026",
+          "origin": "seed"
+        },
+        "https://timbov.com/": {
+          "name": "TIMBOV",
+          "previous_names": [
+            "MINZIV",
+            "XATAF",
+            "WIFRAD",
+            "YAKLAP",
+            "VOGFO",
+            "YOSKOV",
+            "ZINZOV"
+          ],
+          "source": "relevés publics 10-12/11/2026",
+          "origin": "seed"
+        },
+        "https://nandov.com/": {
+          "name": "NANDOV",
+          "previous_names": [
+            "IPDRO",
+            "KOVLIV",
+            "NOKRAF",
+            "VOZGOV"
+          ],
+          "source": "relevés publics 10-12/11/2026",
+          "origin": "seed"
+        },
+        "https://dotivoz.com/": {
+          "name": "DOTIVOZ",
+          "previous_names": [
+            "ZAKMAV",
+            "GOZIRAV",
+            "ZOMATOP"
+          ],
+          "source": "relevés publics 10-12/11/2026",
+          "origin": "seed"
+        },
+        "https://farsov.com/": {
+          "name": "FARSOV",
+          "previous_names": [
+            "DOVLIP"
+          ],
           "source": "relevés publics 10-12/11/2026",
           "origin": "seed"
         }
