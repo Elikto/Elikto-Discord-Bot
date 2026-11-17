@@ -72,6 +72,13 @@ class WebsiteTests(unittest.TestCase):
         self.assertIn("noopener noreferrer", self.js)
         self.assertNotIn("categoryTabs", self.html)
 
+    def test_multiple_mirrors_with_separate_statuses(self):
+        self.assertIn("monitor.mirrors", self.js)
+        self.assertIn("mirrors-list", self.js)
+        self.assertIn("mirror-status", self.js)
+        self.assertIn("mirrorStatuses", self.js)
+        self.assertIn("mirror-row", self.css)
+
     def test_mobile_reuses_the_same_menu(self):
         self.assertIn('id="menuButton"', self.html)
         self.assertIn('id="backdrop"', self.html)
@@ -81,7 +88,7 @@ class WebsiteTests(unittest.TestCase):
     def test_no_mock_content_in_public_html(self):
         self.assertNotIn("Movix", self.html)
         self.assertNotIn("WebFlix", self.html)
-        self.assertEqual(self.parser.scripts, ["./app.js?v=4"])
+        self.assertEqual(self.parser.scripts, ["./app.js?v=5"])
 
 
 if __name__ == "__main__":
