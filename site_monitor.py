@@ -298,9 +298,21 @@ def watch_catalogue(api, catalogue: dict, state: dict, now=None) -> tuple[dict, 
     state["records"] = {key: value for key, value in existing.items()
                         if key in visible}
     statuses = {}
+    control_count = 0
+    monitored_urls = 0
     for rec in state["records"].values():
-        k = rec.get("status", "unknown")
-        statuses[k] = statuses.get(k, 0) + 1
+        mirrors = public_mirrors(state, rec["thread_id"])
+        if mirrors:
+            for mirror in mirrors:
+                key = mirror.get("status", "unknown")
+                statuses[key] = statuses.get(key, 0) + 1
+                control_count += 1
+                monitored_urls += 1
+        else:
+            key = rec.get("status", "unknown")
+            statuses[key] = statuses.get(key, 0) + 1
+            control_count += 1
+            monitored_urls += int(bool(rec.get("site_url")))
 
     events = state["events"][-120:]
     report = {
@@ -308,8 +320,9 @@ def watch_catalogue(api, catalogue: dict, state: dict, now=None) -> tuple[dict, 
         "updated_at": stamp(now),
         "next_check_policy": "48 hours after previous check (Github Actions cadence)",
         "status_counts": statuses,
-        "total": len(state["records"]),
-        "monitored": sum(1 for x in state["records"].values() if x.get("site_url")),
+        "total": control_count,
+        "fiches": len(state["records"]),
+        "monitored": monitored_urls,
         "events": list(reversed(events)),
         "sites": [{
             "thread_id": r["thread_id"],
