@@ -2,13 +2,13 @@
 
 Catalogue automatique du serveur Discord **Les notes d'Elikto**.
 
-**Sans NAS ni PC allume :** le workflow GitHub Actions s'execute toutes les 6 heures (00:23, 06:23, 12:23, 18:23 UTC), avec possibilite de lancement manuel. GitHub peut retarder ou ignorer certaines executions programmees.
+**Sans NAS ni PC allume :** le workflow GitHub Actions s'execute toutes les 6 heures (00:23, 06:23, 12:23, 18:23 UTC), au changement du programme ou manuellement. GitHub peut retarder ou ignorer certaines executions programmees.
 
 ## Fonctions de cette premiere version
 
 - Lit les categories et les salons textuels accessibles publiquement.
 - Indexe les forums et leurs publications actives **et archivees**.
-- Classe par categorie puis par nom de salon et titre de publication.
+- Affiche un accueil soigne : navigation directe vers les messages des categories, compteurs, heure de synchronisation et couleurs/emoji par rubrique.\n- Regroupe les fiches par forum et les trie par ordre alphabetique, avec pagination lorsque le contenu est volumineux.\n- Classe les categories principales dans un ordre naturel : Streaming, IPTV, Anime, Telechargement, Anti-pub, Android, Jeux, Livres, puis les autres rubriques par ordre alphabetique.
 - Cree un catalogue dans un salon textuel `#catalogue` avec des liens vers les fiches d'origine.
 - Actualise ses propres messages sans doublons, et supprime uniquement ses propres anciennes pages de catalogue devenues inutiles.
 - N'efface, ne deplace et ne modifie **aucune publication originale**.
@@ -57,4 +57,4 @@ python -m unittest discover -s tests -v
 
 Les messages d'origine restent dans leurs forums. Le catalogue reference les titres et liens, pas les descriptions completes. Un salon prive ne doit jamais etre mentionne dans un catalogue public. GitHub Actions execute le code programme en tant que bot avec les permissions Discord que tu lui as attribuees ; n'attribue pas de permissions inutiles.
 
-Cette premiere version ne garantit pas l'acces a tous les forums historiques si Discord limite la lecture d'un forum ou si ses permissions empechent l'acces du bot. Le rapport d'execution doit etre verifie apres le premier lancement.
+Le message d'accueil peut etre epingle manuellement dans Discord pour rester visible en haut du salon. Les messages du catalogue sont reutilises et actualises, sans supprimer les publications originales.\n\nCette premiere version ne garantit pas l'acces a tous les forums historiques si Discord limite la lecture d'un forum ou si ses permissions empechent l'acces du bot. Le rapport d'execution doit etre verifie apres le premier lancement.
