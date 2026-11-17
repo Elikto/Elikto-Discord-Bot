@@ -45,6 +45,18 @@ class DashboardTests(unittest.TestCase):
                             and link.get("style") == 5 for link in links))
         self.assertLessEqual(total_components(components), 40)
 
+    def test_numbered_site_shows_up_as_a_link(self):
+        from dashboard_unique import entries_for_forum
+        result = entries_for_forum("films-et-series", [
+            ("Ouvrir le forum", "https://discord.com/channels/1/77"),
+            ("#1 Movix", "https://discord.com/channels/1/1430991985572839547"),
+        ])
+        self.assertIn(
+            "[#1 Movix](https://discord.com/channels/1/1430991985572839547)",
+            result
+        )
+        self.assertIn("1 fiche", result)
+
     def test_all_public_fiches_linked_without_extra_messages(self):
         components = render_dashboard(sample())
         contents = " ".join(x.get("content", "")
@@ -92,7 +104,7 @@ class DashboardTests(unittest.TestCase):
             forums[category[1]].append((record["title"], record["discord_url"]))
         data[("empty_arcade", "Borne d'arcade")] = {}
         data[("empty_salons", "Salons textuels")] = {
-            "discussion": [("#discussion", "https://discord.com/channels/1430984645012357263/1234567890123456789")]
+            "discussion": [("Ouvrir le salon", "https://discord.com/channels/1430984645012357263/1234567890123456789")]
         }
         components = render_dashboard(data)
         content = "\\n".join(
@@ -121,9 +133,9 @@ class DashboardTests(unittest.TestCase):
     def test_discussion_category_and_salon_are_last(self):
         from catalogue_v2 import ordered, salon_sort
         data = {
-            ("2", "Discussion"): {"discussion": [("#discussion", "https://discord.com/channels/1/10")]},
+            ("2", "Discussion"): {"discussion": [("Ouvrir le salon", "https://discord.com/channels/1/10")]},
             ("1", "Streaming"): {
-                "discussion": [("#discussion", "https://discord.com/channels/1/11")],
+                "discussion": [("Ouvrir le salon", "https://discord.com/channels/1/11")],
                 "films": [("Ouvrir le forum", "https://discord.com/channels/1/12")]},
         }
         self.assertEqual(ordered(data)[-1][0][1], "Discussion")
@@ -157,7 +169,7 @@ class DashboardTests(unittest.TestCase):
     def test_distinct_emojis_for_generic_categories(self):
         from catalogue_v2 import category_visuals
         data = {
-            (str(i), name): {"infos": [("#infos", f"https://discord.com/channels/1/{i+40}")]}
+            (str(i), name): {"infos": [("Ouvrir le salon", f"https://discord.com/channels/1/{i+40}")]}
             for i, name in enumerate(
                 ("Archives", "Divers", "Favoris", "Ressources", "Logiciels", "Discussion")
             )
