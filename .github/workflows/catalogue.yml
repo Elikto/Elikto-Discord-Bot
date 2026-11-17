@@ -28,6 +28,5 @@ jobs:
         env:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           DISCORD_GUILD_ID: '1430984645012357263'
-          CATALOG_CHANNEL_ID: ${{ vars.CATALOG_CHANNEL_ID }}
           EXCLUDED_CHANNEL_IDS: ${{ vars.EXCLUDED_CHANNEL_IDS }}
         run: python sync_catalogue.py
