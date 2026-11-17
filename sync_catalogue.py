@@ -364,53 +364,62 @@ def render(grouped):
 
 
 def publish(api: DiscordAPI, grouped):
-    """Synchroniser les cartes V2 avec leurs identifiants persistants Discord."""
-    from catalogue_v2 import (
-        FLAG_V2, render_categories, render_home, marker_id, normalize,
-    )
+    """Un seul message Discord : toutes les rubriques dans des cartes colorees."""
+    from dashboard_unique import render_dashboard
+    from catalogue_v2 import FLAG_V2, marker_id, normalize
 
     me = str(api.call("GET", "/users/@me")["id"])
     existing = api.own_messages(CHANNEL_ID, me)
-    categories = render_categories(grouped)
-    links, wanted = {}, set()
+    marker = f"{MARKER}index"
+    components = render_dashboard(grouped)
+    payload = {
+        "flags": FLAG_V2,
+        "components": components,
+        "allowed_mentions": {"parse": []},
+    }
 
-    def upsert(marker, components):
-        wanted.add(marker)
-        payload = {"flags": FLAG_V2, "components": components,
-                   "allowed_mentions": {"parse": []}}
-        found = existing.get(marker) or existing.get(f"v2id:{marker_id(marker)}")
-        if found:
-            if (not (found.get("flags", 0) & FLAG_V2)
-                    or normalize(found.get("components", [])) != normalize(components)):
-                # Convertir un ancien embed implique d'effacer son contenu/embeds.
-                converted = dict(payload)
-                if not (found.get("flags", 0) & FLAG_V2):
-                    converted.update({"content": None, "embeds": []})
-                api.call("PATCH",
-                         f"/channels/{CHANNEL_ID}/messages/{found['id']}",
-                         json=converted)
-                print("Carte V2 actualisee :", marker)
-            return str(found["id"])
+    found = existing.get(f"v2id:{marker_id(marker)}") or existing.get(marker)
+    if found:
+        old_components = found.get("components", [])
+        if (not (found.get("flags", 0) & FLAG_V2)
+                or normalize(old_components) != normalize(components)):
+            data = dict(payload)
+            if not (found.get("flags", 0) & FLAG_V2):
+                data.update({"content": None, "embeds": []})
+            api.call("PATCH", f"/channels/{CHANNEL_ID}/messages/{found['id']}", json=data)
+            print("Tableau de bord unique actualise")
+        dashboard_id = str(found["id"])
+    else:
         created = api.call("POST", f"/channels/{CHANNEL_ID}/messages", json=payload)
-        print("Carte V2 creee :", marker)
-        return str(created["id"])
+        dashboard_id = str(created["id"])
+        print("Tableau de bord unique cree")
 
-    # Creer ou convertir les cartes de categories avant l'accueil : les boutons
-    # de l'accueil peuvent ensuite pointer vers le bon message Discord.
-    for marker, cat_id, components in categories:
-        message_id = upsert(marker, components)
-        if marker.endswith(":1"):
-            links[cat_id] = f"https://discord.com/channels/{GUILD_ID}/{CHANNEL_ID}/{message_id}"
+    # Nettoyage exclusivement apres creation/actualisation reussie :
+    # les anciennes pages de categories appartiennent au bot, pas aux auteurs.
+    # Les cartes V2 avaient un pied de page caracteristique.
+    stale_ids = set()
+    for key, message in existing.items():
+        message_id = str(message["id"])
+        if message_id == dashboard_id:
+            continue
+        old_embed = key.startswith(f"{MARKER}cat:")
+        old_v2 = any(
+            "Catalogue synchronisé" in child.get("content", "")
+            for parent in message.get("components", [])
+            for child in parent.get("components", [])
+            if isinstance(child, dict)
+        )
+        if old_embed or old_v2:
+            stale_ids.add(message_id)
 
-    upsert(f"{MARKER}index", render_home(grouped, links))
+    for message_id in stale_ids:
+        api.call("DELETE", f"/channels/{CHANNEL_ID}/messages/{message_id}")
+        print("Ancienne carte de rubrique retiree :", message_id)
 
-    # Anciennes pages en embed seulement. Ne jamais effacer les fiches du serveur.
-    for marker, message in existing.items():
-        if marker.startswith(MARKER) and marker not in wanted:
-            api.call("DELETE", f"/channels/{CHANNEL_ID}/messages/{message['id']}")
-            print("Ancienne page du catalogue supprimee :", marker)
-
-    print(f"Termine : {len(categories) + 1} cartes V2, {len(grouped)} categories.")
+    print(
+        f"Termine : un seul message central, {len(grouped)} categories, "
+        f"{len(stale_ids)} anciennes cartes retirees."
+    )
 
 
 
