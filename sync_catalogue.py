@@ -431,6 +431,8 @@ def main():
     api = DiscordAPI(token)
     CHANNEL_ID = ensure_catalog_channel(api)
     grouped = get_items(api)
+    from export_catalogue import write_catalogue
+    write_catalogue(grouped)
     print("Rubriques publiques indexees :",
           [(name, list(forums)) for (_, name), forums in grouped.items()])
     publish(api, grouped)
