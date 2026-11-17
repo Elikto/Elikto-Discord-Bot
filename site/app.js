@@ -182,33 +182,158 @@ function refreshSidebar() {
   ui.categoryItems.replaceChildren(...categoryList().map(categoryButton));
 }
 
+function websiteUrl(value) {
+  try {
+    const result = new URL(value);
+    if (!["http:", "https:"].includes(result.protocol)) return "";
+    if (result.username || result.password) return "";
+    if (/^(localhost|127\.|10\.|192\.168\.|169\.254\.|0\.|172\.(1[6-9]|2\d|3[01])\.)/.test(result.hostname)) return "";
+    return result.href;
+  } catch {
+    return "";
+  }
+}
+
+const healthLabels = {
+  online: ["● Répond", "online"],
+  suspect: ["● À vérifier", "suspect"],
+  offline: ["● Inaccessible", "offline"],
+  restricted: ["● Accès restreint", "restricted"],
+  pending: ["● En attente", "pending"],
+  missing_url: ["● Adresse manquante", "missing"],
+  unknown: ["● Indéterminé", "unknown"]
+};
+
 function resourceCard(item) {
-  const link = element("a", "resource-card");
-  link.href = item.url;
-  link.target = "_blank";
-  link.rel = "noopener noreferrer";
-  link.setAttribute("aria-label", "Ouvrir " + item.title + " sur Discord");
-  link.style.setProperty("--card-accent", colorFor(item.category.color));
+  const card = element("article", "resource-card");
+  const monitor = item.monitor || {};
+  const status = monitor.status || "missing_url";
+  card.dataset.status = status;
+  card.style.setProperty("--card-accent", colorFor(item.category.color));
 
   const top = element("div", "card-top");
-  top.append(
-    element("span", "card-icon", item.channel.icon || item.category.icon || "📁"),
-    element("span", "card-arrow", "↗")
-  );
+  top.append(element("span", "card-icon", item.channel.icon || item.category.icon || "📁"));
+  const badgeData = healthLabels[status] || healthLabels.unknown;
+  top.append(element("span", "health-badge health-" + badgeData[1], badgeData[0]));
 
   const title = element("h3", "card-title", item.title);
   const details = element("div", "card-details");
-  const category = element("span", "card-category", (item.category.icon || "📁") + " " + item.category.name);
   details.append(
-    category,
+    element("span", "card-category", (item.category.icon || "📁") + " " + item.category.name),
     element("span", "card-divider", "·"),
     element("span", "card-forum", item.channel.name.replace(/[-_]/g, " "))
   );
-  const action = element("div", "card-action");
-  action.append(element("span", "", "Voir la fiche Discord"), element("span", "", "↗"));
-  link.append(top, title, details, action);
-  return link;
+
+  const metadata = element("div", "card-monitor-meta");
+  metadata.append(element("span", "",
+    monitor.last_checked ?
+      "Contrôlé le " + formatDate(monitor.last_checked).replace("Mis à jour le ", "") :
+      "Contrôle non encore effectué"
+  ));
+  if (monitor.http_status !== null && monitor.http_status !== undefined) {
+    metadata.append(element("span", "http-code", "HTTP " + monitor.http_status));
+  }
+
+  if (monitor.redirect_url) {
+    const note = element("p", "card-redirect", "↪ Autre domaine détecté — à confirmer");
+    const newTarget = websiteUrl(monitor.redirect_url);
+    if (newTarget) {
+      const link = element("a", "", "Voir la redirection ↗");
+      link.href = newTarget;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      note.append(" · ", link);
+    }
+    metadata.append(note);
+  }
+  if (status === "missing_url") {
+    metadata.append(element("p", "card-no-website",
+      "Aucune adresse exploitable détectée dans cette fiche Discord."));
+  }
+
+  const actions = element("div", "card-actions");
+  const siteHref = websiteUrl(monitor.site_url);
+  if (siteHref) {
+    const website = element("a", "card-website", "🌐 Ouvrir le site ↗");
+    website.href = siteHref;
+    website.target = "_blank";
+    website.rel = "noopener noreferrer nofollow";
+    website.setAttribute("aria-label", "Ouvrir le site référencé pour " + item.title);
+    actions.append(website);
+  }
+  const discord = element("a", "card-discord", "Voir la fiche Discord ↗");
+  discord.href = item.url;
+  discord.target = "_blank";
+  discord.rel = "noopener noreferrer";
+  actions.append(discord);
+  card.append(top, title, details, metadata, actions);
+  return card;
 }
+
+function updateHealthSummary() {
+  const info = state.monitoring || {};
+  const counts = info.status_counts || {};
+  ui.healthyCount.textContent = String(counts.online || 0);
+  ui.incidentCount.textContent = String((counts.offline || 0) + (counts.suspect || 0));
+  ui.restrictedCount.textContent = String(counts.restricted || 0);
+  ui.missingCount.textContent = String(counts.missing_url || 0);
+  ui.lastControl.textContent = info.updated_at ?
+    "Synthèse du " + formatDate(info.updated_at).replace("Mis à jour le ", "") :
+    "Aucun contrôle publié pour le moment";
+  const missing = counts.missing_url || 0;
+  const incident = (counts.offline || 0) + (counts.suspect || 0);
+  let explanation = "";
+  if (!state.monitoring) explanation = "Surveillance non initialisée : aucun état n'est encore disponible.";
+  else if (missing) explanation = missing + " fiche(s) sans adresse de site détectable. Elles ne sont pas testées automatiquement.";
+  else if (incident) explanation = incident + " site(s) nécessitent une vérification. Une erreur temporaire n'est pas une panne confirmée.";
+  ui.monitorBanner.hidden = !explanation;
+  ui.monitorBanner.textContent = explanation;
+}
+
+function renderHistory() {
+  const events = (state.monitoring?.events || []).slice(0, 16);
+  if (!events.length) {
+    ui.historyList.replaceChildren(element("p", "history-empty",
+      "Aucun changement détecté pour le moment. Les événements apparaîtront ici après les vérifications."));
+    return;
+  }
+  const labels = {
+    new_resource: "🆕 Nouvelle fiche",
+    title_changed: "✏️ Nom modifié",
+    address_changed: "🔗 Adresse modifiée",
+    redirect_detected: "🔀 Redirection détectée",
+    site_unreachable: "🔴 Inaccessibilité confirmée",
+    site_recovered: "🟢 Site de nouveau joignable"
+  };
+  const cards = events.map((entry) => {
+    const row = element("article", "history-event");
+    const head = element("div", "history-event-head");
+    head.append(
+      element("strong", "", labels[entry.type] || "🔎 Changement"),
+      element("time", "", formatDate(entry.at).replace("Mis à jour le ", ""))
+    );
+    row.append(
+      head,
+      element("p", "history-event-title", entry.title || "Fiche"),
+      element("p", "history-event-detail", entry.detail || "")
+    );
+    if (entry.previous || entry.current) {
+      row.append(element("div", "history-event-values",
+        [entry.previous, entry.current].filter(Boolean).join("  →  ")));
+    }
+    const linkUrl = discordUrl(entry.discord_url);
+    if (linkUrl) {
+      const link = element("a", "history-event-link", "Ouvrir la fiche ↗");
+      link.href = linkUrl;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      row.append(link);
+    }
+    return row;
+  });
+  ui.historyList.replaceChildren(...cards);
+}
+
 
 function discussionCard(item) {
   const link = element("a", "discussion-card");
