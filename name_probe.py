@@ -80,12 +80,52 @@ def sanitized_name(value):
     return value
 
 
+def announced_rename(raw):
+    """Décoder les titres du type 'momdax devient nandov.com'.
+
+    Ce sont des annonces affichées sur le site, pas une preuve que
+    l'adresse annoncée est contrôlée par le même exploitant.
+    """
+    text = html.unescape(str(raw or "")).strip()
+    match = re.search(
+        r"(?i)(?<![\w-])(?P<old>[a-z][a-z0-9-]{2,35})(?:\.[a-z]{2,10})?"
+        r"\s+(?:devient|est devenu|becomes|is now|renomm[ée] en)"
+        r"\s+(?P<new>[a-z][a-z0-9-]{2,35})(?:\.(?P<tld>[a-z]{2,10}))?(?![\w-])",
+        text,
+    )
+    if not match:
+        return None
+    old = match.group("old").upper()
+    new = match.group("new").upper()
+    if old == new:
+        return None
+    tld = match.group("tld")
+    announced = ("https://" + match.group("new").lower() + "." + tld.lower() + "/") if tld else None
+    return {
+        "name": new,
+        "previous_name": old,
+        "announced_url": announced,
+        "evidence": "title:rename",
+        "confidence": "strong",
+    }
+
+
 def parse_site_name(html_text):
     try:
         parser = BrandHTMLParser()
         parser.feed(html_text[:MAX_HTML])
     except (ValueError, AssertionError):
         return None
+    # Les titres de certains sites annoncent explicitement un nouveau
+    # domaine (ex. MOMDAX devient NANDOV.com) : capturer les DEUX noms.
+    raw_titles = [" ".join(parser.title_parts)]
+    raw_titles.extend(parser.meta.get(key, "") for key in
+                      ("og:title", "twitter:title", "og:site_name"))
+    for raw in raw_titles:
+        announcement = announced_rename(raw)
+        if announcement:
+            return announcement
+
     for key in ("og:site_name", "application-name"):
         value = sanitized_name(parser.meta.get(key))
         if value:
