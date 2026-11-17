@@ -29,7 +29,7 @@ def sample():
 class DashboardTests(unittest.TestCase):
     def test_one_message_with_colored_category_cards(self):
         components = render_dashboard(sample(), now=datetime(2026, 11, 17, tzinfo=timezone.utc))
-        self.assertEqual(len(components), 5)  # accueil + 3 cartes + aide
+        self.assertEqual(len(components), 4)  # accueil + 3 cartes, aucun message supplementaire
         self.assertEqual(components[0]["type"], 17)
         self.assertEqual(components[1]["type"], 17)
         self.assertNotEqual(components[1]["accent_color"], components[3]["accent_color"])
@@ -103,7 +103,7 @@ class DashboardTests(unittest.TestCase):
         for rec in records.values():
             self.assertIn(rec["discord_url"], content, rec["title"])
         self.assertNotIn("fiches accessibles dans le forum", content)
-        self.assertEqual(len(components), len(data))
+        self.assertEqual(len(components), len(data) + 1)  # accueil + 7 catégories
         self.assertLessEqual(total_chars(components), 4000)
         self.assertLessEqual(total_components(components), 40)
 
