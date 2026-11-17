@@ -2,7 +2,7 @@
 
 const DISCORD_HOSTS = new Set(["discord.com", "www.discord.com"]);
 const collator = new Intl.Collator("fr", { numeric: true, sensitivity: "base" });
-const state = { data: null, category: "all", search: "", sort: "az" };
+const state = { data: null, monitoring: null, category: "all", search: "", sort: "az", health: "all" };
 
 const byId = (id) => document.getElementById(id);
 const ui = {
@@ -23,6 +23,15 @@ const ui = {
   empty: byId("emptyState"),
   clear: byId("clearFilters"),
   syncDate: byId("syncDate"),
+  health: byId("healthSelect"),
+  healthButtons: [...document.querySelectorAll("[data-health]")],
+  healthyCount: byId("healthyCount"),
+  incidentCount: byId("incidentCount"),
+  restrictedCount: byId("restrictedCount"),
+  missingCount: byId("missingCount"),
+  lastControl: byId("lastControl"),
+  monitorBanner: byId("monitorBanner"),
+  historyList: byId("historyList"),
 };
 
 function normalize(value) {
@@ -85,16 +94,20 @@ function catalogueEntries() {
         normalize(channel.name).includes(normalize(state.search));
 
       for (const item of channel.items || []) {
+        const status = item.monitor?.status || "missing_url";
+        if (state.health !== "all" &&
+            !(state.health === "incidents" && ["offline", "suspect"].includes(status)) &&
+            state.health !== status) continue;
         const href = discordUrl(item.url);
         if (!href || visited.has(href)) continue;
         if (state.search && !scopeMatch &&
             !normalize(item.title).includes(normalize(state.search))) continue;
         visited.add(href);
-        const record = { title: item.title, url: href, category, channel };
+        const record = { title: item.title, url: href, category, channel, monitor: item.monitor || null };
         (conversational ? discussion : entries).push(record);
       }
 
-      if (conversational) {
+      if (conversational && state.health === "all") {
         const href = discordUrl(channel.url);
         if (href && (!state.search || scopeMatch)) {
           const id = "salon:" + href;
@@ -223,6 +236,7 @@ function render() {
   const { entries, discussion } = catalogueEntries();
   ui.total.textContent = entries.length + " " + (entries.length === 1 ? "fiche" : "fiches");
   ui.grid.replaceChildren(...entries.map(resourceCard));
+  ui.healthButtons.forEach(button => button.classList.toggle("is-selected", state.health === button.dataset.health));
   ui.grid.hidden = entries.length === 0;
 
   ui.discussionGrid.replaceChildren(...discussion.map(discussionCard));
@@ -235,6 +249,8 @@ function resetFilters() {
   state.category = "all";
   state.search = "";
   state.sort = "az";
+  state.health = "all";
+  ui.health.value = "all";
   ui.search.value = "";
   ui.sort.value = "az";
   refreshSidebar();
@@ -260,6 +276,15 @@ function bindEvents() {
     state.sort = event.target.value;
     render();
   });
+  ui.health.addEventListener("change", (event) => {
+    state.health = event.target.value;
+    render();
+  });
+  ui.healthButtons.forEach(button => button.addEventListener("click", () => {
+    state.health = state.health === button.dataset.health ? "all" : button.dataset.health;
+    ui.health.value = state.health;
+    render();
+  }));
   ui.clear.addEventListener("click", resetFilters);
   ui.menuButton.addEventListener("click", () => {
     const open = !ui.sidebar.classList.contains("is-open");
@@ -281,12 +306,18 @@ function bindEvents() {
 async function start() {
   bindEvents();
   try {
-    const response = await fetch("./catalogue.json", { cache: "no-store" });
+    const [response, monitorResponse] = await Promise.all([
+      fetch("./catalogue.json", { cache: "no-store" }),
+      fetch("./monitoring.json", { cache: "no-store" }).catch(() => null),
+    ]);
     if (!response.ok) throw new Error("HTTP " + response.status);
     const data = await response.json();
+    state.monitoring = monitorResponse?.ok ? await monitorResponse.json() : null;
     if (!Array.isArray(data.categories) || !data.stats) throw new Error("JSON invalide");
     state.data = data;
     ui.syncDate.textContent = formatDate(data.updated_at);
+    updateHealthSummary();
+    renderHistory();
     refreshSidebar();
     render();
   } catch (error) {
