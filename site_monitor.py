@@ -222,11 +222,18 @@ def watch_catalogue(api, catalogue: dict, state: dict, now=None) -> tuple[dict, 
                 record["forum"] = channel["name"]
                 # Reessayer au prochain lancement si aucun site n'a ete extrait :
                 # utile lorsque MESSAGE_CONTENT vient d'etre autorise.
+                tracked_url = None
+                if thread_id == "1430988094374547559":
+                    tracked_url = state.get("tracked_threads", {}).get(thread_id, {}).get("address")
                 needs_discovery = (
-                    not record.get("site_url") or due(record.get("last_discovery"), now)
+                    tracked_url != record.get("site_url") if tracked_url else (
+                        not record.get("site_url") or due(record.get("last_discovery"), now)
+                    )
                 )
                 if needs_discovery:
-                    candidate = pick_site_url(api, thread_id, item["title"])
+                    # Pour le fil suivi, le lien validé par l'auteur du fil
+                    # prévaut sur l'ancien lien du message initial.
+                    candidate = tracked_url or pick_site_url(api, thread_id, item["title"])
                     record["last_discovery"] = stamp(now)
                     if candidate and candidate != record.get("site_url"):
                         previous = record.get("site_url")
@@ -235,12 +242,21 @@ def watch_catalogue(api, catalogue: dict, state: dict, now=None) -> tuple[dict, 
                         record["consecutive_failures"] = 0
                         record["status"] = "pending"
                         if previous:
-                            alerts.append(event(
-                                state, "address_changed", record, now,
-                                previous=previous, current=candidate,
-                                note="Adresse modifiée dans la fiche Discord.",
-                                alert=True,
-                            ))
+                            # Le suiveur peut déjà avoir enregistré le même
+                            # changement dans l'historique de ce passage.
+                            already_recorded = any(
+                                ev.get("type") == "address_changed"
+                                and ev.get("thread_id") == thread_id
+                                and ev.get("current") == candidate
+                                for ev in state.get("events", [])[-30:]
+                            )
+                            if not already_recorded:
+                                alerts.append(event(
+                                    state, "address_changed", record, now,
+                                    previous=previous, current=candidate,
+                                    note="Adresse modifiée dans la fiche Discord.",
+                                    alert=True,
+                                ))
 
                 if record.get("site_url") and due(record.get("last_checked"), now):
                     observation = check_site(record["site_url"])
