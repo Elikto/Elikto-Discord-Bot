@@ -14,6 +14,8 @@ on:
       - 'site_monitor.py'
       - 'thread_watch.py'
       - 'mirror_watch.py'
+      - 'site_discovery.py'
+      - 'tests/test_site_discovery.py'
       - 'name_probe.py'
       - 'tests/test_name_probe.py'
       - 'tests/test_mirror_watch.py'
