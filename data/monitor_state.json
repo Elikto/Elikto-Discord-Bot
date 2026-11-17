@@ -710,7 +710,123 @@
         "https://zinzov.com/",
         "https://didvip.com/"
       ],
-      "last_synced": "2026-11-17T22:22:58+00:00"
+      "last_synced": "2026-11-17T22:37:26+00:00",
+      "target_states": {
+        "https://nandov.com/": {
+          "url": "https://nandov.com/",
+          "label": "NANDOV",
+          "status": "online",
+          "last_checked": "2026-11-17T22:37:26+00:00",
+          "http_status": 200,
+          "failures": 0,
+          "reason": null,
+          "redirect_url": null,
+          "final_url": "https://nandov.com/"
+        },
+        "https://dotivoz.com/": {
+          "url": "https://dotivoz.com/",
+          "label": "DOTIVOZ",
+          "status": "online",
+          "last_checked": "2026-11-17T22:37:26+00:00",
+          "http_status": 200,
+          "failures": 0,
+          "reason": null,
+          "redirect_url": null,
+          "final_url": "https://dotivoz.com/"
+        },
+        "https://farsov.com/": {
+          "url": "https://farsov.com/",
+          "label": "FARSOV",
+          "status": "online",
+          "last_checked": "2026-11-17T22:37:26+00:00",
+          "http_status": 200,
+          "failures": 0,
+          "reason": null,
+          "redirect_url": null,
+          "final_url": "https://farsov.com/"
+        },
+        "https://timbov.com/": {
+          "url": "https://timbov.com/",
+          "label": "TIMBOV",
+          "status": "online",
+          "last_checked": "2026-11-17T22:37:26+00:00",
+          "http_status": 200,
+          "failures": 0,
+          "reason": null,
+          "redirect_url": null,
+          "final_url": "https://timbov.com/"
+        }
+      },
+      "display_sites": [
+        {
+          "url": "https://nandov.com/",
+          "name": "NANDOV",
+          "previous_names": [
+            "MOMDAX"
+          ],
+          "source_urls": [
+            "https://momdax.com/"
+          ],
+          "announced": true,
+          "pending": true,
+          "status": "online",
+          "last_checked": "2026-11-17T22:37:26+00:00",
+          "http_status": 200,
+          "redirect_url": null
+        },
+        {
+          "url": "https://dotivoz.com/",
+          "name": "DOTIVOZ",
+          "previous_names": [
+            "ZAKMAV",
+            "FOPOV"
+          ],
+          "source_urls": [
+            "https://zakmav.com/",
+            "https://fopov.com/"
+          ],
+          "announced": true,
+          "pending": true,
+          "status": "online",
+          "last_checked": "2026-11-17T22:37:26+00:00",
+          "http_status": 200,
+          "redirect_url": null
+        },
+        {
+          "url": "https://farsov.com/",
+          "name": "FARSOV",
+          "previous_names": [
+            "DOVLIP",
+            "DIDVIP"
+          ],
+          "source_urls": [
+            "https://dovlip.com/",
+            "https://didvip.com/"
+          ],
+          "announced": true,
+          "pending": true,
+          "status": "online",
+          "last_checked": "2026-11-17T22:37:26+00:00",
+          "http_status": 200,
+          "redirect_url": null
+        },
+        {
+          "url": "https://timbov.com/",
+          "name": "TIMBOV",
+          "previous_names": [
+            "ZINZOV"
+          ],
+          "source_urls": [
+            "https://zinzov.com/"
+          ],
+          "announced": true,
+          "pending": true,
+          "status": "online",
+          "last_checked": "2026-11-17T22:37:26+00:00",
+          "http_status": 200,
+          "redirect_url": null
+        }
+      ]
     }
   }
 }
