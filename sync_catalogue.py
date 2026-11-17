@@ -19,6 +19,7 @@ CHANNEL_TEXT = 0
 CHANNEL_CATEGORY = 4
 CHANNEL_FORUM = 15
 MARKER = "elikto:catalog:"
+CATALOG_TOPIC_MARKER = "[elikto-catalogue:v1]"
 GUILD_ID = os.getenv("DISCORD_GUILD_ID", "1430984645012357263")
 CHANNEL_ID = os.getenv("CATALOG_CHANNEL_ID", "")
 EXCLUDE = {x.strip() for x in os.getenv("EXCLUDED_CHANNEL_IDS", "").split(",") if x.strip()}
@@ -133,6 +134,48 @@ class DiscordAPI:
         return found
 
 
+
+def ensure_catalog_channel(api: DiscordAPI) -> str:
+    """Reutilise ou cree #catalogue. Jamais de doublon ni modification de salon existant."""
+    channels = api.call("GET", f"/guilds/{GUILD_ID}/channels")
+    if CHANNEL_ID:
+        matches = [c for c in channels if str(c["id"]) == CHANNEL_ID]
+        if len(matches) != 1 or matches[0]["type"] != CHANNEL_TEXT:
+            raise RuntimeError("CATALOG_CHANNEL_ID ne correspond pas a un salon textuel accessible")
+        return CHANNEL_ID
+
+    # L'identification par marqueur garantit la reutilisation du salon entre
+    # les executions ephemeres de GitHub Actions.
+    existing = [c for c in channels
+                if c.get("type") == CHANNEL_TEXT
+                and CATALOG_TOPIC_MARKER in (c.get("topic") or "")]
+    if len(existing) == 1:
+        print("Salon catalogue existant :", existing[0]["id"])
+        return str(existing[0]["id"])
+    if len(existing) > 1:
+        raise RuntimeError("Plusieurs salons de catalogue identifies : correction manuelle necessaire")
+
+    if any(c.get("name") == "catalogue" for c in channels):
+        raise RuntimeError(
+            "Un salon #catalogue existe deja sans marqueur du bot. "
+            "Indiquer son ID dans la variable CATALOG_CHANNEL_ID pour le reutiliser."
+        )
+    payload = {
+        "name": "catalogue",
+        "type": CHANNEL_TEXT,
+        "topic": "Catalogue general automatique des forums publics — " + CATALOG_TOPIC_MARKER,
+    }
+    try:
+        created = api.call("POST", f"/guilds/{GUILD_ID}/channels", json=payload)
+    except RuntimeError as exc:
+        raise RuntimeError(
+            "Creation de #catalogue impossible. Verifier que le bot possede "
+            "la permission Discord 'Gerer les salons' et son jeton est valide."
+        ) from exc
+    print("Salon #catalogue cree :", created["id"])
+    return str(created["id"])
+
+
 def get_items(api: DiscordAPI):
     guild = api.call("GET", f"/guilds/{GUILD_ID}")
     everyone = next((r for r in guild["roles"] if str(r["id"]) == GUILD_ID), None)
@@ -237,10 +280,12 @@ def publish(api: DiscordAPI, grouped):
 
 
 def main():
+    global CHANNEL_ID
     token = os.getenv("DISCORD_BOT_TOKEN", "")
-    if not token or not GUILD_ID.isdigit() or not CHANNEL_ID.isdigit():
-        raise SystemExit("Configurer DISCORD_BOT_TOKEN et CATALOG_CHANNEL_ID dans GitHub Actions")
+    if not token or not GUILD_ID.isdigit():
+        raise SystemExit("Configurer DISCORD_BOT_TOKEN dans les secrets GitHub Actions")
     api = DiscordAPI(token)
+    CHANNEL_ID = ensure_catalog_channel(api)
     grouped = get_items(api)
     publish(api, grouped)
 
