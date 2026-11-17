@@ -57,6 +57,21 @@ class WebsiteTests(unittest.TestCase):
         self.assertLess(self.html.index('id="resourceGrid"'),
                         self.html.index('id="discussionSection"'))
 
+    def test_monitoring_controls_and_history(self):
+        for key in ("healthSelect", "healthyCount", "incidentCount",
+                    "restrictedCount", "missingCount", "monitorBanner",
+                    "historyList", "lastControl"):
+            self.assertIn(key, self.parser.ids)
+        self.assertIn("monitoring.json", self.js)
+        self.assertIn("updateHealthSummary", self.js)
+        self.assertIn("renderHistory", self.js)
+        self.assertIn("offline", self.js)
+        self.assertIn("missing_url", self.js)
+        self.assertIn("redirect_url", self.js)
+        self.assertIn("site_url", self.js)
+        self.assertIn("noopener noreferrer", self.js)
+        self.assertNotIn("categoryTabs", self.html)
+
     def test_mobile_reuses_the_same_menu(self):
         self.assertIn('id="menuButton"', self.html)
         self.assertIn('id="backdrop"', self.html)
