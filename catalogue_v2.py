@@ -23,6 +23,8 @@ def marker_id(marker):
 def style(name):
     n = fold(name)
     # Les espaces de discussion sont toujours apres les ressources.
+    if "salons textuels" in n or "salons-textuels" in n:
+        return (998, "🗨️", 0x7493C8, "Salons généraux du serveur")
     if any(token in n for token in ("discussion", "blabla", "bavardage", "general-chat")):
         return (999, "💬", 0x64748B, "Échanges et discussions")
     if "stream" in n or "film" in n or "serie" in n:
@@ -37,6 +39,12 @@ def style(name):
         return (4, "🛡️", 0x52CDAA, "Bloqueurs de publicité")
     if any(x in n for x in ("android", "application", "mobile", "smartphone")):
         return (5, "📱", 0x8ACB73, "Applications et outils")
+    if "arcade" in n or "borne" in n:
+        return (6, "🕹️", 0xF3A75A, "Jeux rétro et bornes d'arcade")
+    if "shopping" in n or "achat" in n or "bon-plan" in n:
+        return (8, "🛍️", 0xEB9FC0, "Achats, cashback et comparateurs")
+    if "ressource" in n or "reference" in n:
+        return (9, "📚", 0xA38DE8, "Ressources et outils pratiques")
     if any(x in n for x in ("jeu", "game", "gaming", "console")):
         return (6, "🎮", 0xF0B96A, "Jeux et ressources")
     if "livre" in n or "comic" in n or "lecture" in n:
@@ -104,6 +112,14 @@ def category_visuals(grouped):
 
 def icon(name):
     n = fold(name)
+    if is_discussion(name): return "💬"
+    if "transfert" in n or "partage" in n: return "📤"
+    if "comparateur" in n or "prix" in n: return "🏷️"
+    if "cashback" in n or "reduction" in n: return "💰"
+    if "extension" in n or "navigateur" in n: return "🧩"
+    if "torrent" in n: return "🧲"
+    if "task" in n or "tache" in n: return "✅"
+    if "arcade" in n or "borne" in n: return "🕹️"
     if "film" in n and "serie" in n: return "📺"
     if "film" in n: return "🎞️"
     if "serie" in n: return "📺"
