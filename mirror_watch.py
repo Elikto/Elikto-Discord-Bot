@@ -358,6 +358,9 @@ def summary_message(items, thread_name):
     monitoring et l'historique, mais ne polluent plus le message public.
     """
     lines = [
+        "🎬 Dernière sortie cinéma en HD **sans pub**, mais petit catalogue.",
+        "✨ **Gratuit - Illimité - Ajouts quotidiens - Zéro pub**",
+        "",
         "## ✦ SITES ACTUELS",
         "",
     ]
