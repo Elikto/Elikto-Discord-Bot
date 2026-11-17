@@ -364,7 +364,7 @@ def render(grouped):
 
 
 def publish(api: DiscordAPI, grouped):
-    """Migrer les embeds existants vers les cartes natives Components V2."""
+    """Synchroniser les cartes V2 avec leurs identifiants persistants Discord."""
     from catalogue_v2 import (
         FLAG_V2, render_categories, render_home, marker_id, normalize,
     )
