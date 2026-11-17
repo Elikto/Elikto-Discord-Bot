@@ -1,0 +1,190 @@
+import unittest
+from datetime import datetime, timedelta, timezone
+from unittest.mock import patch
+
+import mirror_watch
+
+
+URLS = [
+    "https://alpha.example.org/",
+    "https://bravo.example.org/",
+    "https://charlie.example.org/",
+    "https://delta.example.org/",
+    "https://echo.example.org/",
+]
+
+
+def human_message(urls=None, mid="100", name=None):
+    body = "\n".join(urls if urls is not None else URLS)
+    if name:
+        body += "\n" + name
+    return {"id": mid, "content": body, "author": {"id": "999", "bot": False},
+            "embeds": []}
+
+
+def state():
+    return {"version": 1, "records": {}, "events": [], "event_sequence": 0}
+
+
+def response(value="online", http=200, url=URLS[0]):
+    return {"result": value, "http_status": http, "final_url": url, "reason": None}
+
+
+class FakeAPI:
+    def __init__(self, messages):
+        self.messages = messages
+        self.bot_messages = []
+        self.name = "Streaming HD miroir"
+        self.calls = []
+
+    def call(self, method, path, **kwargs):
+        self.calls.append((method, path, kwargs))
+        if method == "GET" and path == f"/channels/{mirror_watch.THREAD_ID}":
+            return {"id": mirror_watch.THREAD_ID, "guild_id": mirror_watch.GUILD_ID,
+                    "type": 11, "name": self.name, "owner_id": "999"}
+        if method == "GET" and path == "/users/@me":
+            return {"id": "333"}
+        if method == "GET" and path == f"/channels/{mirror_watch.THREAD_ID}/messages":
+            return self.messages + self.bot_messages
+        if method == "GET" and path.endswith("/messages/500"):
+            return self.bot_messages[0]
+        if method == "PATCH" and path == f"/channels/{mirror_watch.THREAD_ID}":
+            self.name = kwargs["json"]["name"]
+            return {"name": self.name}
+        if method == "PATCH" and path.endswith("/messages/500"):
+            self.bot_messages[0]["content"] = kwargs["json"]["content"]
+            return self.bot_messages[0]
+        if method == "POST" and path.endswith("/messages"):
+            message = {"id": "500", "author": {"id": "333", "bot": True},
+                       "content": kwargs["json"]["content"]}
+            self.bot_messages.append(message)
+            return message
+        raise AssertionError((method, path))
+
+
+class MirrorWatchTests(unittest.TestCase):
+    def setUp(self):
+        self.now = datetime(2026, 11, 17, 13, tzinfo=timezone.utc)
+
+    def test_initial_five_urls_are_all_checked_and_shown_in_one_message(self):
+        api = FakeAPI([human_message()])
+        s = state()
+        with patch("mirror_watch.check_site", side_effect=lambda u: response(url=u)) as probe:
+            self.assertEqual(mirror_watch.sync_thread(api, s, self.now), "updated")
+            self.assertEqual(probe.call_count, 5)
+        self.assertEqual(len(s["tracked_threads"][mirror_watch.THREAD_ID]["url_states"]), 5)
+        self.assertEqual(len(api.bot_messages), 1)
+        rendered = api.bot_messages[0]["content"]
+        for url in URLS:
+            self.assertIn(url, rendered)
+        self.assertIn("quotidienne", rendered)
+        self.assertEqual(s["events"], [])
+
+    def test_no_double_check_on_same_paris_calendar_day(self):
+        api = FakeAPI([human_message()])
+        s = state()
+        with patch("mirror_watch.check_site", side_effect=lambda u: response(url=u)) as probe:
+            mirror_watch.sync_thread(api, s, self.now)
+            probe.reset_mock()
+            api.calls.clear()
+            mirror_watch.sync_thread(api, s, self.now + timedelta(hours=5))
+            probe.assert_not_called()
+        self.assertEqual(len(api.bot_messages), 1)
+        self.assertFalse(any(method in ("PATCH", "POST") for method, _, _ in api.calls))
+
+    def test_next_local_day_checks_all_five_again(self):
+        api = FakeAPI([human_message()])
+        s = state()
+        with patch("mirror_watch.check_site", side_effect=lambda u: response(url=u)) as probe:
+            mirror_watch.sync_thread(api, s, self.now)
+            probe.reset_mock()
+            mirror_watch.sync_thread(api, s, self.now + timedelta(days=1))
+        self.assertEqual(probe.call_count, 5)
+        self.assertIn("Dernier contrôle", api.bot_messages[0]["content"])
+
+    def test_two_distinct_daily_failures_confirm_offline(self):
+        api = FakeAPI([human_message()])
+        s = state()
+        with patch("mirror_watch.check_site", side_effect=lambda u: response("failed", 503, u)):
+            mirror_watch.sync_thread(api, s, self.now)
+            self.assertEqual(s["tracked_threads"][mirror_watch.THREAD_ID]["url_states"][URLS[0]]["status"], "suspect")
+            mirror_watch.sync_thread(api, s, self.now + timedelta(days=1))
+        states = s["tracked_threads"][mirror_watch.THREAD_ID]["url_states"]
+        self.assertEqual(states[URLS[0]]["status"], "offline")
+        self.assertEqual(len([e for e in s["events"] if e["type"] == "mirror_offline"]), 5)
+
+    def test_recovery_is_recorded(self):
+        api = FakeAPI([human_message()])
+        s = state()
+        with patch("mirror_watch.check_site", side_effect=lambda u: response("failed", 404, u)):
+            mirror_watch.sync_thread(api, s, self.now)
+            mirror_watch.sync_thread(api, s, self.now + timedelta(days=1))
+        with patch("mirror_watch.check_site", side_effect=lambda u: response(url=u)):
+            mirror_watch.sync_thread(api, s, self.now + timedelta(days=2))
+        self.assertEqual(s["tracked_threads"][mirror_watch.THREAD_ID]["url_states"][URLS[0]]["status"], "online")
+        self.assertEqual(len([e for e in s["events"] if e["type"] == "mirror_recovered"]), 5)
+
+    def test_added_and_removed_link_updates_only_bot_message(self):
+        api = FakeAPI([human_message()])
+        s = state()
+        with patch("mirror_watch.check_site", side_effect=lambda u: response(url=u)):
+            mirror_watch.sync_thread(api, s, self.now)
+            api.calls.clear()
+            replacement = "https://foxtrot.example.org/"
+            api.messages = [human_message(URLS[1:] + [replacement])]
+            mirror_watch.sync_thread(api, s, self.now + timedelta(days=1))
+        text = api.bot_messages[0]["content"]
+        self.assertNotIn(URLS[0], text)
+        self.assertIn(replacement, text)
+        self.assertEqual(len(api.bot_messages), 1)
+        self.assertEqual({e["type"] for e in s["events"]},
+                         {"mirror_added", "mirror_removed"})
+        self.assertFalse(any("/messages/100" in path and method == "PATCH"
+                             for method, path, _ in api.calls))
+
+    def test_author_can_explicitly_rename_thread_but_site_label_cannot(self):
+        api = FakeAPI([human_message(name="Nouveau nom : NANDOV")])
+        s = state()
+        with patch("mirror_watch.check_site", side_effect=lambda u: response(url=u)):
+            mirror_watch.sync_thread(api, s, self.now)
+            self.assertEqual(api.name, "Streaming HD miroir")
+            api.messages = [human_message(name="Nouveau nom du fil : Streaming HD miroir 2")]
+            mirror_watch.sync_thread(api, s, self.now + timedelta(hours=6))
+        self.assertEqual(api.name, "Streaming HD miroir 2")
+
+    def test_other_users_urls_included_but_bot_links_excluded(self):
+        user = {"id": "101", "content": "https://visitor.example.org",
+                "author": {"id": "666", "bot": False}}
+        bot = {"id": "102", "content": "https://ignore.example.org",
+               "author": {"id": "333", "bot": True}}
+        result = mirror_watch.find_urls([human_message(), user, bot], "333")
+        self.assertEqual(len(result), 6)
+        self.assertNotIn("https://ignore.example.org/", [x["url"] for x in result])
+
+    def test_invalid_or_unreadable_source_creates_no_message(self):
+        api = FakeAPI([human_message([])])
+        self.assertEqual(mirror_watch.sync_thread(api, state(), self.now), "blocked")
+        self.assertEqual(len(api.bot_messages), 0)
+
+    def test_redirect_keeps_original_url(self):
+        api = FakeAPI([human_message()])
+        s = state()
+        with patch("mirror_watch.check_site", side_effect=lambda u: response(url="https://other.example.org/")):
+            mirror_watch.sync_thread(api, s, self.now)
+        entry = s["tracked_threads"][mirror_watch.THREAD_ID]["url_states"][URLS[0]]
+        self.assertEqual(entry["url"], URLS[0])
+        self.assertEqual(entry["redirect_url"], "https://other.example.org/")
+        self.assertIn("à confirmer", api.bot_messages[0]["content"])
+
+    def test_restricted_does_not_count_as_failure(self):
+        api = FakeAPI([human_message()])
+        s = state()
+        with patch("mirror_watch.check_site", side_effect=lambda u: response("restricted", 403, u)):
+            mirror_watch.sync_thread(api, s, self.now)
+        entry = s["tracked_threads"][mirror_watch.THREAD_ID]["url_states"][URLS[0]]
+        self.assertEqual(entry["status"], "restricted")
+        self.assertEqual(entry["failures"], 0)
+
+
+if __name__ == "__main__":
+    unittest.main()
