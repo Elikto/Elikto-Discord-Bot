@@ -104,7 +104,7 @@ class MirrorWatchTests(unittest.TestCase):
         tracked = s["tracked_threads"][mirror_watch.THREAD_ID]["url_states"][URLS[0]]
         self.assertEqual(tracked["site_name"], "MOMDAX")
         self.assertEqual(tracked["pending_name"], "NANDOV")
-        self.assertIn("Changement de nom suspecté", api.bot_messages[0]["content"])
+        self.assertIn("Nouveau nom annoncé", api.bot_messages[0]["content"])
         self.assertEqual(len([e for e in s["events"] if e["type"] == "mirror_name_suspected"]), 5)
         with patch("mirror_watch.check_site", side_effect=lambda u: response(url=u)), patch(
             "mirror_watch.probe_site_name", return_value={
@@ -150,7 +150,7 @@ class MirrorWatchTests(unittest.TestCase):
                 "confidence": "strong", "evidence": "title:rename"
             }
         ):
-            mirror_watch.sync_thread(api, s, self.now + timedelta(days=1))
+            mirror_watch.sync_thread(api, s, self.now + timedelta(days=1, hours=6))
         self.assertEqual(entry["site_name"], "NANDOV")
         self.assertIsNone(entry["pending_name"])
         self.assertEqual(
