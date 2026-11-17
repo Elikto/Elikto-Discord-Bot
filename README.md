@@ -4,6 +4,12 @@ Catalogue automatique du serveur Discord **Les notes d'Elikto**.
 
 **Sans NAS ni PC allume :** le workflow GitHub Actions s'execute toutes les 6 heures (00:23, 06:23, 12:23, 18:23 UTC), au changement du programme ou manuellement. GitHub peut retarder ou ignorer certaines executions programmees.
 
+## Présentation native Discord Components V2
+
+Le catalogue utilise désormais les **Components V2** de Discord : cartes avec bordure colorée, blocs visuels, véritables séparateurs, titres plus lisibles, compteurs et **boutons-lien** pour ouvrir directement les catégories et forums. Le bot convertit les anciens embeds en cartes natives sans recréer les publications d'origine.
+
+Les boutons de liens fonctionnent sans serveur permanent. Les onglets interactifs et menus de sélection avec réponse immédiate nécessiteraient en revanche un gestionnaire d'interactions actif et ne sont pas disponibles avec GitHub Actions seul.
+
 ## Fonctions de cette premiere version
 
 - Lit les categories et les salons textuels accessibles publiquement.
