@@ -393,6 +393,30 @@ class MirrorWatchTests(unittest.TestCase):
         self.assertFalse(tracked["pending_name"])
         self.assertFalse(any(e["type"] == "mirror_name_changed" for e in s["events"]))
 
+    def test_reuses_historical_urls_when_source_messages_have_no_links(self):
+        api = FakeAPI([human_message()])
+        s = state()
+        with patch("mirror_watch.check_site",
+                   side_effect=lambda u: response(url=u)):
+            self.assertEqual(mirror_watch.sync_thread(api, s, self.now), "updated")
+        self.assertEqual(len(api.bot_messages), 1)
+        api.messages = [human_message([], name="Description sans lien URL")]
+        # Le fil ne contient plus d'URL humaine : conserver les sources
+        # validées, et éditer le même message de suivi.
+        with patch("mirror_watch.check_site") as check:
+            self.assertEqual(
+                mirror_watch.sync_thread(api, s, self.now + timedelta(hours=2)),
+                "updated"
+            )
+        check.assert_not_called()
+        self.assertEqual(len(api.bot_messages), 1)
+        self.assertEqual(len(s["tracked_threads"][mirror_watch.THREAD_ID]["urls"]), 5)
+        content = api.bot_messages[0]["content"]
+        self.assertIn("🎬 Dernière sortie cinéma en HD **sans pub**", content)
+        self.assertIn("✨ **Gratuit - Illimité - Ajouts quotidiens - Zéro pub**", content)
+        for url in URLS:
+            self.assertIn(url, content)
+
     def test_initial_five_urls_are_all_checked_and_shown_in_one_message(self):
         api = FakeAPI([human_message()])
         s = state()
