@@ -12,6 +12,8 @@ on:
       - 'dashboard_unique.py'
       - 'export_catalogue.py'
       - 'site_monitor.py'
+      - 'server_link_watch.py'
+      - 'tests/test_server_link_watch.py'
       - 'thread_watch.py'
       - 'mirror_watch.py'
       - 'site_discovery.py'
@@ -77,6 +79,12 @@ jobs:
         env:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
         run: python mirror_watch.py
+      - name: Recenser et vérifier quotidiennement tous les liens des salons et forums publics
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_GUILD_ID: '1430984645012357263'
+          EXCLUDED_CHANNEL_IDS: ${{ vars.EXCLUDED_CHANNEL_IDS }}
+        run: python server_link_watch.py
       - name: Surveiller les sites publics et alimenter l'historique
         env:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
