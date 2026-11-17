@@ -120,7 +120,7 @@ class MonitorTests(unittest.TestCase):
             p.assert_not_called()
             watch_catalogue(FakeAPI(), catalogue(), current_state,
                             self.now + timedelta(hours=48))
-            self.assertEqual(p.call_count, 1)
+            self.assertEqual(p.call_count, 2)  # Deux fiches, un contrôle chacune à 48 h
 
     def test_title_change_creates_history_event(self):
         class FakeAPI: pass
