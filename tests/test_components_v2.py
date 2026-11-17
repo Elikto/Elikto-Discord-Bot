@@ -18,7 +18,7 @@ def fixture():
             ],
         },
         ("20", "Anti-pub"): {
-            "android": [("#android", "https://discord.com/channels/1/30")]
+            "android": [("Ouvrir le salon", "https://discord.com/channels/1/30")]
         }
     }
 
