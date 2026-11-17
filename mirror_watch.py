@@ -351,38 +351,33 @@ def decorate_destinations(groups, source_items, target_states, now, state):
 
 
 def summary_message(items, thread_name):
-    """Afficher les N sites actuels, jamais N fois un même nom cible."""
+    """Liste Discord épurée : un nouveau nom cliquable, puis ses anciens noms.
+
+    Les informations techniques (HTTP, dates, confirmations) restent dans le
+    monitoring et l'historique, mais ne polluent plus le message public.
+    """
     lines = [
-        f"🔎 **SITES ACTUELS — {thread_name[:60].upper()}**",
-        MARKER,
-        f"**{len(items)} sites distincts** · vérification quotidienne",
+        "## ✦ SITES ACTUELS",
+        "-# Les noms et adresses sont suivis automatiquement",
         "",
     ]
-    last = []
-    for index, item in enumerate(items, 1):
-        name = str(item.get("name") or urlsplit(item["url"]).hostname).replace("@", "@\u200b")
-        status = STATUS.get(item.get("status"), STATUS["unknown"])
-        lines.append(f"**{index}. {name[:48]}** — {status}")
-        code = f" · HTTP {item['http_status']}" if item.get("http_status") else ""
-        checked = item.get("last_checked")
-        moment = (f" · <t:{int(datetime.fromisoformat(checked).timestamp())}:R>"
-                  if checked else " · non contrôlé")
-        lines.append(f"   {item['url']}{code}{moment}")
-        if checked:
-            last.append(datetime.fromisoformat(checked).timestamp())
+    for item in items:
+        name = str(item.get("name") or urlsplit(item["url"]).hostname)
+        name = name.replace("@", "@\\u200b").replace("]", "")
+        # Les URL sont déjà nettoyées et contrôlées via clean_url.
+        url = clean_url(item.get("url"))
+        if not url:
+            continue
+        lines.append(f"### ✦ [{name[:48]}]({url})")
         old_names = item.get("previous_names") or []
         if old_names:
-            lines.append("   ↳ Anciennement : " + ", ".join(old_names))
-        if item.get("pending"):
-            lines.append("   🟡 Nouveau nom annoncé, confirmation en cours")
-        if item.get("redirect_url"):
-            lines.append(f"   ↪ Redirection : {item['redirect_url']} (à confirmer)")
-    if last:
-        lines.extend(["", f"🕒 Dernier contrôle : <t:{int(max(last))}:f>"])
-    lines.append("ℹ️ Les anciennes adresses restent suivies sans être affichées en double.")
-    content = "\n".join(lines)
+            former = ", ".join(str(old) for old in old_names).replace("@", "@\\u200b")
+            lines.append(f"-# ↳ Ancien : {former}")
+        lines.append("")
+
+    content = "\\n".join(lines).rstrip()
     if len(content) > 1950:
-        raise ValueError("Le catalogue des sites actuels dépasse Discord : pas de liens masqués.")
+        raise ValueError("La liste des noms actuels dépasse Discord : aucun site masqué.")
     return content
 
 
@@ -403,7 +398,8 @@ def upsert_bot_message(api, tracked, bot_id, content):
         if str(msg.get("author", {}).get("id")) != bot_id:
             continue
         if (MARKER in (msg.get("content") or "") or
-                "[elikto-suivi-fil:v1]" in (msg.get("content") or "")):
+                "[elikto-suivi-fil:v1]" in (msg.get("content") or "") or
+                (msg.get("content") or "").startswith("## ✦ SITES ACTUELS")):
             if msg.get("content") != content:
                 api.call("PATCH", f"/channels/{THREAD_ID}/messages/{msg['id']}",
                          json={"content": content, "allowed_mentions": {"parse": []}})
