@@ -16,11 +16,53 @@ class SiteDiscoveryTests(unittest.TestCase):
     def test_seeded_sites_are_twelve_unique_candidates(self):
         tracked = {}
         candidates = site_discovery.update_candidates(tracked, NOW, fetcher=lambda _: None)
-        self.assertEqual(len(candidates), 12)
+        self.assertEqual(len(candidates), 16)
         self.assertEqual(candidates["https://tiprov.com/"]["previous_names"],
-                         ["DOMGRAV", "IKROMI", "APLOUF"])
+                         ["DOMGRAV", "IKROMI", "APLOUF", "FARLIZ", "GOZMAP", "WADROX"])
         self.assertEqual(candidates["https://bintov.com/"]["name"], "BINTOV")
         self.assertIn("https://watof.com/", candidates)
+
+    def test_natchecker_annonce_par_complete_history(self):
+        sample = (
+            "<article><h2>Domgrav nouveau nom</h2>"
+            "<p>tiprov.com</p>"
+            "<p>Annoncé par domgrav.com, ikromi.com, aplouf.com, "
+            "farliz.com, gozmap.com et wadrox.com</p>"
+            "<p>varloz.com</p>"
+            "<p>Annoncé par palkad.com, vredap.com, soponov.com, "
+            "xamoz.com et vadbak.com</p>"
+            "<p>bimdav.com</p>"
+            "<p>Annoncé par ilmiv.com, kobiom.com, gadrov.com, "
+            "avobiv.com et imbrav.com</p></article>"
+        )
+        result = {
+            item["url"]: item["previous_names"]
+            for item in site_discovery.extract_migrations(sample)
+        }
+        self.assertEqual(result["https://tiprov.com/"], [
+            "DOMGRAV", "IKROMI", "APLOUF", "FARLIZ", "GOZMAP", "WADROX"
+        ])
+        self.assertEqual(result["https://varloz.com/"], [
+            "PALKAD", "VREDAP", "SOPONOV", "XAMOZ", "VADBAK"
+        ])
+        self.assertEqual(result["https://bimdav.com/"], [
+            "ILMIV", "KOBIOM", "GADROV", "AVOBIV", "IMBRAV"
+        ])
+
+    def test_existing_candidate_accumulates_all_historical_names(self):
+        tracked = {}
+        old = site_discovery.update_candidates(tracked, NOW, lambda _: None)
+        old["https://bimdav.com/"]["previous_names"] = ["ILMIV"]
+        new = site_discovery.update_candidates(
+            tracked, NOW + timedelta(days=1),
+            lambda _: page(
+                "bimdav.com Annoncé par ilmiv.com, kobiom.com, gadrov.com, "
+                "avobiv.com et imbrav.com"
+            )
+        )
+        self.assertEqual(new["https://bimdav.com/"]["previous_names"], [
+            "ILMIV", "KOBIOM", "GADROV", "AVOBIV", "IMBRAV"
+        ])
 
     def test_article_extracts_renames_but_not_random_links(self):
         html = (
@@ -78,7 +120,7 @@ class SiteDiscoveryTests(unittest.TestCase):
         second = site_discovery.update_candidates(
             tracked, NOW + timedelta(hours=5), fetcher=forbidden
         )
-        self.assertEqual(len(second), 12)
+        self.assertEqual(len(second), 16)
 
     def test_private_ips_and_invalid_addresses_rejected(self):
         html = "<article>MonSite devient localhost.com" \
