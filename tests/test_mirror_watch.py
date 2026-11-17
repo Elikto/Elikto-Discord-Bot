@@ -92,6 +92,15 @@ class MirrorWatchTests(unittest.TestCase):
         self.assertEqual(len(api.bot_messages), 1)
         self.assertFalse(any(method in ("PATCH", "POST") for method, _, _ in api.calls))
 
+    def test_avoid_double_check_just_after_midnight(self):
+        previous = datetime(2026, 11, 17, 22, 10, tzinfo=timezone.utc)
+        next_day = previous + timedelta(hours=2)
+        self.assertTrue(mirror_watch.is_checked_today(previous.isoformat(), next_day))
+        self.assertFalse(
+            mirror_watch.is_checked_today(previous.isoformat(),
+                                          previous + timedelta(hours=21))
+        )
+
     def test_next_local_day_checks_all_five_again(self):
         api = FakeAPI([human_message()])
         s = state()
