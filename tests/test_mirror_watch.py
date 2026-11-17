@@ -130,9 +130,14 @@ class MirrorWatchTests(unittest.TestCase):
         for entry in state1.values():
             entry["site_name"] = "momdax devient nandov.com"
             entry["name_attempted_at"] = self.now.isoformat()
-        with patch("mirror_watch.check_site") as http, patch("mirror_watch.probe_site_name") as metadata:
+        with patch("mirror_watch.check_site",
+                   return_value=response(url="https://nandov.com/")) as http, patch(
+            "mirror_watch.probe_site_name"
+        ) as metadata:
             mirror_watch.sync_thread(api, s, self.now + timedelta(hours=5))
-        http.assert_not_called()
+        # Le nouveau domaine, partagé par les cinq alias de cet essai,
+        # est contrôlé une seule fois. Les anciens liens ne sont pas re-testés.
+        http.assert_called_once_with("https://nandov.com/")
         metadata.assert_not_called()
         entry = state1[URLS[0]]
         self.assertEqual(entry["site_name"], "MOMDAX")
@@ -156,6 +161,68 @@ class MirrorWatchTests(unittest.TestCase):
         self.assertEqual(
             len([e for e in s["events"] if e["type"] == "mirror_name_changed"]), 5
         )
+
+    def test_six_old_sites_reduced_to_four_new_names_with_unique_links(self):
+        """MOMDAX->NANDOV, ZAKMAV/FOPOV->DOTIVOZ, etc."""
+        originals = [
+            ("momdax.com", "MOMDAX", "NANDOV", "nandov.com"),
+            ("zakmav.com", "ZAKMAV", "DOTIVOZ", "dotivoz.com"),
+            ("fopov.com", "FOPOV", "DOTIVOZ", "dotivoz.com"),
+            ("dovlip.com", "DOVLIP", "FARSOV", "farsov.com"),
+            ("zinzov.com", "ZINZOV", "TIMBOV", "timbov.com"),
+            ("didvip.com", "DIDVIP", "FARSOV", "farsov.com"),
+        ]
+        api = FakeAPI([human_message([
+            "https://" + domain + "/" for domain, _, _, _ in originals
+        ])])
+        s = state()
+        urls = []
+        states = {}
+        for domain, old, new, destination in originals:
+            url = "https://" + domain + "/"
+            urls.append(url)
+            states[url] = {
+                "url": url, "label": domain, "site_name": old,
+                "pending_name": new, "announced_url": "https://" + destination + "/",
+                "status": "online", "last_checked": self.now.isoformat(),
+                "name_attempted_at": self.now.isoformat(), "failures": 0,
+                "http_status": 200,
+            }
+        s["tracked_threads"] = {
+            mirror_watch.THREAD_ID: {"url_states": states, "urls": urls}
+        }
+        with patch("mirror_watch.check_site",
+                   side_effect=lambda u: response(url=u)) as probe:
+            mirror_watch.sync_thread(api, s, self.now + timedelta(hours=1))
+        target_urls = [
+            "https://nandov.com/", "https://dotivoz.com/",
+            "https://farsov.com/", "https://timbov.com/"
+        ]
+        self.assertEqual([call.args[0] for call in probe.call_args_list], target_urls)
+        tracked = s["tracked_threads"][mirror_watch.THREAD_ID]
+        self.assertEqual(len(tracked["url_states"]), 6)
+        self.assertEqual(len(tracked["display_sites"]), 4)
+        self.assertEqual(len(tracked["target_states"]), 4)
+        self.assertEqual([g["url"] for g in tracked["display_sites"]], target_urls)
+        names = [g["name"] for g in tracked["display_sites"]]
+        self.assertEqual(names, ["NANDOV", "DOTIVOZ", "FARSOV", "TIMBOV"])
+        dotivoz = next(g for g in tracked["display_sites"] if g["name"] == "DOTIVOZ")
+        farsov = next(g for g in tracked["display_sites"] if g["name"] == "FARSOV")
+        self.assertEqual(dotivoz["previous_names"], ["ZAKMAV", "FOPOV"])
+        self.assertEqual(farsov["previous_names"], ["DOVLIP", "DIDVIP"])
+        message = api.bot_messages[0]["content"]
+        for name in names:
+            self.assertEqual(message.count("**" + str(names.index(name)+1) + ". " + name + "**"), 1)
+        for url in target_urls:
+            self.assertEqual(message.count(url), 1)
+        for domain, _, _, _ in originals:
+            self.assertNotIn("https://" + domain + "/", message)
+        self.assertEqual(len(api.bot_messages), 1)
+        probe.reset_mock()
+        with patch("mirror_watch.check_site") as second_probe:
+            mirror_watch.sync_thread(api, s, self.now + timedelta(hours=2))
+        second_probe.assert_not_called()
+        self.assertEqual(len(api.bot_messages), 1)
 
     def test_antibot_page_or_failed_request_never_renames(self):
         api = FakeAPI([human_message()])
