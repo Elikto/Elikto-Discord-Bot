@@ -63,10 +63,18 @@ dispose d'un suivi spécialisé dans `mirror_watch.py`.
 - **Une vérification par jour** selon le calendrier Europe/Paris, avec au
   moins 20 heures d'écart entre les mesures ; le workflow GitHub Actions
   se déclenche toutes les 6 h, sans multiplier les vérifications le même jour.
-- Un seul **message du bot dans le fil** récapitule toutes les adresses
-  cliquables, les états et la date réelle de contrôle de chacune.
-- Le tableau de bord web publie les adresses et leurs statuts séparément ;
-  les transitions et les redirections alimentent l'historique.
+- Un seul **message du bot dans le fil** affiche les **sites actuels**
+  avec leurs **nouveaux noms et leurs nouveaux liens**, chacun une seule fois.
+  Les anciennes adresses menant à la même destination sont regroupées
+  (ex. ZAKMAV + FOPOV → **DOTIVOZ** apparaît **une seule fois**).
+  Leurs anciens noms sont conservés sous « Anciennement » et dans l'historique.
+- Le site web présente la même liste dédoublonnée que Discord, avec
+  l'état HTTP contrôlé sur **la nouvelle adresse**, pas seulement sur
+  l'ancien domaine.
+- La surveillance des anciennes adresses est conservée en arrière-plan
+  pour les changements ultérieurs. Le bot examine aussi les nouveaux
+  domaines afin de suivre les **renommages successifs**, avec prudence,
+  sans modifier les messages rédigés par les membres.
 - Une nouvelle adresse, une suppression ou un changement de libellé dans les
   messages du fil est répercuté à la synchronisation suivante.
 - Les redirections vers de nouveaux domaines sont signalées, **sans supposer
