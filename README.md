@@ -89,6 +89,31 @@ Le mode de surveillance général des autres fiches demeure à 48 heures.
 Les réponses HTTP (même 200) n'établissent ni la légalité d'un site ni son
 fonctionnement applicatif complet.
 
+### Découverte automatique des sites similaires
+
+Le bot effectue maintenant une **veille quotidienne de sources publiques**
+(`site_discovery.py`), en complément du suivi des fils Discord.
+
+- Il part des **12 domaines supplémentaires** recherchés en novembre 2026 :
+  TIPROV, TRIMAV, VARLOZ, POBRAM, BIMDAV, LIMDAV, PADMOV, BINTOV,
+  WATOF, WOOVAZ, BODLAV et ROGZOV.
+- Chaque jour, il tente de lire les annonces de migrations contenues dans trois
+  annuaires publics : NatChecker, AlexiTauzin et GTLF. L'ajout d'un domaine
+  totalement nouveau demande deux sources distinctes, ou un lien explicite
+  vers un domaine déjà suivi ; une simple publicité ne suffit pas.
+- Chaque candidat est **vérifié par HTTP** avant publication. Les candidats
+  inaccessibles restent mémorisés pour un nouveau contrôle quotidien mais
+  ne sont pas ajoutés à la liste publique.
+- Le fil **Streaming HD miroir** et le site web affichent **chaque nouvelle
+  destination une seule fois**, avec les anciens noms juste dessous.
+- Les noms déjà présents dans les messages Discord ne sont jamais supprimés
+  des données de surveillance ; les changements ultérieurs restent suivis.
+- Les détections et leur provenance sont enregistrées dans
+  `data/monitor_state.json`. La veille couvre ces sources sélectionnées,
+  **pas l'intégralité d'Internet**.
+- Les droits de diffusion et l'identité des exploitants ne sont pas certifiés
+  par les contrôles techniques.
+
 ### Autorisation Discord indispensable
 
 **Pour lire les URL des messages** (et non seulement leur titre), activer
