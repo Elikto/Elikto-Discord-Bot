@@ -12,6 +12,8 @@ on:
       - 'dashboard_unique.py'
       - 'export_catalogue.py'
       - 'site_monitor.py'
+      - 'thread_watch.py'
+      - 'tests/test_thread_watch.py'
       - 'site_probe.py'
       - 'tests/test_site_monitor.py'
       - 'tests/test_dashboard_unique.py'
@@ -65,10 +67,10 @@ jobs:
           else
             echo "Première surveillance, aucun historique distant"
           fi
-      - name: Diagnostiquer le fil de suivi cible
+      - name: Mettre à jour le suivi nom et adresse dans le fil ciblé
         env:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
-        run: python diagnose_tracking_thread.py
+        run: python thread_watch.py
       - name: Surveiller les sites publics et alimenter l'historique
         env:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
