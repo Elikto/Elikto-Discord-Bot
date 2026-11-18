@@ -440,6 +440,55 @@ def is_empty_directory_index(html_text):
     return False
 
 
+# Signaux forts du contenu final, indépendants du code HTTP ou du titre.
+# On exclut scripts/styles : les mots de ces ressources ne décrivent pas la page.
+PARKING_MARKERS = (
+    r"\bdomain registration has expired\b",
+    r"\bthis domain (?:name )?(?:has expired|is expired)\b",
+    r"\b(?:ce )?nom de domaine (?:est )?expire\b",
+    r"\bthis domain (?:name )?is (?:for sale|parked)\b",
+    r"\b(?:website|account) (?:is )?suspended\b",
+)
+SHORTENER_MARKERS = (
+    r"\bplease wait \d{1,3} seconds? before viewing the link\b",
+    r"\byour link is (?:almost|nearly) ready\b",
+    r"\bwait \d{1,3} seconds? to (?:access|continue|get).*link\b",
+    r"\bskip (?:this )?ad(?:vertisement)?\b",
+    r"\bacces au lien dans \d{1,3} secondes?\b",
+    r"\bveuillez patienter \d{1,3} secondes? pour acceder au lien\b",
+)
+ANTI_BOT_MARKERS = (
+    r"\bchecking your browser before accessing\b",
+    r"\bverify you are human\b",
+    r"\bjust a moment\b.{0,70}\bcloudflare\b",
+)
+
+
+def detect_wrong_page(html_text):
+    """Classer les faux HTTP 200 sans interpréter un simple titre comme preuve.
+
+    parked : domaine expiré / parqué, interstitial : monétisation de liens
+    ou compte à rebours, blocked : protection anti-bot non concluante.
+    Aucun JavaScript n'est exécuté, donc un site sans HTML clair reste inconnu.
+    """
+    source = str(html_text or "")[:MAX_HTML]
+    source = re.sub(
+        r"(?is)<(?:script|style|noscript)\b[^>]*>.*?</(?:script|style|noscript)\s*>",
+        " ", source,
+    )
+    plain = re.sub(r"(?s)<[^>]+>", " ", html.unescape(source))
+    plain = re.sub(r"\s+", " ", plain)[:MAX_HTML]
+    folded = _fold_notice_text(plain)
+    for kind, expressions in (
+        ("parked", PARKING_MARKERS),
+        ("interstitial", SHORTENER_MARKERS),
+        ("blocked", ANTI_BOT_MARKERS),
+    ):
+        if any(re.search(pattern, folded, re.I) for pattern in expressions):
+            return {"page_health": kind, "evidence": "html:" + kind}
+    return None
+
+
 def probe_site_name(url):
     """Resultat structure ou None ; un seul GET borne par site et par jour."""
     try:
@@ -451,6 +500,10 @@ def probe_site_name(url):
     if is_empty_directory_index(page["html"]):
         return {"page_health": "empty_index", "evidence": "html:directory_index",
                 "final_url": page["final_url"]}
+    wrong = detect_wrong_page(page["html"])
+    if wrong:
+        wrong["final_url"] = page["final_url"]
+        return wrong
     result = parse_site_name(page["html"])
     if not result:
         return None
