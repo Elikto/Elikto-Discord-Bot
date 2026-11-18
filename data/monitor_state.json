@@ -639,9 +639,21 @@
       "current": "https://witv-trouver-nouvelle-adresse.store/",
       "detail": "Domaine final différent : correspondance à vérifier manuellement.",
       "alert": true
+    },
+    {
+      "id": 13,
+      "type": "server_migration_announced",
+      "at": "2026-11-18T00:03:34+00:00",
+      "thread_id": "1562067560856289411",
+      "title": "webflix.art",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1562067560856289411/1562067560856289411",
+      "previous": "https://webflix.art/",
+      "current": "https://webflix.surf/",
+      "detail": "Nouvelle adresse affichée sur le site, à vérifier indépendamment.",
+      "alert": true
     }
   ],
-  "event_sequence": 12,
+  "event_sequence": 13,
   "tracked_threads": {
     "1430988094374547559": {
       "url_states": {
@@ -770,7 +782,7 @@
         "https://zinzov.com/",
         "https://didvip.com/"
       ],
-      "last_synced": "2026-11-18T00:02:53+00:00",
+      "last_synced": "2026-11-18T00:03:33+00:00",
       "target_states": {
         "https://nandov.com/": {
           "url": "https://nandov.com/",
@@ -1455,7 +1467,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1466,7 +1478,8 @@
       "name_evidence": "og:site_name",
       "site_name": "Reseam",
       "pending_name": null,
-      "pending_name_at": null
+      "pending_name_at": null,
+      "migration_attempted_at": "2026-11-18T00:03:34+00:00"
     },
     "https://fr.z-library.ec/": {
       "thread_id": "1431059243968233632",
@@ -1485,7 +1498,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 503,
       "reason": null,
@@ -1509,7 +1522,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1520,7 +1533,8 @@
       "name_evidence": "title",
       "site_name": "SponsorBlock",
       "pending_name": null,
-      "pending_name_at": null
+      "pending_name_at": null,
+      "migration_attempted_at": "2026-11-18T00:03:34+00:00"
     },
     "https://tracker.teamflix.cc/": {
       "thread_id": "1565898044518568187",
@@ -1539,7 +1553,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1550,7 +1564,8 @@
       "name_evidence": "og:site_name",
       "site_name": "TeamFlix",
       "pending_name": null,
-      "pending_name_at": null
+      "pending_name_at": null,
+      "migration_attempted_at": "2026-11-18T00:03:34+00:00"
     },
     "https://www7.torrent9.to/": {
       "thread_id": "1565895933374496890",
@@ -1569,7 +1584,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1580,7 +1595,8 @@
       "name_evidence": "title",
       "site_name": "Torrent9.to",
       "pending_name": null,
-      "pending_name_at": null
+      "pending_name_at": null,
+      "migration_attempted_at": "2026-11-18T00:03:34+00:00"
     },
     "https://ww3-workino.officiel.cc/": {
       "thread_id": "1565895933374496890",
@@ -1599,13 +1615,14 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
       "final_url": "https://www.workino.ws/",
       "redirect_url": "https://www.workino.ws/",
-      "name_attempted_at": "2026-11-17T23:51:50+00:00"
+      "name_attempted_at": "2026-11-17T23:51:50+00:00",
+      "migration_attempted_at": "2026-11-18T00:03:34+00:00"
     },
     "https://ww3-oxtorrent.officiel.cc/": {
       "thread_id": "1565895933374496890",
@@ -1624,13 +1641,14 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
       "final_url": "https://www.oxtorrent.ws/",
       "redirect_url": "https://www.oxtorrent.ws/",
-      "name_attempted_at": "2026-11-17T23:51:50+00:00"
+      "name_attempted_at": "2026-11-17T23:51:50+00:00",
+      "migration_attempted_at": "2026-11-18T00:03:34+00:00"
     },
     "https://torrent9.to/": {
       "thread_id": "1565895933374496890",
@@ -1649,7 +1667,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1660,7 +1678,8 @@
       "name_evidence": "title",
       "site_name": "Torrent9.to",
       "pending_name": null,
-      "pending_name_at": null
+      "pending_name_at": null,
+      "migration_attempted_at": "2026-11-18T00:03:34+00:00"
     },
     "https://v3x.club/": {
       "thread_id": "1565895227619803287",
@@ -1679,7 +1698,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1690,7 +1709,8 @@
       "name_evidence": "title",
       "site_name": "V3X",
       "pending_name": null,
-      "pending_name_at": null
+      "pending_name_at": null,
+      "migration_attempted_at": "2026-11-18T00:03:34+00:00"
     },
     "https://astratorrent.la/": {
       "thread_id": "1565889701225832448",
@@ -1709,7 +1729,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1720,7 +1740,8 @@
       "name_evidence": "og:site_name",
       "site_name": "AstraTorrent 2026",
       "pending_name": null,
-      "pending_name_at": null
+      "pending_name_at": null,
+      "migration_attempted_at": "2026-11-18T00:03:34+00:00"
     },
     "https://draupnirr.xyz/": {
       "thread_id": "1565888855159341147",
@@ -1739,7 +1760,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": null,
       "reason": "TimeoutError",
@@ -1763,7 +1784,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1774,7 +1795,8 @@
       "name_evidence": "title",
       "site_name": "YggReborn",
       "pending_name": null,
-      "pending_name_at": null
+      "pending_name_at": null,
+      "migration_attempted_at": "2026-11-18T00:03:34+00:00"
     },
     "https://webflix.art/": {
       "thread_id": "1562067560856289411",
@@ -1793,12 +1815,22 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 451,
       "reason": null,
       "final_url": "https://webflix.art/",
-      "redirect_url": null
+      "redirect_url": null,
+      "migration_attempted_at": "2026-11-18T00:03:34+00:00",
+      "announced_url": "https://webflix.surf/",
+      "migration_evidence": "captures:2026-11-17",
+      "migration_observed_at": "2026-11-18T00:03:34+00:00",
+      "other_previous_urls": [
+        "https://webflix.bio/"
+      ],
+      "announced_status": "online",
+      "announced_http_status": 200,
+      "announced_last_checked": "2026-11-18T00:03:34+00:00"
     },
     "https://webflixfr.github.io/": {
       "thread_id": "1562067560856289411",
@@ -1817,7 +1849,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1828,7 +1860,8 @@
       "name_evidence": "title",
       "site_name": "Webflix",
       "pending_name": null,
-      "pending_name_at": null
+      "pending_name_at": null,
+      "migration_attempted_at": "2026-11-18T00:03:34+00:00"
     },
     "https://movix.club/Site": {
       "thread_id": "1430991985572839547",
@@ -1847,7 +1880,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 404,
       "reason": null,
@@ -1871,7 +1904,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1882,7 +1915,8 @@
       "name_evidence": "og:site_name",
       "site_name": "Purstream Wiki",
       "pending_name": null,
-      "pending_name_at": null
+      "pending_name_at": null,
+      "migration_attempted_at": "2026-11-18T00:03:34+00:00"
     },
     "https://flemmix.mom/": {
       "thread_id": "1430989114265571459",
@@ -1901,13 +1935,14 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 206,
       "reason": null,
       "final_url": "https://flemmix.mom/",
       "redirect_url": null,
-      "name_attempted_at": "2026-11-17T23:51:50+00:00"
+      "name_attempted_at": "2026-11-17T23:51:50+00:00",
+      "migration_attempted_at": "2026-11-18T00:03:34+00:00"
     },
     "https://witv.football/": {
       "thread_id": "1430989114265571459",
@@ -1926,7 +1961,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1937,7 +1972,8 @@
       "name_evidence": "title",
       "site_name": "WITV",
       "pending_name": null,
-      "pending_name_at": null
+      "pending_name_at": null,
+      "migration_attempted_at": "2026-11-18T00:03:34+00:00"
     },
     "https://ww1.wiflix-adresses.fun/": {
       "thread_id": "1430989114265571459",
@@ -1956,7 +1992,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1967,7 +2003,8 @@
       "name_evidence": "title",
       "site_name": "Flemmix",
       "pending_name": null,
-      "pending_name_at": null
+      "pending_name_at": null,
+      "migration_attempted_at": "2026-11-18T00:03:34+00:00"
     },
     "https://fstream.info/": {
       "thread_id": "1431085822903455744",
@@ -1986,7 +2023,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1997,7 +2034,8 @@
       "name_evidence": "title",
       "site_name": "French Stream",
       "pending_name": null,
-      "pending_name_at": null
+      "pending_name_at": null,
+      "migration_attempted_at": "2026-11-18T00:03:34+00:00"
     },
     "https://cinezzz.club/": {
       "thread_id": "1431079041015742574",
@@ -2016,12 +2054,13 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 403,
       "reason": null,
       "final_url": "https://cinezzz.club/",
-      "redirect_url": null
+      "redirect_url": null,
+      "migration_attempted_at": "2026-11-18T00:03:34+00:00"
     },
     "https://coflix.boo/": {
       "thread_id": "1430989234264870912",
@@ -2040,7 +2079,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": null,
       "reason": "gaierror",
@@ -2064,7 +2103,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2075,7 +2114,8 @@
       "name_evidence": "og:site_name",
       "site_name": "C411",
       "pending_name": null,
-      "pending_name_at": null
+      "pending_name_at": null,
+      "migration_attempted_at": "2026-11-18T00:03:34+00:00"
     },
     "https://adnauseam.io/": {
       "thread_id": "1431052564262162524",
@@ -2094,7 +2134,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2105,7 +2145,8 @@
       "name_evidence": "title",
       "site_name": "AdNauseam",
       "pending_name": null,
-      "pending_name_at": null
+      "pending_name_at": null,
+      "migration_attempted_at": "2026-11-18T00:03:34+00:00"
     },
     "https://privacybadger.org/": {
       "thread_id": "1431056283565424650",
@@ -2124,7 +2165,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 206,
       "reason": null,
@@ -2135,7 +2176,8 @@
       "name_evidence": "og:site_name",
       "site_name": "Privacy Badger",
       "pending_name": null,
-      "pending_name_at": null
+      "pending_name_at": null,
+      "migration_attempted_at": "2026-11-18T00:03:34+00:00"
     },
     "https://fitgirl-repacks.site/": {
       "thread_id": "1431054520477024297",
@@ -2154,7 +2196,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2165,7 +2207,8 @@
       "name_evidence": "og:site_name",
       "site_name": "FitGirl Repacks",
       "pending_name": null,
-      "pending_name_at": null
+      "pending_name_at": null,
+      "migration_attempted_at": "2026-11-18T00:03:34+00:00"
     },
     "https://skidrowreloaded.com/": {
       "thread_id": "1431054323852378264",
@@ -2184,7 +2227,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2195,7 +2238,8 @@
       "name_evidence": "title",
       "site_name": "Skidrow & Reloaded Games",
       "pending_name": null,
-      "pending_name_at": null
+      "pending_name_at": null,
+      "migration_attempted_at": "2026-11-18T00:03:34+00:00"
     },
     "https://swisstransfer.com/fr-fr": {
       "thread_id": "1431057935034744865",
@@ -2214,7 +2258,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2225,7 +2269,8 @@
       "name_evidence": "og:site_name",
       "site_name": "SwissTransfer",
       "pending_name": null,
-      "pending_name_at": null
+      "pending_name_at": null,
+      "migration_attempted_at": "2026-11-18T00:03:34+00:00"
     },
     "https://annas-archive.cc/": {
       "thread_id": "1432848239517765632",
@@ -2244,7 +2289,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2255,7 +2300,8 @@
       "name_evidence": "application-name",
       "site_name": "Anna’s Archive",
       "pending_name": null,
-      "pending_name_at": null
+      "pending_name_at": null,
+      "migration_attempted_at": "2026-11-18T00:03:34+00:00"
     },
     "https://1001ebooks.app/": {
       "thread_id": "1431060081784655974",
@@ -2274,7 +2320,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2285,7 +2331,8 @@
       "name_evidence": "og:site_name",
       "site_name": "1001Ebooks",
       "pending_name": null,
-      "pending_name_at": null
+      "pending_name_at": null,
+      "migration_attempted_at": "2026-11-18T00:03:34+00:00"
     },
     "https://www7.bookys-ebooks.com/magazines/new": {
       "thread_id": "1431060780584796270",
@@ -2304,12 +2351,13 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 403,
       "reason": null,
       "final_url": "https://www7.bookys-ebooks.com/magazines/new",
-      "redirect_url": null
+      "redirect_url": null,
+      "migration_attempted_at": "2026-11-18T00:03:34+00:00"
     },
     "https://ledenicheur.fr/": {
       "thread_id": "1432836342093578306",
@@ -2328,7 +2376,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2339,7 +2387,8 @@
       "name_evidence": "og:site_name",
       "site_name": "leDénicheur",
       "pending_name": null,
-      "pending_name_at": null
+      "pending_name_at": null,
+      "migration_attempted_at": "2026-11-18T00:03:34+00:00"
     },
     "https://idealo.fr/": {
       "thread_id": "1432836242453827704",
@@ -2358,7 +2407,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": null,
       "reason": "OSError",
@@ -2382,7 +2431,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:02:54+00:00",
+      "last_seen": "2026-11-18T00:03:34+00:00",
       "active": true,
       "http_status": null,
       "reason": "OSError",
@@ -2391,7 +2440,7 @@
     }
   },
   "server_scan": {
-    "at": "2026-11-18T00:02:54+00:00",
+    "at": "2026-11-18T00:03:34+00:00",
     "counts": {
       "messages_read": 47,
       "locations_scanned": 37,
@@ -2403,6 +2452,8 @@
     "errors": [],
     "all_public_sources_scanned": true,
     "new_http_checks": 0,
-    "new_name_checks": 0
+    "new_name_checks": 0,
+    "new_migration_checks": 28,
+    "new_announced_address_checks": 1
   }
 }
