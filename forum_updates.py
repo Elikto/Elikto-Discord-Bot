@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import os
 import re
+import unicodedata
 from datetime import datetime, timedelta, timezone
 from html.parser import HTMLParser
 from urllib.parse import urljoin, urlsplit
@@ -245,36 +246,80 @@ def directory_kind(title):
     return None
 
 
+def folded_directory_text(text):
+    value = unicodedata.normalize("NFKD", str(text or "").casefold())
+    return "".join(c for c in value if not unicodedata.combining(c))
+
+
+def is_blocked_directory_entry(text):
+    """Blocage FAI, ancien domaine, clone ou adresse expirée."""
+    value = folded_directory_text(text)
+    return bool(re.search(
+        r"bloqu|blocked|ancien domaine|old domain|inactif|expir|"
+        r"faux (?:site|domaine)|fake|frauduleux|clone|parking|"
+        r"domain(?:e)? (?:suspendu|parque)|non disponible",
+        value,
+    ))
+
+
 class StreamingDirectoryParser(HTMLParser):
-    """Liens dont la page d'annuaire déclare explicitement la disponibilité."""
+    """Chaque lien conserve sa catégorie et son statut, sans mélange global.
+
+    Les annuaires peuvent signaler « Bloqué par les FAI » soit dans le lien,
+    soit juste après, soit dans un en-tête commun à plusieurs domaines.
+    """
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.entries = []
         self.current = None
+        self.heading_tag = None
+        self.heading_text = []
+        self.blocked_category = False
 
     def handle_starttag(self, tag, attrs):
+        if re.fullmatch(r"h[1-6]", tag):
+            self.heading_tag = tag
+            self.heading_text = []
         if tag == "a":
-            self.current = {"href": dict(attrs).get("href"), "text": "",
-                            "after": ""}
+            self.current = {
+                "href": dict(attrs).get("href"), "text": "", "after": "",
+                "blocked_category": self.blocked_category,
+            }
 
     def handle_data(self, value):
         clean = re.sub(r"\s+", " ", value)
+        if self.heading_tag is not None:
+            self.heading_text.append(clean)
         if self.current is not None:
             self.current["text"] += " " + clean
-        elif self.entries:
+        elif self.entries and self.heading_tag is None:
             self.entries[-1]["after"] += " " + clean
 
     def handle_endtag(self, tag):
         if tag == "a" and self.current is not None:
             self.entries.append(self.current)
             self.current = None
+        if tag == self.heading_tag:
+            heading = folded_directory_text(" ".join(self.heading_text))
+            if is_blocked_directory_entry(heading) and (
+                "fai" in heading or "ancien" in heading or "bloqu" in heading
+            ):
+                self.blocked_category = True
+            elif re.search(
+                r"adresses? (?:disponibles?|actives?|officielles?)|"
+                r"nouveaux? domaines?|sites? (?:actifs?|officiels?)|"
+                r"nom de domaine principal|nos sites",
+                heading,
+            ):
+                self.blocked_category = False
+            self.heading_tag = None
+            self.heading_text = []
 
 
 def directory_candidates(html_text, hub, kind):
-    """Retourner les domaines dont l'annuaire confirme explicitement l'activité.
+    """N'utiliser QUE les adresses annoncées disponibles, hors blocage FAI.
 
-    L'ordre est celui du site de référence. Leurs noms ne sont pas copiés
-    depuis des blogs externes et les clones signalés comme faux sont exclus.
+    Une réponse HTTP 200 ne rend pas un domaine bloqué ou expiré éligible.
     """
     parsed = StreamingDirectoryParser()
     try:
@@ -287,14 +332,14 @@ def directory_candidates(html_text, hub, kind):
         proposed = clean_url(urljoin(hub, entry["href"] or "")) if entry["href"] else None
         if not proposed or not domain(proposed).startswith(expected):
             continue
-        descriptor = (entry["text"] + " " + entry["after"][:160]).casefold()
-        descriptor = re.sub(r"\s+", " ", descriptor)
-        if any(bad in descriptor for bad in ("bloqu", "ancien domaine",
-                                            "frauduleux", "faux domaine", "clone")):
+        descriptor = folded_directory_text(entry["text"] + " " + entry["after"][:120])
+        if entry.get("blocked_category") or is_blocked_directory_entry(descriptor):
             continue
         if kind == "coflix":
-            suitable = bool(re.search(r"adresse disponible|domaine actif|site actif",
-                                      descriptor))
+            suitable = bool(re.search(
+                r"adresse disponible|domaine actif|site actif",
+                descriptor,
+            ))
         else:
             suitable = bool(re.search(
                 r"nom de domaine principal|domaine actif|nouveau site|"
@@ -332,64 +377,49 @@ def validated_directory_groups(linked, kind):
             proposals = directory_candidates(page["html"], hub, kind)
 
     found = None
-    found_state = None
     verified = False
-    uncertain = None
     expected_prefix = DIRECTORIES[kind][1]
     for proposed in proposals:
         result = check_site(proposed)
         if result.get("result") != "online":
             continue
-        # Un domaine de streaming peut répondre HTTP 200 en redirigeant
-        # vers un raccourcisseur, une page publicitaire ou un clone.
-        # Ce n'est pas un catalogue valide et cela ne doit pas afficher ✅.
         destination = clean_url(result.get("final_url") or proposed)
+        # Lien publicitaire/intermédiaire ou raccourcisseur : aucune coche verte.
         if not destination or not domain(destination).startswith(expected_prefix):
             continue
         identity = probe_site_name(destination)
-        if identity and identity.get("page_health") == "empty_index":
+        if not identity:
             continue
-        label = str((identity or {}).get("name") or "").casefold()
+        if identity.get("page_health") in (
+            "empty_index", "parked", "interstitial", "blocked",
+        ):
+            continue
+        # Un simple titre arbitraire ou HTTP 200 n'est pas une preuve.
+        label = folded_directory_text(identity.get("name"))
         brand_matches = ("coflix" in label if kind == "coflix"
                          else "flemmix" in label or "wiflix" in label)
-        if brand_matches:
-            found = destination
-            found_state = "online"
-            verified = True
-            break
-        if uncertain is None:
-            uncertain = destination
+        if not brand_matches:
+            continue
+        if identity.get("page_health") not in (None, "content"):
+            continue
+        final_html_url = clean_url(identity.get("final_url") or destination)
+        if not final_html_url or not domain(final_html_url).startswith(expected_prefix):
+            continue
+        found = final_html_url
+        verified = True
+        break
 
-    if found:
-        current = found
-        status = found_state
-    elif uncertain:
-        current = uncertain
-        status = "suspect"
-    elif proposals:
-        # L'annonce du portail est explicite, mais n'a pas passé les contrôles.
-        current = proposals[0]
-        status = "suspect"
-    else:
-        # Si aucun site actif n'est découvert, montrer le domaine historique
-        # comme indisponible/indéterminé et laisser le portail en référence.
-        former = next(
-            (item for item in linked
-             if clean_url(item.get("site_url")) != hub),
-            {},
-        )
-        current = clean_url(former.get("site_url")) or hub
-        status = former.get("status", "unknown")
-        if current == hub:
-            status = "unknown"
+    # Ne pas présenter un ancien domaine expiré, bloqué FAI ou un lien
+    # raccourci comme « actif ». Le portail est la seule référence affichée.
     return [{
-        "url": current,
-        "name": domain(current),
-        "reference_url": hub if hub != current else None,
-        "older": [x for x in previous if x != domain(current)],
-        "announced": bool(proposals),
+        "url": found or hub,
+        "name": domain(found or hub),
+        "reference_url": hub,
+        "no_active": not bool(found),
+        "older": [x for x in previous if x != domain(found or hub)],
+        "announced": bool(proposals and found),
         "verified": verified,
-        "status": status,
+        "status": "online" if found else "unknown",
     }]
 
 
