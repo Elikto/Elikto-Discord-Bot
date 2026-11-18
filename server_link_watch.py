@@ -19,6 +19,7 @@ import re
 
 from site_probe import RE_URL, clean_url, check_site
 from name_probe import probe_site_name, probe_site_migration
+from forum_updates import sync_forum_updates
 from site_monitor import (
     STATE_PATH, load_state, event, record_check, notify_discord, stamp,
 )
@@ -429,6 +430,10 @@ def main():
     api = DiscordAPI(os.environ["DISCORD_BOT_TOKEN"])
     state = load_state()
     result, alerts = watch_server_links(api, state)
+    # Les alertes et les nouvelles URLs declenchent aussi la mise a jour
+    # du fil de forum d'origine (message du bot uniquement).
+    forum_result = sync_forum_updates(api, state, alerts)
+    state["server_scan"]["forum_updates"] = forum_result
     STATE_PATH.write_text(
         json.dumps(state, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
@@ -436,6 +441,7 @@ def main():
     if alerts:
         notify_discord(api, GUILD_ID, alerts)
     print("Contrôle global terminé :", result)
+    print("Mises à jour des forums :", forum_result)
 
 
 if __name__ == "__main__":
