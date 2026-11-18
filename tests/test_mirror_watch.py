@@ -88,6 +88,35 @@ class MirrorWatchTests(unittest.TestCase):
         no_discovery.start()
         self.addCleanup(no_discovery.stop)
 
+    def test_root_domains_use_exact_reported_landing_paths(self):
+        good = "https://varloz.com/47b6f3a/home/varloz"
+        empty = "https://rogzov.com/93zjfyqk6llf/"
+        roots = [
+            {"url": "https://varloz.com/", "label": "VARLOZ", "status": "online"},
+            {"url": "https://rogzov.com/", "label": "ROGZOV", "status": "online"},
+        ]
+        groups = mirror_watch.grouped_current_sites(roots)
+        self.assertEqual({g["url"] for g in groups}, {good, empty})
+        target_states = {}
+        s = state()
+        called = []
+        def check(url):
+            called.append(url)
+            return response(url=url)
+        def inspect(url):
+            if url == empty:
+                return {"page_health": "empty_index"}
+            return {"name": "VARLOZ", "evidence": "title", "confidence": "medium"}
+        with patch("mirror_watch.check_site", side_effect=check), patch(
+            "mirror_watch.probe_site_name", side_effect=inspect
+        ):
+            cards = mirror_watch.decorate_destinations(
+                groups, roots, target_states, self.now, s
+            )
+        self.assertEqual(set(called), {good, empty})
+        self.assertEqual({g["url"]: g["status"] for g in cards},
+                         {good: "online", empty: "empty_index"})
+
     def test_mirror_cards_show_red_cross_only_for_directory_index(self):
         good = "https://varloz.com/47b6f3a/home/varloz"
         empty = "https://rogzov.com/93zjfyqk6llf/"
