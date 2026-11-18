@@ -531,6 +531,50 @@ class MirrorWatchTests(unittest.TestCase):
         self.assertIn("https://miroir.example.org/", "\n".join(hidden))
         self.assertIn("❌", "\n".join(hidden))
 
+    def test_native_dropdown_contains_all_mirrors_and_no_spoiler(self):
+        sites = [
+            {"name": "PRIMARY", "url": "https://primary.example.org/",
+             "status": "online", "source_urls": ["https://primary.example.org/"]},
+            {"name": "MIRROR", "url": "https://mirror.example.org/",
+             "status": "online", "source_urls": []},
+            {"name": "EMPTY", "url": "https://empty.example.org/",
+             "status": "empty_index", "source_urls": []},
+        ]
+        cards = mirror_watch.render_site_cards(
+            sites, "Streaming HD miroir", dropdown_enabled=True
+        )
+        self.assertEqual(len(cards), 1)
+        self.assertFalse(cards[0].get("spoiler", False))
+        header = cards[0]["components"][0]["content"]
+        self.assertIn("https://primary.example.org/", header)
+        self.assertNotIn("https://mirror.example.org/", header)
+        menu = cards[0]["components"][1]["components"][0]
+        self.assertEqual(menu["type"], 3)
+        self.assertEqual(menu["custom_id"], "streaming_hd_mirrors:v1:0")
+        self.assertEqual([o["value"] for o in menu["options"]],
+                         ["https://mirror.example.org/",
+                          "https://empty.example.org/"])
+        self.assertIn("❌", menu["options"][1]["description"])
+        self.assertNotIn("spoiler", cards[0])
+
+    def test_dropdown_enabled_on_sync_reuses_one_bot_message(self):
+        api = FakeAPI([human_message()])
+        s = state()
+        with patch.dict("os.environ", {"DISCORD_MIRROR_DROPDOWN_ENABLED": "1"}), patch(
+            "mirror_watch.check_site", side_effect=lambda url: response(url=url)
+        ):
+            mirror_watch.sync_thread(api, s, self.now)
+            first = api.bot_messages[0]["id"]
+            self.assertEqual(len(api.bot_messages), 1)
+            comp = api.bot_messages[0]["components"]
+            self.assertEqual(comp[0]["components"][1]["type"], 1)
+            api.calls.clear()
+            mirror_watch.sync_thread(api, s, self.now + timedelta(hours=2))
+            self.assertEqual(len(api.bot_messages), 1)
+            self.assertEqual(api.bot_messages[0]["id"], first)
+            self.assertFalse(any(method in ("POST", "PATCH")
+                                 for method, _, _ in api.calls))
+
     def test_cards_support_many_sites_without_hiding_them(self):
         sites = [
             {"name": "NAME" + str(i), "url": "https://example" + str(i) + ".org/",
