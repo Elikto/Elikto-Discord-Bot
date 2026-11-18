@@ -49,21 +49,30 @@ def strip_duplicate_source_url(description, groups):
     Conserver les phrases, liens inline et adresses inconnues : on n'edite
     jamais le message de l'auteur, seulement sa presentation dans la fiche.
     """
+    # Éviter le doublon www/non-www (ex. www.cinezzz.club versus
+    # cinezzz.club) et http/https uniquement pour les URL isolées.
+    # Conserver les chemins distincts et les liens inclus dans une phrase.
+    def canonical_page(url):
+        parts = urlsplit(url)
+        host = (parts.hostname or "").removeprefix("www.")
+        return host, parts.path.rstrip("/") or "/"
+
     known = set()
+    known_domains = set()
     for group in groups:
         for field in ("url", "reference_url", "directory_url"):
             url = clean_url(group.get(field))
             if url:
-                known.add(url)
+                known.add(canonical_page(url))
         for old in group.get("older") or []:
-            known.add(str(old).lower().removeprefix("www."))
+            known_domains.add(str(old).lower().removeprefix("www."))
     result = []
     for line in str(description or "").splitlines():
         plain = line.strip().strip("<>").rstrip(".,!?")
         if re.fullmatch(r"https?://[^\s<>]+", plain, flags=re.I):
             normalized = clean_url(plain)
-            if normalized and (normalized in known
-                    or domain(normalized) in known):
+            if normalized and (canonical_page(normalized) in known
+                    or domain(normalized) in known_domains):
                 continue
         result.append(line)
     return "\n".join(result).strip()
@@ -295,7 +304,10 @@ def build_card(groups, description, title=None, credentials=None, preview_image_
             prefix = "🟠 "
         else:
             prefix = "🟡 "
-        line = prefix + "**🌐 Site actif**\n" + url
+        site_label = ("**🌐 Site (accès restreint)**"
+                      if status == "restricted" and not group.get("verified")
+                      else "**🌐 Site actif**")
+        line = prefix + site_label + "\n" + url
         if status == "empty_index":
             line += "\n-# ❌ Page vide : index de répertoire détecté"
         elif status == "parked":
@@ -308,7 +320,7 @@ def build_card(groups, description, title=None, credentials=None, preview_image_
             line += ("\n-# Page HTML vérifiée · accès HTTP direct limité (403)"
                      if status == "restricted" else "\n-# Page HTML vérifiée")
         elif status == "restricted":
-            line += "\n-# Accès HTTP 403 : navigation possible, contenu non confirmé par le bot"
+            line += "\n-# HTTP 403 depuis GitHub : le navigateur peut fonctionner, mais le bot ne confirme pas encore le contenu"
         else:
             line += "\n-# Contenu du site non confirmé"
         if group.get("directory_url") and group["directory_url"] != reference:
