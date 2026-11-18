@@ -93,6 +93,9 @@ class ForumUpdatesTests(unittest.TestCase):
     def test_webflix_displays_current_address_and_previous_domains(self):
         result = render_forum_update("WebFlix", list(state()["server_links"].values()))
         self.assertIn("https://webflix.surf/", result)
+        self.assertIn("### 🔄 Adresses mises à jour · webflix.surf", result)
+        self.assertIn("**✦ [webflix.surf](https://webflix.surf/)**", result)
+        self.assertIn("**✦ [webflixfr.github.io](https://webflixfr.github.io/)**", result)
         self.assertIn("webflix.art, webflix.bio", result)
         self.assertIn("https://webflixfr.github.io/", result)
         self.assertEqual(result.count("https://webflix.surf/"), 1)
