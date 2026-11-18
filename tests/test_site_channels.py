@@ -5,6 +5,7 @@ from unittest.mock import patch
 from site_channels import (
     channel_slug, mirror_category_name, catalogue_threads, sync_mirrors,
     safe_source_description, groups_for_mirror, CHANNEL_MARKER,
+    destination_category_name, mirror_card, PREFIX,
 )
 from forum_cards import all_text
 
@@ -116,6 +117,11 @@ class FakeDiscord:
             rec = {"id": str(self.seq), **json}
             self.channels.append(rec)
             return dict(rec)
+        if method == "PATCH" and path.startswith("/channels/") and "/messages/" not in path:
+            channel_id = path.split("/")[2]
+            rec = next(c for c in self.channels if str(c["id"]) == channel_id)
+            rec.update(json)
+            return dict(rec)
         if method == "GET" and "/messages/" in path:
             cid, mid = path.split("/")[2], path.split("/")[-1]
             if cid in self.originals and cid == mid:
@@ -150,6 +156,10 @@ class MirrorTests(unittest.TestCase):
         self.assertEqual(channel_slug("C411 - La Méga !"), "c411-la-mega")
         self.assertEqual(mirror_category_name("Téléchargement", 2),
                          "Téléchargement · Sites 2")
+        source = {"source_category_name": "Téléchargement",
+                  "source_forum_name": "torrent"}
+        self.assertEqual(destination_category_name(source),
+                         "📥 Téléchargement · Torrents")
 
     def test_creates_parallel_categories_channels_and_cards_idempotently(self):
         api = FakeDiscord()
@@ -161,7 +171,7 @@ class MirrorTests(unittest.TestCase):
         self.assertEqual(first["errors"], [])
         mirrored = current["site_channel_mirrors"]
         self.assertEqual(set(mirrored), {TR4KER, C411, WEBFLIX})
-        self.assertTrue(any(c["name"] == "Téléchargement · Sites"
+        self.assertTrue(any(c["name"] == "📥 Téléchargement · Torrents"
                             for c in api.channels))
         for tid in (TR4KER, C411, WEBFLIX):
             cid = mirrored[tid]["channel_id"]
@@ -204,6 +214,134 @@ class MirrorTests(unittest.TestCase):
         self.assertEqual(second["channels_created"], 0)
         self.assertEqual(second["cards_created"], 0)
         self.assertEqual(second["cards_unchanged"], 3)
+
+    def test_existing_download_channels_are_moved_without_recreation(self):
+        """Former 14-channel folder becomes Torrents; Books/Games get their own."""
+        api = FakeDiscord()
+        api.channels.extend([
+            {"id": "211", "name": "jeux-video", "type": 15, "parent_id": "200"},
+            {"id": "212", "name": "livres", "type": 15, "parent_id": "200"},
+            {"id": "400", "name": "Telechargement · Sites", "type": 4,
+             "permission_overwrites": []},
+        ])
+        game = "1672752361967853711"
+        book = "1672752361967853712"
+        d = catalogue()
+        d["categories"][1]["channels"].extend([
+            {"kind": "forum", "name": "jeux-video",
+             "url": f"https://discord.com/channels/{GUILD}/211",
+             "items": [{"title": "Fitgirl repacks",
+                        "url": f"https://discord.com/channels/{GUILD}/{game}"}]},
+            {"kind": "forum", "name": "livres",
+             "url": f"https://discord.com/channels/{GUILD}/212",
+             "items": [{"title": "Z-library",
+                        "url": f"https://discord.com/channels/{GUILD}/{book}"}]},
+        ])
+        api.originals[game] = "Bibliothèque de jeux."
+        api.originals[book] = "Bibliothèque de livres."
+        st = state()
+        for tid, domain in [(game, "https://fitgirl-repacks.site/"),
+                            (book, "https://z-library.ec/")]:
+            st["records"][tid] = {"thread_id": tid, "title": tid,
+                                   "site_url": domain, "status": "online"}
+            st["forum_updates"][tid] = {
+                "active_url": domain, "active_status": "online",
+                "active_verified": True,
+            }
+        sources = {x["tid"]: x for x in catalogue_threads(d)}
+        st["site_channel_mirrors"] = {}
+        for cid, tid, label in [
+            ("401", TR4KER, "tr4ker"),
+            ("402", game, "fitgirl-repacks"),
+            ("403", book, "z-library"),
+        ]:
+            api.channels.append({
+                "id": cid, "name": label, "type": 0, "parent_id": "400",
+                "topic": PREFIX + tid + "]",
+            })
+            previous_id = "500" + cid
+            api.messages[cid] = [{
+                "id": previous_id, "author": {"id": "999"},
+                "content": None, "flags": 32768,
+                "components": mirror_card(api, st, sources[tid], "999"),
+            }]
+            st["site_channel_mirrors"][tid] = {
+                "channel_id": cid, "message_id": previous_id
+            }
+        # C411 is not already mirrored. It must be created in Torrents,
+        # whereas the other three channels retain their IDs and messages.
+        first = sync_mirrors(api, d, st)
+        self.assertEqual(first["categories_renamed"], 1)
+        self.assertEqual(first["channels_moved"], 2)
+        self.assertEqual(first["categories_created"], 2)
+        self.assertEqual(first["channels_created"], 1)
+        self.assertEqual(first["cards_updated"], 0)
+        self.assertTrue(any(
+            cat["id"] == "400" and cat["name"] == "📥 Téléchargement · Torrents"
+            for cat in api.channels
+        ))
+        dest = {cat["name"]: cat["id"] for cat in api.channels if cat["type"] == 4}
+        self.assertEqual(
+            next(ch["parent_id"] for ch in api.channels if ch["id"] == "401"),
+            "400"
+        )
+        self.assertEqual(
+            next(ch["parent_id"] for ch in api.channels if ch["id"] == "402"),
+            dest["🎮 Téléchargement · Jeux vidéo"]
+        )
+        self.assertEqual(
+            next(ch["parent_id"] for ch in api.channels if ch["id"] == "403"),
+            dest["📚 Téléchargement · Livres"]
+        )
+        for tid in (TR4KER, game, book):
+            self.assertEqual(
+                st["site_channel_mirrors"][tid]["message_id"],
+                "500" + st["site_channel_mirrors"][tid]["channel_id"]
+            )
+        self.assertFalse(any(
+            method == "DELETE" for method, _, _ in api.actions
+        ))
+        second = sync_mirrors(api, d, st)
+        self.assertEqual(second["categories_renamed"], 0)
+        self.assertEqual(second["channels_moved"], 0)
+        self.assertEqual(second["channels_created"], 0)
+        self.assertEqual(second["categories_created"], 0)
+
+    def test_future_download_site_keeps_its_source_forum_group(self):
+        api = FakeDiscord()
+        api.channels.extend([
+            {"id": "211", "name": "jeux-video", "type": 15, "parent_id": "200"},
+            {"id": "212", "name": "livres", "type": 15, "parent_id": "200"},
+        ])
+        d = catalogue()
+        d["categories"][1]["channels"].extend([
+            {"kind": "forum", "name": "jeux-video",
+             "url": f"https://discord.com/channels/{GUILD}/211",
+             "items": []},
+            {"kind": "forum", "name": "livres",
+             "url": f"https://discord.com/channels/{GUILD}/212",
+             "items": []},
+        ])
+        st = state()
+        sync_mirrors(api, d, st)
+        extra = "1672752361967853714"
+        d["categories"][1]["channels"][1]["items"].append({
+            "title": "Nouveau jeu",
+            "url": f"https://discord.com/channels/{GUILD}/{extra}",
+        })
+        api.originals[extra] = "Jeux à télécharger"
+        st["records"][extra] = {
+            "thread_id": extra, "site_url": "https://example.net/",
+            "status": "unknown",
+        }
+        result = sync_mirrors(api, d, st)
+        self.assertEqual(result["channels_created"], 1)
+        parent = next(
+            ch["parent_id"] for ch in api.channels
+            if ch["id"] == st["site_channel_mirrors"][extra]["channel_id"]
+        )
+        category = next(ch for ch in api.channels if ch["id"] == parent)
+        self.assertEqual(category["name"], "🎮 Téléchargement · Jeux vidéo")
 
     def test_daily_sync_updates_same_message_when_current_domain_changes(self):
         api = FakeDiscord()
