@@ -743,7 +743,8 @@ def sync_thread(api, state, now=None):
         # déjà effectués dans la journée.
         if (item.get("status") == "online" and
                 (force_scan or
-                 int(item.get("html_content_probe_version") or 0) < HTML_CONTENT_PROBE_VERSION
+                 (not item.get("pending_name") and not item.get("announced_url")
+                  and int(item.get("html_content_probe_version") or 0) < HTML_CONTENT_PROBE_VERSION)
                  or not is_checked_today(item.get("name_attempted_at"), now))):
             item["name_attempted_at"] = now.isoformat(timespec="seconds")
             item["html_content_probe_version"] = HTML_CONTENT_PROBE_VERSION
