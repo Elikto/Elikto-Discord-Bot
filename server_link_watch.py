@@ -333,7 +333,7 @@ def update_identity(state, record, observation, now, *, first_run):
 # Chaque site public est alors reinspecte une fois lors de la mise a jour,
 # meme si une ancienne inspection a deja eu lieu le meme jour.
 MIGRATION_PROBE_VERSION = 3
-HTML_HEALTH_PROBE_VERSION = 4  # Reinspect restricted sites after HTML fallback upgrade
+HTML_HEALTH_PROBE_VERSION = 5  # Reinspect 403 HTML with browser gzip/deflate fallback
 ANNOUNCED_HTML_PROBE_VERSION = 1  # Recheck legacy destinations missing HTML proof
 
 
