@@ -342,5 +342,48 @@ class BrandDetectionTests(unittest.TestCase):
 
 
 
+    def test_browser_html_probe_supports_gzip_without_unbounded_memory(self):
+        import gzip
+        from unittest.mock import MagicMock
+        html = b"<html><head><title>Cinezzz - films et series</title></head></html>"
+        encoded = gzip.compress(html)
+        conn = MagicMock()
+        resp = MagicMock()
+        resp.status = 200
+        resp.getheader.side_effect = lambda key: {
+            "Content-Type": "text/html; charset=utf-8",
+            "Content-Encoding": "gzip",
+        }.get(key)
+        resp.read.return_value = encoded
+        conn.getresponse.return_value = resp
+        with patch("name_probe.resolve_public_ip", return_value="8.8.8.8"), patch(
+            "name_probe.PublicHTTPSConnection", return_value=conn
+        ):
+            page = fetch_html_page("https://cinezzz.club/",
+                                   browser_compatible=True)
+        self.assertIn("Cinezzz", page["html"])
+        headers = conn.request.call_args.kwargs["headers"]
+        self.assertEqual(headers["Accept-Encoding"], "gzip, deflate")
+        self.assertIn("Firefox", headers["User-Agent"])
+
+    def test_browser_html_probe_rejects_invalid_gzip(self):
+        from unittest.mock import MagicMock
+        conn = MagicMock()
+        response = MagicMock()
+        response.status = 200
+        response.getheader.side_effect = lambda key: {
+            "Content-Type": "text/html",
+            "Content-Encoding": "gzip",
+        }.get(key)
+        response.read.return_value = b"not-a-gzip-stream"
+        conn.getresponse.return_value = response
+        with patch("name_probe.resolve_public_ip", return_value="8.8.8.8"), patch(
+            "name_probe.PublicHTTPSConnection", return_value=conn
+        ):
+            self.assertIsNone(fetch_html_page("https://cinezzz.club/",
+                                               browser_compatible=True))
+
+
+
 if __name__ == "__main__":
     unittest.main()
