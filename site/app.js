@@ -246,6 +246,20 @@ function resourceCard(item) {
     metadata.append(element("span", "http-code", "HTTP " + monitor.http_status));
   }
 
+  if (!mirrors.length && monitor.announced_url) {
+    const next = websiteUrl(monitor.announced_url);
+    if (next) {
+      const note = element("p", "card-redirect",
+        "🔄 Nouvelle adresse annoncée sur le site · " +
+        ((healthLabels[monitor.announced_status] || healthLabels.unknown)[0]));
+      const link = element("a", "", new URL(next).hostname + " ↗");
+      link.href = next;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer nofollow";
+      note.append(" ", link);
+      metadata.append(note);
+    }
+  }
   if (!mirrors.length && monitor.redirect_url) {
     const note = element("p", "card-redirect", "↪ Autre domaine détecté — à confirmer");
     const newTarget = websiteUrl(monitor.redirect_url);
@@ -401,6 +415,18 @@ function renderServerSites() {
       card.append(element("p", "server-site-name-alert",
         "Nouveau nom potentiel : " + site.pending_name));
     }
+    const migration = websiteUrl(site.announced_url);
+    if (migration) {
+      const hint = element("p", "server-site-name-alert",
+        "🔄 Nouvelle adresse annoncée : ");
+      const action = element("a", "", new URL(migration).hostname + " ↗");
+      action.href = migration;
+      action.target = "_blank";
+      action.rel = "noopener noreferrer nofollow";
+      hint.append(action, " · " +
+        ((healthLabels[site.announced_status] || healthLabels.unknown)[0]));
+      card.append(hint);
+    }
     return card;
   });
   ui.serverSitesList.replaceChildren(...nodes);
@@ -432,7 +458,8 @@ function renderHistory() {
     server_site_added: "🆕 Nouveau site découvert dans le serveur",
     server_site_removed: "➖ Site retiré du serveur",
     server_name_suspected: "🟡 Changement de nom à confirmer",
-    server_name_changed: "✅ Nouveau nom confirmé"
+    server_name_changed: "✅ Nouveau nom confirmé",
+    server_migration_announced: "🔄 Nouvelle adresse annoncée par le site"
   };
   const cards = events.map((entry) => {
     const row = element("article", "history-event");
