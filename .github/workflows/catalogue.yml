@@ -60,6 +60,8 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Verifier le JavaScript du site
         run: node --check site/app.js
+      - name: Tester le menu Discord
+        run: node --test tests/test_discord_interactions.mjs
       - name: Synchroniser les forums Discord et exporter les fiches publiques
         env:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
@@ -81,6 +83,9 @@ jobs:
       - name: Vérifier quotidiennement toutes les URL du fil Streaming HD miroir
         env:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          # Activer UNIQUEMENT après déploiement et vérification de l'endpoint
+          # d'interactions Discord (un menu sans réponse affiche une erreur).
+          DISCORD_MIRROR_DROPDOWN_ENABLED: ${{ vars.DISCORD_MIRROR_DROPDOWN_ENABLED }}
         run: python mirror_watch.py
       - name: Recenser et vérifier quotidiennement tous les liens des salons et forums publics
         env:
