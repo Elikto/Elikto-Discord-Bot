@@ -17,7 +17,7 @@ from site_probe import check_site, extract_candidate_urls, other_domain
 
 
 INTERVAL = timedelta(hours=20)
-HTTP_PROBE_VERSION = 2  # Nouvelle politique : 5xx temporaires ne confirment pas une panne
+HTTP_PROBE_VERSION = 3  # DNS, timeout, TLS et refus réseau ne prouvent plus une panne
 PARIS = ZoneInfo("Europe/Paris")
 STATE_PATH = Path("data/monitor_state.json")
 PUBLIC_PATH = Path("site/monitoring.json")
@@ -124,7 +124,10 @@ def record_check(state: dict, record: dict, observation: dict, now: datetime) ->
     result = observation.get("result", "unknown")
     # Défense supplémentaire lorsque l'observation provient d'un ancien
     # format de cache ou d'une autre méthode d'analyse.
-    if result == "failed" and int(observation.get("http_status") or 0) >= 500:
+    # Une panne n'est confirmable que par deux réponses explicites 404/410.
+    # DNS, timeout, TLS, accès refusé, 5xx ou erreurs sans code HTTP
+    # ne confirment jamais une indisponibilité, même lors d'anciens scans.
+    if result == "failed" and int(observation.get("http_status") or 0) not in (404, 410):
         result = "unknown"
     old_status = record.get("status", "pending")
     old_redirect = record.get("redirect_url")
@@ -167,7 +170,7 @@ def record_check(state: dict, record: dict, observation: dict, now: datetime) ->
         alerts.append(event(
             state, "site_unreachable", record, now,
             previous=old_status, current="offline",
-            note="Deux vérifications successives sans réponse exploitable.",
+            note="Deux réponses HTTP 404/410 confirmées lors de contrôles distincts.",
             alert=True,
         ))
     elif old_status == "offline" and record["status"] in ("online", "restricted"):
@@ -181,8 +184,8 @@ def record_check(state: dict, record: dict, observation: dict, now: datetime) ->
         alerts.append(event(
             state, "site_check_inconclusive", record, now,
             previous="offline", current="unknown",
-            note="Ancienne alerte de panne invalidée : HTTP 5xx/protection "
-                 "ou test réseau non concluant. Fonctionnement à confirmer.",
+            note="Ancienne alerte de panne non fiable annulée : DNS, délai "
+                 "ou contrôle HTTP indéterminé. Site à vérifier.",
             alert=True,
         ))
     return alerts
@@ -324,7 +327,7 @@ def watch_catalogue(api, catalogue: dict, state: dict, now=None) -> tuple[dict, 
 
                 uncertain_old_result = (
                     record.get("status") in ("offline", "suspect")
-                    and int(record.get("http_status") or 0) >= 500
+                    and int(record.get("http_status") or 0) not in (404, 410)
                     and int(record.get("http_probe_version") or 0) < HTTP_PROBE_VERSION
                 )
                 if record.get("site_url") and (
