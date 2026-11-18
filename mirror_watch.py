@@ -29,6 +29,14 @@ STATUS = {
     "unknown": "⚪ Indéterminé",
     "pending": "⚪ En attente",
 }
+# Pages de contrôle explicitement fournies pour ces deux sites (18/11/2026).
+# Utiliser le chemin exact, pas seulement la racine HTTP parfois trompeuse.
+# Le statut final dépend TOUJOURS du nouveau contrôle réseau quotidien.
+STREAMING_LANDING_PATHS = {
+    "https://varloz.com/": "https://varloz.com/47b6f3a/home/varloz",
+    "https://rogzov.com/": "https://rogzov.com/93zjfyqk6llf/",
+}
+
 THREAD_TITLE = re.compile(r"(?im)^\s*(?:nouveau nom du fil|nouveau titre du fil)\s*[:=-]\s*(.+)$")
 
 
@@ -235,7 +243,7 @@ def grouped_current_sites(items):
     groups = {}
     for item in items:
         proposed_url = clean_url(item.get("announced_url")) if item.get("announced_url") else None
-        current_url = proposed_url or item["url"]
+        current_url = proposed_url or STREAMING_LANDING_PATHS.get(item["url"], item["url"])
         # www et non-www ne créent pas deux entrées pour le même site.
         parsed = urlsplit(current_url)
         host = (parsed.hostname or "").removeprefix("www.")
