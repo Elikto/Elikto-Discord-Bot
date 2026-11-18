@@ -401,6 +401,48 @@ class ForumUpdatesTests(unittest.TestCase):
         self.assertIn("||cinéma orange violet lundi jeudi avion||", shown(card))
         self.assertNotIn("cinéma orange violet lundi jeudi avion", repr(data))
 
+    def test_every_site_card_places_url_after_description_access_and_before_image(self):
+        from forum_cards import build_card
+        content = (
+            "Détails du service.\n\n"
+            "Id : exemple\n"
+            "mdp : demo-only\n"
+        )
+        groups = [{"url": "https://sample.example.org/", "status": "online",
+                   "older": [], "announced": False}]
+        components = build_card(
+            groups, content, "Site exemple",
+            preview_image_url="https://sample.example.org/cover.jpg"
+        )
+        parts = components[0]["components"]
+        title_i = next(i for i, p in enumerate(parts)
+                       if p["type"] == 10 and "Site exemple" in p["content"])
+        description_i = next(i for i, p in enumerate(parts)
+                             if p["type"] == 10 and "Description" in p["content"])
+        password_i = next(i for i, p in enumerate(parts)
+                          if p["type"] == 10 and "Mot de passe" in p["content"])
+        url_i = next(i for i, p in enumerate(parts)
+                     if p["type"] == 10 and "🌐 https://sample.example.org/" in p["content"])
+        image_i = next(i for i, p in enumerate(parts) if p["type"] == 12)
+        self.assertTrue(title_i < description_i < password_i < url_i)
+        self.assertEqual(url_i + 1, image_i)
+        self.assertEqual(parts[image_i]["items"][0]["media"]["url"],
+                         "https://sample.example.org/cover.jpg")
+
+    def test_vip_url_is_also_immediately_before_preview(self):
+        from forum_cards import build_card
+        components = build_card(
+            [{"url": "https://movix.online/", "status": "online",
+              "older": [], "announced": False}],
+            "Description", "Movix",
+            credentials={"vip_phrase": "six mots de démonstration uniquement"},
+            preview_image_url="https://movix.online/banner.png"
+        )
+        parts = components[0]["components"]
+        self.assertIn("🔐 Accès VIP", parts[-3]["content"])
+        self.assertIn("🌐 https://movix.online/", parts[-2]["content"])
+        self.assertEqual(parts[-1]["type"], 12)
+
     def test_opengraph_preview_image_inside_container_without_second_url(self):
         data = state()
         data["records"][THREAD]["title"] = "Reseam Manager"
