@@ -596,16 +596,12 @@ def validated_directory_groups(linked, kind):
         # Ce n'est PAS une preuve HTML : le lien sera marqué non vérifié
         # tant que sa propre page ne peut pas être inspectée.
         extra = clean_url(os.getenv("COFLIX_OBSERVED_MAIN", ""))
+        blocked = {
+            h.strip().lower() for h in
+            os.getenv("COFLIX_FAI_BLOCKED_HOSTS", "").split(",") if h.strip()
+        }
         if (extra and re.fullmatch(r"coflix\.[a-z0-9-]{2,24}", domain(extra))
-                and extra not in proposals
-                and not is_blocked_directory_entry(
-                    os.getenv("COFLIX_FAI_BLOCKED_HOSTS", "")
-                    if domain(extra) in os.getenv("COFLIX_FAI_BLOCKED_HOSTS", "").split(",")
-                    else ""
-                )
-                and domain(extra) not in {
-                    h.strip().lower() for h in os.getenv("COFLIX_FAI_BLOCKED_HOSTS", "").split(",")
-                }):
+                and extra not in proposals and domain(extra) not in blocked):
             proposals.append(extra)
 
     # Source de secours fournie par l'utilisateur et datée dans le workflow.
