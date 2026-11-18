@@ -84,6 +84,12 @@ def response(url, result="online"):
 
 
 class ServerWatchTests(unittest.TestCase):
+    def setUp(self):
+        # Ne jamais lancer de recherche réseau pendant les tests.
+        notice = patch("server_link_watch.probe_site_migration", return_value=None)
+        notice.start()
+        self.addCleanup(notice.stop)
+
     def test_scans_all_public_channels_forums_archives_and_text_threads(self):
         api = FakeDiscord()
         result, counts, errors = watch.find_server_links(api)
@@ -196,6 +202,50 @@ class ServerWatchTests(unittest.TestCase):
             self.assertEqual(report["sites"], 8)
             self.assertEqual(len([e for e in alerts
                                   if e["type"] == "server_site_added"]), 1)
+
+    def test_webflix_art_notice_is_detected_and_target_is_checked(self):
+        api = FakeDiscord()
+        api.messages["11"].append(human(902, "https://webflix.art/"))
+        s = state()
+        observed = []
+        def probe(url):
+            observed.append(url)
+            return response(url)
+        with patch("server_link_watch.check_site", side_effect=probe), patch(
+            "server_link_watch.probe_site_name", return_value={"name": "Webflix"}
+        ):
+            _, alerts = watch.watch_server_links(api, s, NOW)
+        record = s["server_links"]["https://webflix.art/"]
+        self.assertEqual(record["announced_url"], "https://webflix.surf/")
+        self.assertEqual(record["migration_evidence"], "captures:2026-11-17")
+        self.assertEqual(record["other_previous_urls"], ["https://webflix.bio/"])
+        self.assertEqual(record["announced_status"], "online")
+        self.assertEqual(record["announced_http_status"], 200)
+        self.assertEqual(observed.count("https://webflix.surf/"), 1)
+        self.assertFalse(any(e["alert"] for e in s["events"]
+                             if e["type"] == "server_migration_announced"))
+
+    def test_webflix_notice_changes_to_newer_announcement_without_stale_fallback(self):
+        api = FakeDiscord()
+        api.messages["11"].append(human(902, "https://webflix.art/"))
+        s = state()
+        with patch("server_link_watch.check_site", side_effect=lambda url: response(url)), patch(
+            "server_link_watch.probe_site_name", return_value=None
+        ):
+            watch.watch_server_links(api, s, NOW)
+        later = NOW + timedelta(days=1)
+        with patch("server_link_watch.check_site", side_effect=lambda url: response(url)), patch(
+            "server_link_watch.probe_site_migration", return_value={
+                "announced_url": "https://webflix.next/",
+                "evidence": "html:migration_notice",
+            }
+        ), patch("server_link_watch.probe_site_name", return_value=None):
+            _, alerts = watch.watch_server_links(api, s, later)
+        rec = s["server_links"]["https://webflix.art/"]
+        self.assertEqual(rec["announced_url"], "https://webflix.next/")
+        self.assertEqual(rec["announced_status"], "online")
+        self.assertEqual(len([e for e in alerts
+                              if e["type"] == "server_migration_announced"]), 1)
 
     def test_change_of_site_name_requires_two_daily_checks(self):
         api = FakeDiscord()
