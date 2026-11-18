@@ -200,6 +200,43 @@ class BrandDetectionTests(unittest.TestCase):
         self.assertIsNone(fetch_html_page("http://127.0.0.1/admin"))
         self.assertIsNone(fetch_html_page("http://localhost/"))
 
+    def test_expired_namecheap_domain_cannot_be_misread_as_active(self):
+        from name_probe import detect_wrong_page, probe_site_name
+        page = (
+            "<html><head><title>flemmix.mom - Namecheap</title></head>"
+            "<body><h1>flemmix.mom</h1>"
+            "<h2>Domain registration has expired.</h2>"
+            "<p>If you own flemmix.mom, renew the domain.</p></body></html>"
+        )
+        self.assertEqual(detect_wrong_page(page)["page_health"], "parked")
+        with patch("name_probe.fetch_html_page", return_value={
+            "html": page, "final_url": "https://flemmix.mom/"
+        }):
+            check = probe_site_name("https://flemmix.mom/")
+        self.assertEqual(check["page_health"], "parked")
+        self.assertNotIn("name", check)
+
+    def test_dlink_wait_page_does_not_count_as_a_real_flemmix_site(self):
+        from name_probe import detect_wrong_page, probe_site_name
+        page = (
+            "<html><head><title>View your link</title></head>"
+            "<body><h2>Please wait 10 seconds before viewing the link</h2>"
+            "<div>Access the link after countdown</div></body></html>"
+        )
+        self.assertEqual(detect_wrong_page(page)["page_health"], "interstitial")
+        with patch("name_probe.fetch_html_page", return_value={
+            "html": page, "final_url": "https://www.dlink9.com/m6nL/"
+        }):
+            check = probe_site_name("https://www.dlink9.com/m6nL/")
+        self.assertEqual(check["page_health"], "interstitial")
+        self.assertNotIn("name", check)
+
+    def test_normal_site_does_not_match_expiry_or_shortener_patterns(self):
+        from name_probe import detect_wrong_page
+        page = ("<title>VARLOZ - films et séries</title>"
+                "<p>Retrouvez les derniers films et la recherche par catégories</p>")
+        self.assertIsNone(detect_wrong_page(page))
+
     def test_streaming_page_distinguishes_varloz_from_rogzov_index(self):
         from name_probe import is_empty_directory_index
         good_url = "https://varloz.com/47b6f3a/home/varloz"
