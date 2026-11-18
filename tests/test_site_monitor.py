@@ -59,6 +59,83 @@ class MonitorTests(unittest.TestCase):
         self.assertEqual(outcome["result"], "online")
         self.assertEqual([c.args[1] for c in mocked.call_args_list], ["HEAD", "GET"])
 
+    def test_head_503_browser_get_200_is_online(self):
+        with patch("site_probe.single_request", side_effect=[
+            (503, None), (200, None),
+        ]) as request:
+            result = check_site("https://example.org/")
+        self.assertEqual(result["result"], "online")
+        self.assertEqual(result["http_status"], 200)
+        self.assertEqual([c.args[1] for c in request.call_args_list],
+                         ["HEAD", "GET"])
+
+    def test_head_and_get_503_are_inconclusive_not_offline(self):
+        with patch("site_probe.single_request", side_effect=[
+            (503, None), (503, None),
+        ]):
+            result = check_site("https://example.org/")
+        self.assertEqual(result["result"], "unknown")
+        self.assertEqual(result["http_status"], 503)
+        self.assertIn("temporaire", result["reason"])
+
+    def test_head_404_get_200_does_not_mark_a_working_site_down(self):
+        with patch("site_probe.single_request", side_effect=[
+            (404, None), (200, None),
+        ]):
+            result = check_site("https://example.org/")
+        self.assertEqual(result["result"], "online")
+
+    def test_old_offline_zlibrary_503_is_corrected_not_alerted_as_down(self):
+        url = "https://fr.z-library.ec/"
+        record = {
+            "thread_id": "100", "title": "Z-library",
+            "discord_url": "https://discord.com/channels/1/100",
+            "site_url": url, "status": "offline",
+            "consecutive_failures": 2, "http_status": 503,
+        }
+        s = state()
+        alerts = record_check(
+            s, record,
+            {"result": "failed", "http_status": 503,
+             "final_url": url, "reason": "HTTP 503"},
+            self.now,
+        )
+        self.assertEqual(record["status"], "unknown")
+        self.assertEqual(record["consecutive_failures"], 0)
+        self.assertEqual([x["type"] for x in alerts], ["site_check_inconclusive"])
+        self.assertNotIn("site_unreachable", [x["type"] for x in alerts])
+        record_check(s, record, {
+            "result": "unknown", "http_status": 503,
+            "final_url": url,
+        }, self.now + timedelta(days=1))
+        self.assertEqual(len(s["events"]), 1)
+
+    def test_stale_503_is_rechecked_same_day_after_probe_upgrade(self):
+        url = "https://fr.z-library.ec/"
+        current_state = state()
+        current_state["records"] = {"100": {
+            "thread_id": "100", "title": "Movix",
+            "discord_url": "https://discord.com/channels/1/100",
+            "site_url": url, "status": "offline",
+            "http_status": 503, "consecutive_failures": 2,
+            "last_checked": self.now.isoformat(),
+            "last_discovery": self.now.isoformat(),
+        }}
+        with patch("site_monitor.check_site", return_value={
+            "result": "unknown", "http_status": 503,
+            "final_url": url, "reason": "Temporarily protected",
+        }) as probe, patch("site_monitor.pick_site_url", return_value=None):
+            _, alerts = watch_catalogue(
+                object(), catalogue(), current_state,
+                self.now + timedelta(minutes=4),
+            )
+        probe.assert_called_once_with(url)
+        self.assertEqual(current_state["records"]["100"]["status"], "unknown")
+        self.assertEqual(
+            [ev["type"] for ev in alerts if ev["thread_id"] == "100"],
+            ["site_check_inconclusive"],
+        )
+
     def test_site_offline_only_after_two_distinct_checks(self):
         rec = {
             "thread_id": "100", "title": "Movix",
@@ -66,7 +143,7 @@ class MonitorTests(unittest.TestCase):
             "site_url": "https://movix.example.org/",
             "status": "pending", "consecutive_failures": 0,
         }
-        observations = {"result": "failed", "http_status": 503,
+        observations = {"result": "failed", "http_status": 404,
                         "final_url": "https://movix.example.org/", "reason": None}
         current_state = state()
         alert1 = record_check(current_state, rec, observations, self.now)
