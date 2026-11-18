@@ -165,6 +165,82 @@ class ServerWatchTests(unittest.TestCase):
             watch.watch_server_links(api, s, NOW + timedelta(days=1))
             self.assertEqual(probe.call_count, 7)
 
+    def test_fstream_new_address_announced_and_verified_for_forum_card(self):
+        from forum_updates import site_groups
+        url = "https://fstream.info/"
+        new = "https://fs99.lol/"
+        found = {url: {"source_count": 1, "sources": [{
+            "url": "https://discord.com/channels/1/100/110",
+            "channel": "French Stream", "kind": "forum"
+        }]}}
+        def discover(_):
+            return found, {"unique_urls": 1}, []
+        def identity(value):
+            if value == url or value == new:
+                return {"name": "French Stream", "confidence": "strong",
+                        "evidence": "og:site_name"}
+            return None
+        with patch("server_link_watch.check_site",
+                   side_effect=lambda value: response(value)), patch(
+            "server_link_watch.probe_site_name", side_effect=identity
+        ), patch(
+            "server_link_watch.probe_site_migration", return_value={
+                "announced_url": new,
+                "previous_url": url,
+                "evidence": "html:official_address_link",
+            }
+        ):
+            s = state()
+            report, _ = watch.watch_server_links(FakeDiscord(), s, NOW, discover=discover)
+        rec = s["server_links"][url]
+        self.assertEqual(rec["announced_url"], new)
+        self.assertEqual(rec["announced_status"], "online")
+        self.assertEqual(rec["announced_page_health"], "content")
+        self.assertTrue(rec["announced_verified"])
+        groups = site_groups([rec], "French Stream")
+        self.assertEqual(groups[0]["url"], new)
+        self.assertTrue(groups[0]["verified"])
+        self.assertEqual(report["new_addresses_checked"], 1)
+
+    def test_scheduled_18h_forces_even_if_checked_earlier_today(self):
+        url = "https://fstream.info/"
+        proposed = "https://fs99.lol/"
+        found = {url: {"source_count": 1, "sources": [{
+            "url": "https://discord.com/channels/1/100/110",
+            "channel": "French Stream", "kind": "forum"
+        }]}}
+        def discover(_):
+            return found, {"unique_urls": 1}, []
+        s = state()
+        s["server_links"] = {url: {
+            "site_url": url, "title": "French Stream", "thread_id": "100",
+            "status": "online", "active": True, "last_checked": NOW.isoformat(),
+            "name_attempted_at": NOW.isoformat(),
+            "migration_attempted_at": NOW.isoformat(),
+            "announced_last_checked": NOW.isoformat(),
+            "announced_url": proposed,
+            "sources": found[url]["sources"], "source_count": 1,
+            "first_seen": NOW.isoformat(),
+        }}
+        with patch.dict("os.environ", {"FORCE_DAILY_INTEGRITY_SCAN": "1"}), patch(
+            "server_link_watch.check_site",
+            side_effect=lambda value: response(value)
+        ) as http, patch(
+            "server_link_watch.probe_site_name",
+            return_value={"name": "French Stream", "evidence": "title"}
+        ) as html_probe, patch(
+            "server_link_watch.probe_site_migration",
+            return_value={"announced_url": proposed}
+        ) as migration:
+            report, _ = watch.watch_server_links(
+                FakeDiscord(), s, NOW, discover=discover
+            )
+        self.assertEqual(report["checked"], 1)
+        self.assertEqual(report["new_addresses_checked"], 1)
+        self.assertEqual(http.call_count, 2)
+        self.assertEqual(html_probe.call_count, 2)
+        migration.assert_called_once_with(url)
+
     def test_directory_index_is_not_counted_as_a_working_streaming_site(self):
         good = "https://varloz.com/47b6f3a/home/varloz"
         empty = "https://rogzov.com/93zjfyqk6llf/"
