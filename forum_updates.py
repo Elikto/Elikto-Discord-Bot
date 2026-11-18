@@ -9,6 +9,8 @@ import hashlib
 import re
 from urllib.parse import urlsplit
 from site_probe import clean_url
+from forum_cards import (source_description, build_card, all_text, normalize,
+                         is_own_card, card_digest, V2_FLAG)
 
 MARKER = "[elikto-forum-suivi:v1]"
 MIRROR_THREAD = "1430988094374547559"
@@ -68,6 +70,24 @@ def site_groups(records, forum_title):
     return sorted(groups.values(), key=lambda item: (not item["announced"], item["url"]))
 
 
+
+def records_for_forum(state, thread_id):
+    """Réunir les liens publics du fil et son adresse principale historique."""
+    forum = {thread_id}
+    found = [
+        item for item in state.get("server_links", {}).values()
+        if thread_id in forum_sources(item, forum) and item.get("active", True)
+    ]
+    primary = state.get("records", {}).get(thread_id, {})
+    link = clean_url(primary.get("site_url"))
+    if link and not any(domain(x.get("site_url")) == domain(link) for x in found):
+        found.insert(0, {
+            "site_url": link,
+            "status": primary.get("status", "pending"),
+        })
+    return found
+
+
 def render_forum_update(title, records):
     groups = site_groups(records, title)
     heading = domain(groups[0]["url"]) if groups else safe_label(title)
@@ -95,9 +115,7 @@ def render_forum_update(title, records):
 
 
 def own_message(msg, bot_id):
-    return str((msg.get("author") or {}).get("id")) == bot_id and MARKER in (
-        msg.get("content") or ""
-    )
+    return is_own_card(msg, bot_id)
 
 
 def find_existing(api, tid, bot_id, known=None):
@@ -125,58 +143,66 @@ def find_existing(api, tid, bot_id, known=None):
     return None
 
 
-def upsert_forum_update(api, tid, bot_id, content, tracking):
+def upsert_forum_update(api, tid, bot_id, components, tracking):
+    """Éditer une seule publication du bot, jamais celle du membre."""
     old = find_existing(api, tid, bot_id, tracking.get("message_id"))
+    payload = {
+        "content": None,
+        "embeds": [],
+        "flags": V2_FLAG,
+        "components": components,
+        "allowed_mentions": {"parse": []},
+    }
     if old:
-        if old.get("content") != content:
-            api.call("PATCH", f"/channels/{tid}/messages/{old['id']}",
-                     json={"content": content, "allowed_mentions": {"parse": []}})
+        if normalize(old.get("components")) != normalize(components):
+            api.call("PATCH", f"/channels/{tid}/messages/{old['id']}", json=payload)
             return str(old["id"]), "updated"
         return str(old["id"]), "unchanged"
-    msg = api.call("POST", f"/channels/{tid}/messages",
-                   json={"content": content, "allowed_mentions": {"parse": []}})
-    return str(msg["id"]), "created"
+    posted = api.call("POST", f"/channels/{tid}/messages", json=payload)
+    return str(posted["id"]), "created"
 
 
 def sync_forum_updates(api, state, changed_events=()):
-    """Mettre a jour uniquement les forums publics touches par un changement."""
-    forums = {str(i): v for i, v in state.get("records", {}).items()
-              if str(i) != MIRROR_THREAD}
-    by_forum = {}
-    for record in state.get("server_links", {}).values():
-        for tid in forum_sources(record, forums):
-            by_forum.setdefault(tid, []).append(record)
+    """Initialiser tous les forums publics, puis synchroniser les changements.
 
-    changed = {str(e.get("thread_id")) for e in changed_events
-               if e.get("type") in CHANGE_EVENTS}
-    tracked = state.setdefault("forum_updates", {})
-    targets = {
-        tid for tid, records in by_forum.items()
-        if any(rec.get("announced_url") for rec in records)
-        or tid in changed or tid in tracked
+    Les descriptions ne sont jamais sauvées dans le dépôt : on relit le
+    message original au moment de publier/éditer la carte.
+    """
+    forums = {
+        str(tid): rec for tid, rec in state.get("records", {}).items()
+        if str(tid) != MIRROR_THREAD
     }
-    if not targets:
-        return {"created": 0, "updated": 0, "unchanged": 0, "errors": []}
+    tracked = state.setdefault("forum_updates", {})
+    result = {
+        "created": 0, "updated": 0, "unchanged": 0, "skipped": 0,
+        "descriptions_found": 0, "description_missing": 0, "errors": [],
+    }
     bot_id = str(api.call("GET", "/users/@me")["id"])
-    results = {"created": 0, "updated": 0, "unchanged": 0, "errors": []}
-    for tid in sorted(targets):
-        message = render_forum_update(forums[tid].get("title") or "Site",
-                                      by_forum.get(tid, []))
-        previous = tracked.get(tid, {})
-        digest = hashlib.sha256(message.encode("utf-8")).hexdigest()
-        if previous.get("digest") == digest and previous.get("message_id"):
-            results["unchanged"] += 1
+    for tid, info in sorted(forums.items()):
+        linked = records_for_forum(state, tid)
+        if not linked:
+            result["skipped"] += 1
             continue
         try:
-            mid, outcome = upsert_forum_update(
-                api, tid, bot_id, message, previous
+            original = source_description(api, tid, bot_id)
+            if original.strip():
+                result["descriptions_found"] += 1
+            else:
+                result["description_missing"] += 1
+            components = build_card(site_groups(linked, info.get("title") or "Site"), original)
+            if not components:
+                result["skipped"] += 1
+                continue
+            digest = card_digest(components)
+            message_id, outcome = upsert_forum_update(
+                api, tid, bot_id, components, tracked.get(tid, {})
             )
-        except RuntimeError as exc:
-            results["errors"].append({
-                "thread_id": tid, "reason": str(exc).split("HTTP ")[-1][:55]
+            tracked[tid] = {"message_id": message_id, "digest": digest}
+            result[outcome] += 1
+        except (RuntimeError, ValueError) as exc:
+            result["errors"].append({
+                "thread_id": tid,
+                "reason": str(exc).split("HTTP ")[-1][:85],
             })
-            continue
-        tracked[tid] = {"message_id": mid, "digest": digest}
-        results[outcome] += 1
-    print("FORUMS : resultats des messages actualises :", results)
-    return results
+    print("FORUMS : fiches stylisées et descriptions d'origine :", result)
+    return result
