@@ -62,6 +62,24 @@ class BrandDetectionTests(unittest.TestCase):
         self.assertEqual(migration["previous_url"], "https://fstream.info/")
         self.assertEqual(migration["evidence"], "html:official_address_link")
 
+    def test_html_meta_refresh_new_domain_supported_with_public_url_only(self):
+        from name_probe import parse_site_migration
+        html = (
+            '<html><head><meta http-equiv="refresh" '
+            'content="0; URL=https://nouveau-stream.example.org/"></head></html>'
+        )
+        result = parse_site_migration(html, "https://ancien-stream.example.org/")
+        self.assertEqual(result["announced_url"], "https://nouveau-stream.example.org/")
+        self.assertEqual(result["evidence"], "html:meta_refresh")
+        self.assertIsNone(parse_site_migration(
+            '<meta http-equiv="refresh" content="0; url=http://127.0.0.1/admin">',
+            "https://ancien-stream.example.org/"
+        ))
+        self.assertIsNone(parse_site_migration(
+            '<meta http-equiv="refresh" content="60; url=https://ads.example.org/">',
+            "https://ancien-stream.example.org/"
+        ))
+
     def test_generic_adresse_actuelle_and_no_false_ads(self):
         from name_probe import parse_site_migration
         html = """
