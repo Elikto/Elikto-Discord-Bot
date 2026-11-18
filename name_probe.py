@@ -451,6 +451,9 @@ PARKING_MARKERS = (
 )
 SHORTENER_MARKERS = (
     r"\bplease wait \d{1,3} seconds? before viewing the link\b",
+    r"\bplease wait\b.{0,90}\b(?:link|destination|redirect)\b",
+    r"\byour link will be available in \d{1,3} seconds?\b",
+    r"\b(?:unlock|continue to|access) (?:the |your )?link after\b",
     r"\byour link is (?:almost|nearly) ready\b",
     r"\bwait \d{1,3} seconds? to (?:access|continue|get).*link\b",
     r"\bskip (?:this )?ad(?:vertisement)?\b",
