@@ -165,6 +165,47 @@ class ServerWatchTests(unittest.TestCase):
             watch.watch_server_links(api, s, NOW + timedelta(days=1))
             self.assertEqual(probe.call_count, 7)
 
+    def test_new_migration_parser_version_rescans_fstream_same_day(self):
+        from server_link_watch import MIGRATION_PROBE_VERSION
+        original = "https://fstream.info/"
+        latest = "https://fs5.lol/"
+        s = state()
+        s["server_links"] = {original: {
+            "site_url": original, "title": "French Stream",
+            "thread_id": "100", "status": "online", "active": True,
+            "last_checked": NOW.isoformat(),
+            "name_attempted_at": NOW.isoformat(),
+            "migration_attempted_at": NOW.isoformat(),
+            "migration_probe_version": MIGRATION_PROBE_VERSION - 1,
+            "sources": [{
+                "url": "https://discord.com/channels/1/100/110",
+                "channel": "French Stream", "kind": "forum",
+            }],
+        }}
+        found = {original: {
+            "source_count": 1,
+            "sources": s["server_links"][original]["sources"]
+        }}
+        def discover(_):
+            return found, {"unique_urls": 1}, []
+        with patch("server_link_watch.check_site",
+                   side_effect=lambda url: response(url)), patch(
+            "server_link_watch.probe_site_name",
+            return_value={"name": "French Stream", "evidence": "title"}
+        ), patch("server_link_watch.probe_site_migration", return_value={
+            "announced_url": latest, "evidence": "html:official_address_text"
+        }) as migration:
+            report, _ = watch.watch_server_links(
+                FakeDiscord(), s, NOW, discover=discover
+            )
+            migration.assert_called_once_with(original)
+            self.assertEqual(report["migration_checked"], 1)
+            self.assertEqual(s["server_links"][original]["announced_url"], latest)
+            self.assertEqual(s["server_links"][original]["migration_probe_version"],
+                             MIGRATION_PROBE_VERSION)
+            watch.watch_server_links(FakeDiscord(), s, NOW, discover=discover)
+            migration.assert_called_once()
+
     def test_fstream_new_address_announced_and_verified_for_forum_card(self):
         from forum_updates import site_groups
         url = "https://fstream.info/"
