@@ -371,6 +371,17 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
             observation = check_site(rec["site_url"])
             record_check(state, rec, observation, now)
             checked += 1
+            # Les vraies redirections HTTP inter-domaines sont des preuves
+            # plus fortes que la simple disponibilité de l'ancienne URL.
+            # Publier la cible en tant qu'adresse annoncée, puis vérifier
+            # son contenu HTML indépendamment ci-dessous.
+            if rec.get("redirect_url") and observation.get("result") == "online":
+                record_migration(
+                    state, rec,
+                    {"announced_url": rec["redirect_url"],
+                     "evidence": "http:cross_domain_redirect"},
+                    now, first_run=first_run,
+                )
         if rec.get("status") == "online" and (force_scan or due_daily(rec.get("name_attempted_at"), now)):
             rec["name_attempted_at"] = stamp(now)
             identity = probe_site_name(rec["site_url"])
