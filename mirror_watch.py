@@ -93,6 +93,8 @@ def update_probe(item, observation, now, state, first_run=False):
     previous = item.get("status", "pending")
     previous_redirect = item.get("redirect_url")
     result = observation.get("result", "unknown")
+    if result == "failed" and int(observation.get("http_status") or 0) >= 500:
+        result = "unknown"
     if result in ("online", "restricted"):
         item["status"] = result
         item["failures"] = 0
