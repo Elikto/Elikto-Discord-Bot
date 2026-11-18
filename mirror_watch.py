@@ -724,11 +724,14 @@ def sync_thread(api, state, now=None):
     sites = decorate_destinations(
         original_sites + internet_sites, source_items, target_states, now, state
     )
-    # Seuls les candidats supplémentaires réellement joignables sont
-    # publiés. Les anciens sites suivis depuis Discord restent affichés.
+    # Conserver aussi les candidats dont le serveur répond mais qui affichent
+    # un « Index of / ». Sinon l'anomalie disparaît purement de la liste,
+    # et l'utilisateur ne voit jamais la croix rouge demandée.
+    # Les adresses hors ligne non publiées dans le fil restent masquées.
     sites = [
         site for site in sites
-        if site.get("source_urls") or site.get("status") == "online"
+        if site.get("source_urls")
+        or site.get("status") in ("online", "empty_index")
     ]
     # Ne créer un menu interactif que lorsqu'un serveur Discord répond aux clics.
     dropdown_enabled = os.environ.get("DISCORD_MIRROR_DROPDOWN_ENABLED") == "1"
