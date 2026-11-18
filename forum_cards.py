@@ -44,28 +44,29 @@ def split_text(text, length=3850):
 
 
 def strip_duplicate_source_url(description, groups):
-    """Ôter seulement une URL finale déjà affichée dans la fiche.
+    """Une URL seule deja affichee dans la carte ne se repete pas.
 
-    Conserve sans réécriture le corps de la description et ses liens internes.
+    Conserver les phrases, liens inline et adresses inconnues : on n'edite
+    jamais le message de l'auteur, seulement sa presentation dans la fiche.
     """
     known = set()
     for group in groups:
-        known.add(domain(group.get("url")))
-        if group.get("reference_url"):
-            known.add(domain(group.get("reference_url")))
-        known.update(group.get("older") or [])
-    lines = str(description or "").rstrip().splitlines()
-    while lines:
-        last = lines[-1].strip()
-        if not re.fullmatch(r"<?https?://[^\s<>]+>?", last):
-            break
-        host = domain(last.strip("<>").rstrip(".,!?"))
-        if host not in known:
-            break
-        lines.pop()
-        while lines and not lines[-1].strip():
-            lines.pop()
-    return "\n".join(lines).strip()
+        for field in ("url", "reference_url", "directory_url"):
+            url = clean_url(group.get(field))
+            if url:
+                known.add(url)
+        for old in group.get("older") or []:
+            known.add(str(old).lower().removeprefix("www."))
+    result = []
+    for line in str(description or "").splitlines():
+        plain = line.strip().strip("<>").rstrip(".,!?")
+        if re.fullmatch(r"https?://[^\s<>]+", plain, flags=re.I):
+            normalized = clean_url(plain)
+            if normalized and (normalized in known
+                    or domain(normalized) in known):
+                continue
+        result.append(line)
+    return "\n".join(result).strip()
 
 
 ACCOUNT_LINE = re.compile(
