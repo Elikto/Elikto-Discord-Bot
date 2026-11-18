@@ -321,6 +321,12 @@ def update_identity(state, record, observation, now, *, first_run):
               note="Renommage confirmé sur deux journées de contrôle.")
 
 
+# Incrementer apres une amelioration de la reconnaissance des adresses.
+# Chaque site public est alors reinspecte une fois lors de la mise a jour,
+# meme si une ancienne inspection a deja eu lieu le meme jour.
+MIGRATION_PROBE_VERSION = 3
+
+
 def watch_server_links(api, state, now=None, *, discover=find_server_links):
     now = now or datetime.now(timezone.utc)
     force_scan = os.environ.get("FORCE_DAILY_INTEGRITY_SCAN") == "1"
@@ -407,8 +413,11 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
         # Une fenêtre "Passe sur ..." n'est ni une redirection HTTP ni
         # forcément le titre de la page. Examiner la notice même sur HTTP 451.
         if (rec.get("status") in ("online", "unknown", "restricted")
-                and (force_scan or due_daily(rec.get("migration_attempted_at"), now))):
+                and (force_scan
+                     or int(rec.get("migration_probe_version") or 0) < MIGRATION_PROBE_VERSION
+                     or due_daily(rec.get("migration_attempted_at"), now))):
             rec["migration_attempted_at"] = stamp(now)
+            rec["migration_probe_version"] = MIGRATION_PROBE_VERSION
             notice = probe_site_migration(rec["site_url"])
             migration_checks += 1
             if notice:
