@@ -18,7 +18,7 @@ import os
 import re
 
 from site_probe import RE_URL, clean_url, check_site
-from name_probe import probe_site_name
+from name_probe import probe_site_name, probe_site_migration
 from site_monitor import (
     STATE_PATH, load_state, event, record_check, notify_discord, stamp,
 )
@@ -48,6 +48,43 @@ BARE_DOMAIN = re.compile(
     r"[a-z]{2,24}(?:/[\w.%~!$&'()+,;=:@/-]*)?(?![\w.-])",
     re.I,
 )
+
+
+# Observations fournies par des captures d'écran (17/11/2026).
+# Ces annonces ne prouvent ni l'identité juridique ni la sécurité du domaine.
+# La détection HTML prend le relais lors des prochains changements.
+OBSERVED_MIGRATIONS = {
+    "https://webflix.art/": {
+        "announced_url": "https://webflix.surf/",
+        "evidence": "captures:2026-11-17",
+        "other_previous": ["https://webflix.bio/"],
+    },
+    "https://webflix.bio/": {
+        "announced_url": "https://webflix.surf/",
+        "evidence": "captures:2026-11-17",
+    },
+}
+
+
+def record_migration(state, rec, observation, now, *, first_run):
+    """Historiser un changement annoncé sans remplacer l'ancienne URL source."""
+    announced = clean_url((observation or {}).get("announced_url"))
+    if not announced or announced == rec["site_url"]:
+        return False
+    previous = rec.get("announced_url")
+    if previous == announced:
+        return False
+    rec["announced_url"] = announced
+    rec["migration_evidence"] = observation.get("evidence", "html:migration_notice")
+    rec["migration_observed_at"] = stamp(now)
+    if observation.get("other_previous"):
+        rec["other_previous_urls"] = observation["other_previous"]
+    # Une annonce se rapporte au site, pas à une redirection HTTP prouvée.
+    event(state, "server_migration_announced", rec, now,
+          previous=previous or rec["site_url"], current=announced,
+          note="Nouvelle adresse affichée sur le site, à vérifier indépendamment.",
+          alert=not first_run)
+    return True
 
 
 def due_daily(last: str | None, now: datetime) -> bool:
@@ -323,6 +360,8 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
     # Si une lecture a échoué, préserver toutes les observations déjà connues.
     checked = 0
     identity_checks = 0
+    migration_checks = 0
+    new_address_checks = {}
     for rec in records.values():
         if not rec.get("active"):
             continue
@@ -336,16 +375,46 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
             update_identity(state, rec, identity, now, first_run=first_run)
             identity_checks += 1
 
+        # Une fenêtre "Passe sur ..." n'est ni une redirection HTTP ni
+        # forcément le titre de la page. Examiner la notice même sur HTTP 451.
+        if (rec.get("status") in ("online", "unknown", "restricted")
+                and due_daily(rec.get("migration_attempted_at"), now)):
+            rec["migration_attempted_at"] = stamp(now)
+            notice = probe_site_migration(rec["site_url"])
+            migration_checks += 1
+            if notice:
+                record_migration(state, rec, notice, now, first_run=first_run)
+        # Garde-fou pour l'annonce Webflix documentée par deux captures :
+        # utile si la notice est rendue côté JavaScript et absente du HTML.
+        if rec["site_url"] in OBSERVED_MIGRATIONS and not rec.get("announced_url"):
+            record_migration(
+                state, rec, OBSERVED_MIGRATIONS[rec["site_url"]], now,
+                first_run=first_run,
+            )
+
+        target = rec.get("announced_url")
+        if target and due_daily(rec.get("announced_last_checked"), now):
+            if target not in new_address_checks:
+                new_address_checks[target] = check_site(target)
+            checked_target = new_address_checks[target]
+            rec["announced_status"] = checked_target.get("result", "unknown")
+            rec["announced_http_status"] = checked_target.get("http_status")
+            rec["announced_last_checked"] = stamp(now)
+
     state["server_scan"] = {
         "at": stamp(now), "counts": scan_counts,
         "errors": errors[:30],
         "all_public_sources_scanned": not errors,
         "new_http_checks": checked,
         "new_name_checks": identity_checks,
+        "new_migration_checks": migration_checks,
+        "new_announced_address_checks": len(new_address_checks),
     }
     active_records = [rec for rec in records.values() if rec.get("active")]
     report = {
         "checked": checked, "name_checked": identity_checks,
+        "migration_checked": migration_checks,
+        "new_addresses_checked": len(new_address_checks),
         "sites": len(active_records), "sources": scan_counts,
         "complete": not errors,
     }
