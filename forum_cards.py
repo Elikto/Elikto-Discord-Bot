@@ -70,7 +70,7 @@ ACCOUNT_LINE = re.compile(
     r"^\s*(?:[-•*]\s*)?(?:\*\*)?(?:👤|🔑|🔐|🆔)?\s*(?:\*\*)?"
     r"(?P<label>nom d['’]utilisateur|utilisateur|identifiant|identifiants|"
     r"username|login|user|pseudo|mot de passe|mdp|password|pass)"
-    r"(?:\*\*)?\s*[:：=\-]\s*(?P<value>\S.*?)\s*$",
+    r"(?:\*\*)?\s*[:：=\-]\s*(?:\*\*)?\s*(?P<value>\S.*?)\s*$",
     flags=re.I,
 )
 USER_LABELS = {"nom d'utilisateur", "nom d’utilisateur", "utilisateur", "identifiant",
@@ -113,6 +113,8 @@ def build_card(groups, description, title=None):
         if not url:
             continue
         line = "🌐 " + url
+        if group.get("directory_url"):
+            line += "\n-# ↳ Page de référence : " + group["directory_url"]
         if group.get("older"):
             line += "\n-# ↳ Ancien : " + ", ".join(group["older"])
         if group.get("announced"):
