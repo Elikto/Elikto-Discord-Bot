@@ -205,6 +205,7 @@ const healthLabels = {
   online: ["● Répond", "online"],
   suspect: ["● À vérifier", "suspect"],
   offline: ["● Inaccessible", "offline"],
+  empty_index: ["❌ Index vide", "offline"],
   restricted: ["● Accès restreint", "restricted"],
   pending: ["● En attente", "pending"],
   missing_url: ["● Adresse manquante", "missing"],
@@ -333,14 +334,14 @@ function updateHealthSummary() {
   const info = state.monitoring || {};
   const counts = info.status_counts || {};
   ui.healthyCount.textContent = String(counts.online || 0);
-  ui.incidentCount.textContent = String((counts.offline || 0) + (counts.suspect || 0));
+  ui.incidentCount.textContent = String((counts.offline || 0) + (counts.suspect || 0) + (counts.empty_index || 0));
   ui.restrictedCount.textContent = String(counts.restricted || 0);
   ui.missingCount.textContent = String(counts.missing_url || 0);
   ui.lastControl.textContent = info.updated_at ?
     "Contrôle quotidien · " + formatDate(info.updated_at).replace("Mis à jour le ", "") :
     "Aucun contrôle publié pour le moment";
   const missing = counts.missing_url || 0;
-  const incident = (counts.offline || 0) + (counts.suspect || 0);
+  const incident = (counts.offline || 0) + (counts.suspect || 0) + (counts.empty_index || 0);
   let explanation = "";
   if (!state.monitoring) explanation = "Surveillance non initialisée : aucun état n'est encore disponible.";
   else if (missing) explanation = missing + " fiche(s) sans adresse de site détectable. Elles ne sont pas testées automatiquement.";
