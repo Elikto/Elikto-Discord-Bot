@@ -100,6 +100,47 @@ def credential_fields(text):
     return fields, consumed
 
 
+VIP_MARKER = re.compile(r"\bphrase\s+secr[eèê]te\b", flags=re.I)
+LIST_PREFIX = re.compile(r"^\s*(?:\d+[.)]|[-*•])\s*")
+
+
+def valid_vip_phrase(value):
+    """Ne pas interpréter un texte libre ou un lien comme une clé VIP."""
+    value = str(value or "").strip().strip("*").strip()
+    return bool(8 <= len(value) <= 250 and len(value.split()) >= 2
+                and not re.search(r"https?://|<@|@everyone|@here", value, re.I)
+                and not VIP_MARKER.search(value))
+
+
+def vip_phrase_fields(text):
+    """Lire une « phrase secrète » suivie d'une ligne numérotée ou en gras."""
+    lines = str(text or "").splitlines()
+    for i, raw in enumerate(lines):
+        label = LIST_PREFIX.sub("", raw).strip().strip("*").strip()
+        if not VIP_MARKER.search(label):
+            continue
+        inline = label.split(":", 1)[1].strip() if ":" in label else ""
+        if inline and valid_vip_phrase(inline):
+            return inline.strip("* ").strip(), {i}
+        for j in range(i + 1, min(len(lines), i + 5)):
+            candidate = LIST_PREFIX.sub("", lines[j]).strip().strip("*").strip()
+            if not candidate:
+                continue
+            if valid_vip_phrase(candidate):
+                return candidate, {i, j}
+            break
+    return None, set()
+
+
+def split_vip_phrase(description):
+    value, consumed = vip_phrase_fields(description)
+    if not value:
+        return description, None
+    remaining = [line for i, line in enumerate(str(description or "").splitlines())
+                 if i not in consumed]
+    return "\n".join(remaining).strip(), value
+
+
 def split_credentials(description):
     """Retirer un couple complet de la description pour éviter un doublon."""
     fields, consumed = credential_fields(description)
@@ -156,8 +197,12 @@ def credentials_from_author_posts(api, thread_id, bot_id):
         before = last
 
     latest = None
+    vip_phrase = None
     pending = {}
     for message in sorted(messages, key=lambda m: int(m["id"])):
+        found_vip, _ = vip_phrase_fields(message.get("content") or "")
+        if found_vip:
+            vip_phrase = found_vip
         fields, _ = credential_fields(message.get("content") or "")
         if not fields:
             # Ne pas mélanger des identifiants avec une discussion ultérieure.
@@ -175,6 +220,8 @@ def credentials_from_author_posts(api, thread_id, bot_id):
         if {"user", "password"}.issubset(pending):
             latest = dict(pending)
             pending = {}
+    if vip_phrase:
+        latest = {**(latest or {}), "vip_phrase": vip_phrase}
     return latest
 
 
@@ -205,7 +252,10 @@ def build_card(groups, description, title=None, credentials=None):
             line += "\n-# 🟠 Accessibilité à vérifier"
         parts.extend({"type": 10, "content": chunk} for chunk in split_text(line))
     regular_description, original_credentials = split_credentials(description)
-    credentials = credentials or original_credentials
+    regular_description, original_vip_phrase = split_vip_phrase(regular_description)
+    credentials = {**(original_credentials or {}), **(credentials or {})}
+    if original_vip_phrase and not credentials.get("vip_phrase"):
+        credentials["vip_phrase"] = original_vip_phrase
     cleaned = strip_duplicate_source_url(regular_description, groups)
     if cleaned:
         for i, chunk in enumerate(split_text(cleaned, 3800)):
@@ -213,12 +263,18 @@ def build_card(groups, description, title=None, credentials=None):
                 "type": 10,
                 "content": ("**📝 Description**\n" if i == 0 else "") + chunk,
             })
-    if credentials:
+    if credentials.get("user") and credentials.get("password"):
         parts.append({
             "type": 10,
             "content": "**🔐 Identifiants**\n**👤 Utilisateur :** "
                        + credentials["user"] + "\n**🔑 Mot de passe :** "
                        + "||" + credentials["password"].replace("||", "| |") + "||",
+        })
+    if credentials.get("vip_phrase"):
+        parts.append({
+            "type": 10,
+            "content": "**🔐 Accès VIP**\n**🔑 Phrase secrète :** ||"
+                       + credentials["vip_phrase"].replace("||", "| |") + "||",
         })
     if len(parts) > 38:
         raise ValueError("Description trop longue pour une carte Discord")
