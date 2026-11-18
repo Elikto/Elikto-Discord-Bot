@@ -46,6 +46,52 @@ class BrandDetectionTests(unittest.TestCase):
         self.assertIsNone(announced_rename("NANDOV — Films et séries en HD"))
         self.assertIsNone(announced_rename("MOMDAX devient MOMDAX.com"))
 
+    def test_fstream_landing_portal_link_updates_without_hardcoding_domain(self):
+        from name_probe import parse_site_migration
+        html = """
+          <html><head><title>French Stream - Accès au site</title></head>
+          <body><header><a href='/installer'>Installer</a></header>
+            <h2>URL Éphémère Du moment</h2>
+            <a href='https://fs99.lol/'>fs99.lol</a>
+            <section><a href='https://tv-unrelated.example.org/'>Regarder la TV</a>
+            <a href='https://music-unrelated.example.org/'>Musique</a></section>
+          </body></html>
+        """
+        migration = parse_site_migration(html, "https://fstream.info/")
+        self.assertEqual(migration["announced_url"], "https://fs99.lol/")
+        self.assertEqual(migration["previous_url"], "https://fstream.info/")
+        self.assertEqual(migration["evidence"], "html:official_address_link")
+
+    def test_generic_adresse_actuelle_and_no_false_ads(self):
+        from name_probe import parse_site_migration
+        html = """
+           <div>Adresse actuelle :</div>
+           <a href="https://nouveau-site.example.org/">Cliquez pour accéder</a>
+           <a href="https://tracker-ad.example.org/">Publicité</a>
+        """
+        migration = parse_site_migration(html, "https://ancien-site.example.org/")
+        self.assertEqual(
+            migration["announced_url"], "https://nouveau-site.example.org/"
+        )
+        no_announcement = """
+           <a href="https://pub.example.org/">Publicité</a>
+           <div>Site de films et séries</div>
+           <a href="https://social.example.org/">Nous suivre</a>
+        """
+        self.assertIsNone(parse_site_migration(
+            no_announcement, "https://ancien-site.example.org/"
+        ))
+
+    def test_announced_link_rejects_unsafe_internal_destination(self):
+        from name_probe import parse_site_migration
+        for href in ("http://127.0.0.1/private", "http://localhost/admin",
+                     "https://user:password@example.org/",
+                     "https://original.example.org/page"):
+            raw = (f"<h2>Nouvelle adresse officielle</h2>"
+                   f"<a href='{href}'>Visiter</a>")
+            result = parse_site_migration(raw, "https://original.example.org/")
+            self.assertIsNone(result, href)
+
     def test_webflix_popup_announces_surf_without_http_redirect(self):
         from name_probe import parse_site_migration
         body = """
