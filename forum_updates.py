@@ -53,16 +53,16 @@ def proven_html_content(record, now=None):
     Upgrade that existing observation when it is recent; never promote
     HTTP-only, stale, blocked or directory-index results to green.
     """
-    if record.get("page_health") == "content":
-        return record.get("status") == "online"
-    if record.get("page_health") in ("unknown", "empty_index", "parked", "blocked"):
+    if record.get("status") not in ("online", "restricted"):
         return False
-    if record.get("status") != "online":
+    if record.get("page_health") in (
+        "unknown", "empty_index", "parked", "blocked", "interstitial"
+    ):
         return False
     evidence = record.get("name_evidence")
     last = record.get("name_checked_at")
     if evidence not in ("og:site_name", "application-name", "title",
-                        "og:title", "twitter:title") or not last:
+                        "og:title", "twitter:title", "html:title_brand") or not last:
         return False
     try:
         checked = datetime.fromisoformat(last.replace("Z", "+00:00"))
