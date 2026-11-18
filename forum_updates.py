@@ -346,14 +346,16 @@ def sync_forum_updates(api, state, changed_events=()):
             if not components:
                 result["skipped"] += 1
                 continue
-            digest = card_digest(components)
             previous = tracked.get(tid, {})
             message_id, outcome = upsert_forum_update(
                 api, tid, bot_id, components, previous
             )
             # Enregistrer le message immédiatement pour éviter une seconde
             # carte si Discord refuse temporairement l'aperçu.
-            tracked[tid] = {**previous, "message_id": message_id, "digest": digest}
+            # Ne pas conserver même une empreinte des mots de passe
+            # dans l'historique public GitHub.
+            safe_tracking = {k: v for k, v in previous.items() if k != "digest"}
+            tracked[tid] = {**safe_tracking, "message_id": message_id}
             result[outcome] += 1
             preview_url = clean_url(groups[0]["url"])
             if preview_url:
