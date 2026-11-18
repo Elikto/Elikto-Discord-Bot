@@ -540,5 +540,145 @@ class ServerWatchTests(unittest.TestCase):
 
 
 
+    def test_webflix_legacy_http_200_rechecks_html_immediately_after_upgrade(self):
+        """Ancien résultat HTTP 200 sans HTML : recontrôle même jour."""
+        from server_link_watch import ANNOUNCED_HTML_PROBE_VERSION
+        from forum_updates import site_groups
+        from forum_cards import build_card, all_text
+        old_url = "https://webflix.art/"
+        new_url = "https://webflix.surf/"
+        source = {"url": "https://discord.com/channels/1/100/110",
+                  "channel": "WebFlix", "kind": "fil"}
+        rec = {
+            "site_url": old_url, "thread_id": "100", "title": "WebFlix",
+            "discord_url": source["url"], "sources": [source],
+            "status": "unknown", "last_checked": NOW.isoformat(),
+            "name_attempted_at": NOW.isoformat(),
+            "migration_attempted_at": NOW.isoformat(),
+            "migration_probe_version": watch.MIGRATION_PROBE_VERSION,
+            "announced_url": new_url,
+            "announced_status": "online", "announced_http_status": 200,
+            "announced_last_checked": NOW.isoformat(),
+            "active": True,
+        }
+        s = state()
+        s["server_links"] = {old_url: rec}
+        def discover(_):
+            return {old_url: {"sources": [source], "source_count": 1}}, {}, []
+        with patch("server_link_watch.check_site",
+                   side_effect=lambda url: response(url)) as http, patch(
+            "server_link_watch.probe_site_name",
+            return_value={"name": "Webflix", "page_health": "content",
+                          "final_url": new_url, "evidence": "og:site_name"}
+        ) as html:
+            report, _ = watch.watch_server_links(
+                FakeDiscord(), s, NOW + timedelta(hours=1), discover=discover
+            )
+            self.assertEqual(report["new_addresses_checked"], 1)
+            http.assert_called_once_with(new_url)
+            html.assert_called_once_with(new_url)
+            self.assertTrue(rec["announced_verified"])
+            self.assertEqual(rec["announced_page_health"], "content")
+            self.assertEqual(rec["announced_html_probe_version"],
+                             ANNOUNCED_HTML_PROBE_VERSION)
+            groups = site_groups([rec], "WebFlix")
+            self.assertTrue(groups[0]["verified"])
+            rendered = "\n".join(all_text(build_card(groups, "Description", "WebFlix")))
+            self.assertIn("✅", rendered)
+            # Pas de nouvelle sonde inutile à chaque push dans la même journée.
+            http.reset_mock()
+            watch.watch_server_links(
+                FakeDiscord(), s, NOW + timedelta(hours=2), discover=discover
+            )
+            http.assert_not_called()
+
+    def test_announced_target_rejects_unrelated_html_redirect(self):
+        old_url = "https://webflix.art/"
+        new_url = "https://webflix.surf/"
+        source = {"url": "https://discord.com/channels/1/100/110",
+                  "channel": "WebFlix", "kind": "fil"}
+        s = state()
+        s["server_links"] = {old_url: {
+            "site_url": old_url, "thread_id": "100", "title": "Webflix",
+            "discord_url": source["url"], "sources": [source],
+            "status": "unknown", "active": True,
+            "last_checked": NOW.isoformat(),
+            "migration_attempted_at": NOW.isoformat(),
+            "migration_probe_version": watch.MIGRATION_PROBE_VERSION,
+            "announced_url": new_url,
+            "announced_last_checked": NOW.isoformat(),
+        }}
+        def discover(_):
+            return {old_url: {"sources": [source], "source_count": 1}}, {}, []
+        with patch("server_link_watch.check_site", return_value={
+            "result": "online", "http_status": 200,
+            "final_url": "https://unrelated.example.org/"
+        }), patch("server_link_watch.probe_site_name", return_value={
+            "name": "Webflix", "page_health": "content",
+            "final_url": "https://unrelated.example.org/"
+        }):
+            watch.watch_server_links(
+                FakeDiscord(), s, NOW + timedelta(hours=1), discover=discover
+            )
+        rec = s["server_links"][old_url]
+        self.assertFalse(rec["announced_verified"])
+        self.assertEqual(rec["announced_page_health"], "unknown")
+
+    def test_announced_target_refresh_discards_previous_html_proof(self):
+        old_url = "https://webflix.art/"
+        former = "https://webflix.surf/"
+        newer = "https://webflix.next/"
+        s = state()
+        rec = {
+            "site_url": old_url, "thread_id": "100", "title": "Webflix",
+            "discord_url": "https://discord.com/channels/1/100/110",
+            "announced_url": former, "announced_verified": True,
+            "announced_status": "online", "announced_page_health": "content",
+            "announced_last_checked": NOW.isoformat(),
+            "announced_html_probe_version": watch.ANNOUNCED_HTML_PROBE_VERSION,
+        }
+        s["server_links"] = {old_url: rec}
+        change = {"announced_url": newer, "evidence": "html:migration_notice"}
+        watch.record_migration(s, rec, change, NOW + timedelta(hours=1),
+                               first_run=False)
+        self.assertEqual(rec["announced_url"], newer)
+        self.assertFalse(rec["announced_verified"])
+        self.assertEqual(rec["announced_page_health"], "unknown")
+        self.assertIsNone(rec["announced_last_checked"])
+        self.assertEqual(rec["announced_status"], "pending")
+
+    def test_announced_html_uses_browser_fallback_only_if_needed(self):
+        old_url = "https://webflix.art/"
+        new_url = "https://webflix.surf/"
+        source = {"url": "https://discord.com/channels/1/100/110",
+                  "channel": "Webflix", "kind": "fil"}
+        s = state()
+        s["server_links"] = {old_url: {
+            "site_url": old_url, "title": "Webflix", "thread_id": "100",
+            "status": "unknown", "active": True, "sources": [source],
+            "discord_url": source["url"], "last_checked": NOW.isoformat(),
+            "migration_attempted_at": NOW.isoformat(),
+            "migration_probe_version": watch.MIGRATION_PROBE_VERSION,
+            "announced_last_checked": NOW.isoformat(), "announced_url": new_url,
+        }}
+        def discover(_):
+            return {old_url: {"sources": [source], "source_count": 1}}, {}, []
+        def identity(url, *, allow_www_fallback=False):
+            if allow_www_fallback:
+                return {"name": "Webflix", "page_health": "content",
+                        "final_url": new_url}
+            return None
+        with patch("server_link_watch.check_site",
+                   side_effect=lambda url: response(url)), patch(
+            "server_link_watch.probe_site_name", side_effect=identity
+        ) as inspect:
+            watch.watch_server_links(
+                FakeDiscord(), s, NOW + timedelta(hours=1), discover=discover
+            )
+        self.assertEqual(inspect.call_count, 2)
+        self.assertTrue(s["server_links"][old_url]["announced_verified"])
+
+
+
 if __name__ == "__main__":
     unittest.main()
