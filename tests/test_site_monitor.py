@@ -195,6 +195,34 @@ class MonitorTests(unittest.TestCase):
                          "https://webflix.surf/")
         self.assertEqual(report["server_sites"][0]["announced_status"], "online")
 
+    def test_directory_index_in_global_scan_overrides_http_ok_in_resource_card(self):
+        class FakeAPI: pass
+        current = state()
+        url = "https://rogzov.com/93zjfyqk6llf/"
+        current["records"]["100"] = {
+            "thread_id": "100", "title": "Rogzov",
+            "discord_url": "https://discord.com/channels/1/100",
+            "site_url": url, "status": "online",
+            "last_checked": self.now.isoformat(),
+            "last_discovery": self.now.isoformat(),
+        }
+        current["server_links"] = {url: {
+            "thread_id": "100", "site_url": url, "active": True,
+            "status": "empty_index", "http_status": 200,
+        }}
+        cat = {"categories": [{"name": "Streaming", "channels": [{
+            "name": "films-et-series", "kind": "forum",
+            "items": [{"title": "Rogzov",
+                       "url": "https://discord.com/channels/1/100"}],
+        }]}]}
+        with patch("site_monitor.check_site") as check:
+            report, _ = watch_catalogue(FakeAPI(), cat, current, self.now)
+        check.assert_not_called()
+        self.assertEqual(current["records"]["100"]["status"], "empty_index")
+        self.assertEqual(cat["categories"][0]["channels"][0]["items"][0]
+                         ["monitor"]["status"], "empty_index")
+        self.assertEqual(report["status_counts"]["empty_index"], 1)
+
     def test_mirror_urls_are_exported_and_counted_individually(self):
         class FakeAPI: pass
         thread_id = "1430988094374547559"
