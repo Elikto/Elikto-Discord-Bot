@@ -22,6 +22,7 @@ PARIS = ZoneInfo("Europe/Paris")
 
 STATUS = {
     "online": "🟢 Accessible",
+    "empty_index": "❌ Index vide / page sans site",
     "restricted": "🟠 Accès limité",
     "suspect": "🟡 À vérifier",
     "offline": "🔴 Inaccessible",
@@ -152,8 +153,18 @@ def update_name(item, identity, now, state, first_run=False):
     Si la page est inaccessible, protégée ou ne fournit aucun nom crédible,
     le dernier nom fiable reste inchangé.
     """
-    if not identity or not identity.get("name"):
+    if identity and identity.get("page_health") == "empty_index":
+        item["status"] = "empty_index"
+        item["page_health"] = "empty_index"
+        item["reason"] = "Répertoire de fichiers au lieu du site attendu"
         return
+    if not identity or not identity.get("name"):
+        if item.get("page_health") == "empty_index" and item.get("status") == "online":
+            item["status"] = "empty_index"
+        return
+    item["page_health"] = "content"
+    if item.get("reason") == "Répertoire de fichiers au lieu du site attendu":
+        item["reason"] = None
     detected = identity["name"][:58]
     item["name_last_checked"] = now.isoformat(timespec="seconds")
     item["name_evidence"] = identity.get("evidence", "html")
@@ -371,7 +382,10 @@ def summary_message(items, thread_name):
         url = clean_url(item.get("url"))
         if not url:
             continue
-        lines.append(f"### ✦ [{name[:48]}]({url})")
+        indicator = "❌ " if item.get("status") == "empty_index" else ""
+        lines.append(f"### {indicator}✦ [{name[:48]}]({url})")
+        if indicator:
+            lines.append("-# Page vide : index de répertoire détecté")
         old_names = item.get("previous_names") or []
         if old_names:
             former = ", ".join(str(old) for old in old_names).replace("@", "@\u200b")
@@ -412,7 +426,10 @@ def render_site_cards(items, thread_name):
             old = str(raw).replace("@", "@\u200b")[:40]
             if old and old not in old_names:
                 old_names.append(old)
-        content = f"### ✦ [{name}]({url})"
+        indicator = "❌ " if site.get("status") == "empty_index" else ""
+        content = f"### {indicator}✦ [{name}]({url})"
+        if indicator:
+            content += "\n-# Page vide : index de répertoire détecté"
         if old_names:
             content += "\n-# ↳ Ancien : " + ", ".join(old_names)
         cards.append(content)
