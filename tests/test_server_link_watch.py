@@ -165,6 +165,33 @@ class ServerWatchTests(unittest.TestCase):
             watch.watch_server_links(api, s, NOW + timedelta(days=1))
             self.assertEqual(probe.call_count, 7)
 
+    def test_directory_index_is_not_counted_as_a_working_streaming_site(self):
+        good = "https://varloz.com/47b6f3a/home/varloz"
+        empty = "https://rogzov.com/93zjfyqk6llf/"
+        api = FakeDiscord()
+        s = state()
+        found = {
+            good: {"source_count": 1, "sources": [{
+                "url": "https://discord.com/channels/1/21/201", "channel": "Streaming", "kind": "fil"
+            }]},
+            empty: {"source_count": 1, "sources": [{
+                "url": "https://discord.com/channels/1/22/202", "channel": "Streaming", "kind": "fil"
+            }]},
+        }
+        def discover(api):
+            return found, {"unique_urls": 2}, []
+        def identity(url):
+            if url == empty:
+                return {"page_health": "empty_index", "evidence": "html:directory_index"}
+            return {"name": "VARLOZ", "evidence": "title", "confidence": "medium"}
+        with patch("server_link_watch.check_site", side_effect=lambda url: response(url)), patch(
+            "server_link_watch.probe_site_name", side_effect=identity
+        ):
+            watch.watch_server_links(api, s, NOW, discover=discover)
+        self.assertEqual(s["server_links"][good]["status"], "online")
+        self.assertEqual(s["server_links"][empty]["status"], "empty_index")
+        self.assertEqual(s["server_links"][empty]["http_status"], 200)
+
     def test_failure_in_one_channel_preserves_old_discoveries(self):
         api = FakeDiscord()
         s = state()
