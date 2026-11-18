@@ -283,8 +283,12 @@ class StreamingDirectoryParser(HTMLParser):
 
     def _section(self, value):
         folded = folded_directory_text(value)
-        if re.search(r"(?:anciens? domaines?|old domains?).{0,55}"
-                     r"(?:bloqu|blocked|fai)", folded):
+        if re.search(
+            r"(?:anciens? domaines?|old domains?).{0,55}(?:bloqu|blocked|fai)"
+            r"|(?:bloqu|blocked).{0,45}(?:fai|domaines?)"
+            r"|(?:fai|domaines?).{0,45}(?:bloqu|blocked)",
+            folded,
+        ):
             self.blocked_category = True
             self.active_category = False
         elif re.search(r"faux domaines?|sites? frauduleux|fake domains?", folded):
