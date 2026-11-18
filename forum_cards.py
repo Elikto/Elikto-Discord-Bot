@@ -112,7 +112,10 @@ def build_card(groups, description, title=None):
         url = clean_url(group.get("url"))
         if not url:
             continue
-        line = "🌐 " + url
+        empty_index = group.get("status") == "empty_index"
+        line = ("❌ 🌐 " if empty_index else "🌐 ") + url
+        if empty_index:
+            line += "\n-# Page vide : index de répertoire détecté"
         if group.get("directory_url"):
             line += "\n-# ↳ Page de référence : " + group["directory_url"]
         if group.get("older"):
