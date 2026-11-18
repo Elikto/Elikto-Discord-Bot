@@ -10,7 +10,8 @@ import re
 from datetime import datetime, timedelta, timezone
 from html.parser import HTMLParser
 from urllib.parse import urljoin, urlsplit
-from site_probe import clean_url, check_site
+from site_probe import (clean_url, check_site, resolve_public_ip,
+                        PublicHTTPSConnection, PublicHTTPConnection, USER_AGENT)
 from name_probe import fetch_html_page, probe_site_name
 from forum_cards import (source_description, credentials_from_author_posts,
                          build_card, all_text, normalize, is_own_card,
@@ -382,82 +383,207 @@ def safe_preview_image(raw, page_url):
     return cleaned
 
 
-def image_from_page_html(html_text, page_url):
+def image_candidates_from_html(html_text, page_url):
+    """Images proposées, dans l'ordre de préférence OpenGraph / Twitter."""
     parser = SitePreviewParser()
     try:
         parser.feed(str(html_text or "")[:96000])
     except (ValueError, AssertionError):
-        return None
+        return []
+    results = []
     for key in ("og:image", "og:image:url", "twitter:image",
                 "twitter:image:src", "image_src"):
-        image = safe_preview_image(parser.images.get(key), page_url)
-        if image:
-            return image
-    return None
+        candidate = safe_preview_image(parser.images.get(key), page_url)
+        if candidate and candidate not in results:
+            results.append(candidate)
+    return results
 
 
-def image_from_discord_starter(api, tid, page_url):
-    """Réutiliser une image Discord existante pour le MÊME domaine."""
+def image_from_page_html(html_text, page_url):
+    """Compatibilité tests et anciens appels : première métadonnée d'image."""
+    candidates = image_candidates_from_html(html_text, page_url)
+    return candidates[0] if candidates else None
+
+
+def preview_image_works(url):
+    """Lire un petit échantillon de l'image depuis un hôte public (anti-SSRF).
+
+    Un og:image peut être un HTML, un 403 anti-hotlink ou un ancien domaine.
+    Ne jamais publier de Media Gallery si les octets ne sont pas une image.
+    """
+    current = safe_preview_image(url, url)
+    if not current:
+        return False
+    for _ in range(4):
+        parts = urlsplit(current)
+        host = parts.hostname
+        if not host:
+            return False
+        port = 443 if parts.scheme == "https" else 80
+        connection = None
+        try:
+            ip = resolve_public_ip(host, port)
+            connection = (PublicHTTPSConnection(host, ip, port, 4)
+                          if parts.scheme == "https"
+                          else PublicHTTPConnection(host, ip, port, 4))
+            connection.request("GET", parts.path or "/", headers={
+                "User-Agent": USER_AGENT,
+                "Accept": "image/avif,image/webp,image/png,image/jpeg,image/gif,*/*",
+                "Accept-Encoding": "identity",
+                "Range": "bytes=0-63",
+            })
+            response = connection.getresponse()
+            if response.status in (301, 302, 303, 307, 308):
+                candidate = safe_preview_image(
+                    response.getheader("Location"), current
+                ) if response.getheader("Location") else None
+                if not candidate:
+                    return False
+                current = candidate
+                continue
+            if response.status not in (200, 206):
+                return False
+            content_type = (response.getheader("Content-Type") or "").lower()
+            if not content_type.startswith("image/"):
+                return False
+            if "svg" in content_type or "icon" in content_type:
+                return False
+            if (response.getheader("Content-Encoding") or "").lower() not in ("", "identity"):
+                return False
+            first = response.read(64)
+            return (first.startswith(b"\x89PNG\r\n\x1a\n")
+                    or first.startswith(b"\xff\xd8\xff")
+                    or first.startswith((b"GIF87a", b"GIF89a"))
+                    or (first.startswith(b"RIFF") and first[8:12] == b"WEBP")
+                    or (len(first) > 12 and first[4:12] in
+                        (b"ftypavif", b"ftypavis")))
+        except (OSError, TimeoutError, ValueError):
+            return False
+        finally:
+            if connection:
+                connection.close()
+    return False
+
+
+def image_candidates_from_discord_starter(api, tid, page_url):
+    """Réutiliser les images de Discord liées au même domaine si accessibles."""
     try:
         starter = api.call("GET", f"/channels/{tid}/messages/{tid}")
     except RuntimeError as exc:
         if "HTTP 404" in str(exc):
-            return None
+            return []
         raise
+    images = []
     for embed in starter.get("embeds") or []:
         source = clean_url(embed.get("url"))
         if not source or domain(source) != domain(page_url):
             continue
         for kind in ("image", "thumbnail"):
             media = embed.get(kind) or {}
-            image = safe_preview_image(media.get("url"), page_url)
-            if image:
-                return image
-    return None
+            candidate = safe_preview_image(media.get("url"), page_url)
+            if candidate and candidate not in images:
+                images.append(candidate)
+    return images
 
 
-def cached_site_preview(api, tid, page_url, tracking):
-    """Une vérification visuelle / jour ; ne stocke jamais le HTML."""
+def image_from_discord_starter(api, tid, page_url):
+    candidates = image_candidates_from_discord_starter(api, tid, page_url)
+    return candidates[0] if candidates else None
+
+
+def cached_site_preview(api, tid, page_url, tracking, reference_url=None):
+    """Toujours revalider une image : un lien mis en cache peut expirer.
+
+    Repli sur l'image OpenGraph du site de référence lorsqu'elle existe.
+    Ne jamais créer de second message uniquement pour l'aperçu.
+    """
     now = datetime.now(timezone.utc)
-    last = tracking.get("preview_image_checked_at")
-    if tracking.get("preview_image_source") == page_url and last:
-        try:
-            when = datetime.fromisoformat(last)
-            if when.tzinfo and now - when < timedelta(hours=20):
-                return tracking.get("preview_image_url")
-        except ValueError:
-            pass
+    saved = (tracking.get("preview_image_url")
+             if tracking.get("preview_image_source") == page_url else None)
+    if saved and preview_image_works(saved):
+        return saved
 
-    image = image_from_discord_starter(api, tid, page_url)
-    if not image:
+    sources = [page_url]
+    reference = clean_url(reference_url)
+    if reference and reference != page_url:
+        sources.append(reference)
+    seen = set()
+    for source in sources:
+        candidates = image_candidates_from_discord_starter(api, tid, source)
         try:
-            page = fetch_html_page(page_url, timeout=4)
+            page = fetch_html_page(source, timeout=4)
         except (OSError, TimeoutError, ValueError, UnicodeError):
             page = None
         if page:
-            image = image_from_page_html(page["html"], page.get("final_url") or page_url)
+            candidates.extend(image_candidates_from_html(
+                page["html"], page.get("final_url") or source
+            ))
+        for candidate in candidates:
+            if candidate in seen:
+                continue
+            seen.add(candidate)
+            if preview_image_works(candidate):
+                tracking["preview_image_source"] = page_url
+                tracking["preview_image_url"] = candidate
+                tracking["preview_image_checked_at"] = now.isoformat(timespec="seconds")
+                return candidate
     tracking["preview_image_source"] = page_url
-    tracking["preview_image_url"] = image
+    tracking["preview_image_url"] = None
     tracking["preview_image_checked_at"] = now.isoformat(timespec="seconds")
-    return image
+    return None
 
 
-def delete_preview_if_own(api, tid, bot_id, tracking):
-    """Retirer le second lien de notre bot si l'image est maintenant intégrée."""
+def is_preview_message(message, bot_id):
+    """Ancien message du bot contenant uniquement un lien, sans carte."""
+    return (str((message.get("author") or {}).get("id")) == bot_id
+            and not (message.get("components") or [])
+            and bool(re.fullmatch(r"https?://[^\s]+",
+                                  str(message.get("content") or "").strip())))
+
+
+def remove_duplicate_bot_links(api, tid, bot_id, tracking):
+    """Supprimer les anciens messages URL du BOT, jamais ceux des membres.
+
+    Cherche aussi quand le fichier de suivi a perdu l'identifiant historique.
+    Ne supprime aucun message avec d'autres contenus ou composants.
+    """
     known = tracking.get("preview_message_id")
-    if not known:
-        return
-    try:
-        message = api.call("GET", f"/channels/{tid}/messages/{known}")
-        if is_preview_message(message, bot_id):
-            api.call("DELETE", f"/channels/{tid}/messages/{known}")
-            tracking.pop("preview_message_id", None)
-    except RuntimeError as exc:
-        if "HTTP 404" in str(exc):
-            tracking.pop("preview_message_id", None)
+    removed = 0
+    inspected = set()
+    if known:
+        try:
+            old = api.call("GET", f"/channels/{tid}/messages/{known}")
+        except RuntimeError as exc:
+            if "HTTP 404" not in str(exc):
+                raise
         else:
-            # Un échec de suppression ne doit pas effacer la carte principale.
-            tracking["preview_cleanup_error"] = "discord_delete_failed"
+            if is_preview_message(old, bot_id):
+                api.call("DELETE", f"/channels/{tid}/messages/{known}")
+                removed += 1
+                inspected.add(str(known))
+    before = None
+    for _ in range(10):
+        params = {"limit": 100}
+        if before:
+            params["before"] = before
+        batch = api.call("GET", f"/channels/{tid}/messages", params=params)
+        if not batch:
+            break
+        for msg in batch:
+            message_id = str(msg.get("id"))
+            if message_id not in inspected and is_preview_message(msg, bot_id):
+                api.call("DELETE", f"/channels/{tid}/messages/{message_id}")
+                removed += 1
+                inspected.add(message_id)
+        if len(batch) < 100:
+            break
+        next_before = str(batch[-1]["id"])
+        if next_before == before:
+            break
+        before = next_before
+    tracking.pop("preview_message_id", None)
+    return removed
+
 
 
 def records_for_forum(state, thread_id):
@@ -615,7 +741,8 @@ def sync_forum_updates(api, state, changed_events=()):
     result = {
         "created": 0, "updated": 0, "unchanged": 0, "skipped": 0,
         "descriptions_found": 0, "description_missing": 0,
-        "previews_created": 0, "previews_updated": 0, "errors": [],
+        "previews_created": 0, "previews_updated": 0,
+        "duplicate_links_removed": 0, "errors": [],
     }
     bot_id = str(api.call("GET", "/users/@me")["id"])
     for tid, info in sorted(forums.items()):
@@ -638,8 +765,10 @@ def sync_forum_updates(api, state, changed_events=()):
             credentials = credentials_from_author_posts(api, tid, bot_id)
             previous = tracked.get(tid, {})
             preview_url = clean_url(groups[0]["url"])
-            image = (cached_site_preview(api, tid, preview_url, previous)
-                     if preview_url and groups[0].get("status") not in
+            image = (cached_site_preview(
+                api, tid, preview_url, previous,
+                reference_url=groups[0].get("reference_url"),
+            ) if preview_url and groups[0].get("status") not in
                      ("offline", "suspect", "empty_index") else None)
             components = build_card(
                 groups, original, info.get("title") or "Site",
@@ -673,22 +802,11 @@ def sync_forum_updates(api, state, changed_events=()):
             safe_tracking = {k: v for k, v in previous.items() if k != "digest"}
             tracked[tid] = {**safe_tracking, "message_id": message_id}
             result[outcome] += 1
-            if image:
-                delete_preview_if_own(api, tid, bot_id, tracked[tid])
-            if preview_url and not image:
-                # Fallback : lien seul quand aucune image OG exploitable.
-                # Le contenu URL seul déclenche l'aperçu natif de Discord
-                # lorsque le site autorise son robot d'indexation.
-                candidates = tuple(
-                    clean_url(item.get("site_url"))
-                    for item in linked if item.get("site_url")
-                )
-                preview_id, preview_outcome = upsert_preview(
-                    api, tid, bot_id, preview_url, tracked[tid], candidates
-                )
-                tracked[tid]["preview_message_id"] = preview_id
-                if preview_outcome != "unchanged":
-                    result["previews_" + preview_outcome] += 1
+            # Une seule publication par forum : le lien se trouve deja
+            # dans la carte, meme lorsqu'aucune image valide n'existe.
+            result["duplicate_links_removed"] += remove_duplicate_bot_links(
+                api, tid, bot_id, tracked[tid]
+            )
         except (RuntimeError, ValueError) as exc:
             result["errors"].append({
                 "thread_id": tid,
