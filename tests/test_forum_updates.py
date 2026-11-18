@@ -1,4 +1,5 @@
 import unittest
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 from forum_cards import all_text, BRAND
 from forum_updates import (
@@ -365,6 +366,54 @@ class ForumUpdatesTests(unittest.TestCase):
         self.assertNotIn("Identifiants", body)
         self.assertNotIn("secret-autre", body)
         self.assertNotIn("secret-bot", body)
+
+    def test_annas_archive_html_identity_proves_current_green_badge(self):
+        from forum_updates import proven_html_content
+        from forum_cards import build_card
+        observed = (datetime.now(timezone.utc) - timedelta(hours=5)).isoformat()
+        record_ = {
+            **record("https://annas-archive.cc/"),
+            "site_name": "Anna’s Archive",
+            "name_evidence": "application-name",
+            "name_checked_at": observed,
+            "last_checked": observed,
+        }
+        self.assertTrue(proven_html_content(record_))
+        groups = site_groups([record_], "Annas-archive")
+        self.assertTrue(groups[0]["verified"])
+        content = "\n".join(all_text(build_card(groups, "Livres", "Annas-archive")))
+        self.assertIn("✅", content)
+        self.assertNotIn("Intégrité du contenu non confirmée", content)
+
+    def test_http_200_alone_is_yellow_not_green(self):
+        from forum_updates import proven_html_content
+        from forum_cards import build_card
+        record_ = {**record("https://sample.example.org/"), "http_status": 200}
+        self.assertFalse(proven_html_content(record_))
+        groups = site_groups([record_], "Sans preuve HTML")
+        content = "\n".join(all_text(build_card(groups, "Catalogue", "Sans preuve HTML")))
+        self.assertIn("🟡", content)
+        self.assertNotIn("✅", content)
+
+    def test_stale_or_failed_html_evidence_is_not_green(self):
+        from forum_updates import proven_html_content
+        stale = (datetime.now(timezone.utc) - timedelta(days=5)).isoformat()
+        fresh = datetime.now(timezone.utc).isoformat()
+        base = {**record("https://sample.example.org/"),
+                "name_evidence": "title", "name_checked_at": stale}
+        self.assertFalse(proven_html_content(base))
+        self.assertFalse(proven_html_content({
+            **base, "name_checked_at": fresh, "page_health": "unknown"
+        }))
+        self.assertFalse(proven_html_content({
+            **base, "name_checked_at": fresh, "page_health": "empty_index"
+        }))
+        self.assertFalse(proven_html_content({
+            **base, "name_checked_at": fresh, "status": "unknown"
+        }))
+        self.assertTrue(proven_html_content({
+            **base, "name_checked_at": fresh, "page_health": "content"
+        }))
 
     def test_every_migrated_site_displays_reference_before_active(self):
         from forum_cards import build_card
