@@ -340,7 +340,7 @@ class ServerWatchTests(unittest.TestCase):
             report, _ = watch.watch_server_links(
                 FakeDiscord(), s, NOW, discover=discover
             )
-        self.assertEqual(report["new_http_checks"], 2)
+        self.assertEqual(report["checked"], 2)
         for url, expected in cases.items():
             entry = s["server_links"][url]
             self.assertEqual(entry["http_status"], 200)
