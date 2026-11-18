@@ -5,6 +5,7 @@ Valide DNS et adresses IP pour chaque redirection, lecture bornee, sans script.
 from __future__ import annotations
 
 import html
+import http.client
 from html.parser import HTMLParser
 import re
 import unicodedata
@@ -430,7 +431,13 @@ def fetch_html_page(url, timeout=7, *, browser_compatible=False):
                 return None
             # La taille lue ET la sortie décompressée restent plafonnées
             # pour éviter qu'une page arbitraire ne consomme trop de RAM.
-            body = response.read(MAX_HTML + 1)[:MAX_HTML]
+            try:
+                body = response.read(MAX_HTML + 1)[:MAX_HTML]
+            except http.client.IncompleteRead:
+                # Un CDN peut fermer un flux chunked avant la fin. Ce n'est
+                # ni un site hors ligne ni une raison d'arrêter tout Discord.
+                # Ne pas utiliser du HTML partiel comme preuve d'identité.
+                return None
             if content_encoding in ("gzip", "deflate"):
                 try:
                     inflater = zlib.decompressobj(
