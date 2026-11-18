@@ -111,6 +111,47 @@ class BrandDetectionTests(unittest.TestCase):
         self.assertIsNone(fetch_html_page("http://127.0.0.1/admin"))
         self.assertIsNone(fetch_html_page("http://localhost/"))
 
+    def test_streaming_page_distinguishes_varloz_from_rogzov_index(self):
+        from name_probe import is_empty_directory_index
+        good_url = "https://varloz.com/47b6f3a/home/varloz"
+        empty_url = "https://rogzov.com/93zjfyqk6llf/"
+        good_html = (
+            "<html><head><title>VARLOZ — Films et séries</title></head>"
+            "<body><main><h1>Films populaires</h1>"
+            "<article>Films et nouveautés</article></main></body></html>"
+        )
+        empty_html = (
+            "<html><head><title>Index of /93zjfyqk6llf/</title></head>"
+            "<body><h1>Index of /93zjfyqk6llf/</h1><hr>"
+            "<pre><a href='../'>Parent Directory</a></pre></body></html>"
+        )
+        self.assertFalse(is_empty_directory_index(good_html))
+        self.assertTrue(is_empty_directory_index(empty_html))
+        with patch("name_probe.fetch_html_page", side_effect=lambda url: {
+            "html": good_html if url == good_url else empty_html, "final_url": url
+        }):
+            valid = probe_site_name(good_url)
+            empty = probe_site_name(empty_url)
+        self.assertEqual(valid["name"], "VARLOZ")
+        self.assertEqual(empty["page_health"], "empty_index")
+        self.assertNotIn("name", empty)
+
+    def test_index_variants_and_javascript_shell_not_false_positive(self):
+        from name_probe import is_empty_directory_index
+        self.assertTrue(is_empty_directory_index(
+            "<html><title>Directory listing for /foo/</title>"
+            "<body><h1>Directory listing for /foo/</h1></body></html>"
+        ))
+        self.assertTrue(is_empty_directory_index(
+            "<html><h1>Index of /file/</h1><pre></pre></html>"
+        ))
+        self.assertFalse(is_empty_directory_index(
+            "<div id='root'></div><script src='/app.js'></script>"
+        ))
+        self.assertFalse(is_empty_directory_index(
+            "<title>Index of popular movies - films et séries</title>"
+        ))
+
     def test_probe_does_not_invent_name_on_failure(self):
         with patch("name_probe.fetch_html_page", return_value=None):
             self.assertIsNone(probe_site_name("https://example.org/"))
