@@ -167,7 +167,7 @@ def is_preview_message(message, bot_id):
     """Lien seul, publié par ce bot sans Components V2."""
     return (str((message.get("author") or {}).get("id")) == bot_id
             and not (message.get("components") or [])
-            and bool(re.fullmatch(r"https?://[^\\s]+",
+            and bool(re.fullmatch(r"https?://[^\s]+",
                                   str(message.get("content") or "").strip())))
 
 
