@@ -302,6 +302,7 @@ def decorate_destinations(groups, source_items, target_states, now, state):
     annoncé dans le HTML suit la même procédure, jusqu'à trois transitions
     pour empêcher les cycles et les redirections infinies.
     """
+    force_scan = os.environ.get("FORCE_DAILY_INTEGRITY_SCAN") == "1"
     source_index = {item["url"]: item for item in source_items}
     required = set()
     projected = {}
@@ -334,12 +335,12 @@ def decorate_destinations(groups, source_items, target_states, now, state):
                         "reason": None, "redirect_url": None, "final_url": None,
                     }
                     target_states[target] = observation
-                if not is_checked_today(observation.get("last_checked"), now):
+                if force_scan or not is_checked_today(observation.get("last_checked"), now):
                     update_probe(
                         observation, check_site(target), now, state, first_run=is_new
                     )
                 if (observation.get("status") == "online"
-                        and not is_checked_today(observation.get("name_attempted_at"), now)):
+                        and (force_scan or not is_checked_today(observation.get("name_attempted_at"), now))):
                     observation["name_attempted_at"] = now.isoformat(timespec="seconds")
                     update_name(
                         observation, probe_site_name(target), now, state,
@@ -689,18 +690,19 @@ def sync_thread(api, state, now=None):
                          before=removed, after="retirée",
                          detail="URL absente des messages du fil.")
 
+    force_scan = os.environ.get("FORCE_DAILY_INTEGRITY_SCAN") == "1"
     checked = 0
     names_checked = 0
     for source in sources:
         item = entries[source["url"]]
         migrate_legacy_title(item, now, state, first_run=is_first)
-        if not is_checked_today(item.get("last_checked"), now):
+        if force_scan or not is_checked_today(item.get("last_checked"), now):
             update_probe(item, check_site(item["url"]), now, state, first_run=is_first)
             checked += 1
         # Analyser les noms dès l'installation sans refaire les tests HTTP
         # déjà effectués dans la journée.
         if (item.get("status") == "online" and
-                not is_checked_today(item.get("name_attempted_at"), now)):
+                (force_scan or not is_checked_today(item.get("name_attempted_at"), now))):
             item["name_attempted_at"] = now.isoformat(timespec="seconds")
             identity = probe_site_name(item["url"])
             update_name(item, identity, now, state, first_run=is_first)
