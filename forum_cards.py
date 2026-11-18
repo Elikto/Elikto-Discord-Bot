@@ -270,9 +270,9 @@ def build_card(groups, description, title=None, credentials=None, preview_image_
         if group.get("older"):
             line += "\n-# ↳ Ancien : " + ", ".join(group["older"])
         if group.get("announced"):
-            line += ("\n-# 🟢 Nouvelle adresse annoncée · serveur accessible"
-                     if group.get("status") == "online"
-                     else "\n-# 🟡 Nouvelle adresse annoncée · à vérifier")
+            line += ("\n-# 🟢 Nouvelle adresse annoncée · page HTML vérifiée"
+                     if group.get("verified")
+                     else "\n-# 🟡 Nouvelle adresse annoncée · intégrité à confirmer")
         elif group.get("status") in ("offline", "suspect"):
             line += "\n-# 🟠 Accessibilité à vérifier"
         parts.extend({"type": 10, "content": chunk} for chunk in split_text(line))
