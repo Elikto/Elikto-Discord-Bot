@@ -46,6 +46,49 @@ class BrandDetectionTests(unittest.TestCase):
         self.assertIsNone(announced_rename("NANDOV — Films et séries en HD"))
         self.assertIsNone(announced_rename("MOMDAX devient MOMDAX.com"))
 
+    def test_webflix_popup_announces_surf_without_http_redirect(self):
+        from name_probe import parse_site_migration
+        body = """
+        <div class='modal'>
+          <strong>webflix.art est en train d'être bloqué en France</strong>
+          <p>Passe sur Webflix.surf, même compte.</p>
+          <button>Utiliser Webflix.surf</button>
+          <small>Nouvelle adresse officielle - compte et listes synchronisés</small>
+        </div>"""
+        notice = parse_site_migration(body, "https://webflix.art/")
+        self.assertEqual(notice["announced_url"], "https://webflix.surf/")
+        self.assertEqual(notice["previous_url"], "https://webflix.art/")
+        self.assertEqual(notice["evidence"], "html:migration_notice")
+        notice2 = parse_site_migration(
+            "<script>const title='Passe sur Webflix.surf, même compte'</script>",
+            "https://webflix.bio/"
+        )
+        self.assertEqual(notice2["announced_url"], "https://webflix.surf/")
+
+    def test_notice_must_not_be_random_link_or_bad_domain(self):
+        from name_probe import parse_site_migration
+        self.assertIsNone(parse_site_migration(
+            '<a href="https://unrelated.org">Voir le site</a>',
+            "https://webflix.art/",
+        ))
+        self.assertIsNone(parse_site_migration(
+            'Passe sur http://127.0.0.1, même compte',
+            "https://webflix.art/",
+        ))
+        self.assertIsNone(parse_site_migration(
+            'Utiliser random-ads.example.org',
+            "https://webflix.art/",
+        ))
+
+    def test_probe_works_on_html_notice_without_title_change(self):
+        from name_probe import probe_site_migration
+        with patch("name_probe.fetch_html_page", return_value={
+            "html": "<title>Webflix</title><div>Passe sur Webflix.surf, même compte</div>",
+            "final_url": "https://webflix.art/",
+        }):
+            notice = probe_site_migration("https://webflix.art/")
+        self.assertEqual(notice["announced_url"], "https://webflix.surf/")
+
     def test_antibot_titles_do_not_create_false_renames(self):
         for title in ("Just a moment...", "Attention Required! | Cloudflare",
                       "Checking your browser before accessing", "Accès refusé",
