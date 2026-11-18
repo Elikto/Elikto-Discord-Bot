@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 from html.parser import HTMLParser
 from urllib.parse import urljoin, urlsplit
 from site_probe import clean_url, check_site
-from name_probe import fetch_html_page
+from name_probe import fetch_html_page, probe_site_name
 from forum_cards import (source_description, credentials_from_author_posts,
                          build_card, all_text, normalize, is_own_card,
                          card_digest, V2_FLAG)
@@ -43,6 +43,13 @@ def forum_sources(record, forum_ids):
 
 
 def site_groups(records, forum_title):
+    """Conserver la source d'une annonce ET sa destination actuelle.
+
+    Les fiches distinguent le portail de référence (s'il existe) du domaine
+    actif ; une ancienne URL en échec n'est pas arbitrairement qualifiée de
+    « référence ». Lorsque le portail fonctionne encore et annonce une
+    migration, il sert de référence.
+    """
     groups = {}
     for rec in records:
         if not rec.get("active"):
@@ -55,13 +62,18 @@ def site_groups(records, forum_title):
         key = domain(url)
         if not key:
             continue
+        reference = clean_url(rec.get("reference_url"))
+        if not reference and successor and rec.get("status") == "online":
+            reference = original
+        if reference == url:
+            reference = None
+        verified = (bool(rec.get("announced_verified")) if successor else
+                    bool(rec.get("status") == "online" and
+                         rec.get("page_health") == "content"))
         if key not in groups:
             groups[key] = {
-                "url": url, "name": domain(url),
-                "older": [], "announced": bool(successor),
-                "verified": bool(rec.get("announced_verified")) if successor else bool(
-                    rec.get("status") == "online" and rec.get("page_health") == "content"
-                ),
+                "url": url, "name": domain(url), "reference_url": reference,
+                "older": [], "announced": bool(successor), "verified": verified,
                 "status": rec.get("announced_status") if successor else rec.get("status"),
             }
         entry = groups[key]
@@ -69,14 +81,14 @@ def site_groups(records, forum_title):
             entry["url"] = successor
             entry["announced"] = True
             entry["status"] = rec.get("announced_status")
-            entry["verified"] = bool(rec.get("announced_verified"))
+            entry["verified"] = verified
+            entry["reference_url"] = reference or entry.get("reference_url")
             entry["name"] = domain(successor)
             for old in [original, *(rec.get("other_previous_urls") or [])]:
                 older = domain(old)
                 if older and older != key and older not in entry["older"]:
                     entry["older"].append(older)
     return sorted(groups.values(), key=lambda item: (not item["announced"], item["url"]))
-
 
 
 MOVIX_HUB = "https://movix.online/"
@@ -164,10 +176,162 @@ def validated_movix_groups(linked):
     return [{
         "url": current,
         "name": domain(current),
+        "reference_url": MOVIX_HUB if target else None,
         "older": previous,
         "announced": bool(target),
+        "verified": False,  # La validation HTTP seule ne suffit pas.
         "status": target_status if target else hub_status,
         "directory_url": MOVIX_HUB if target else None,
+    }]
+
+
+
+COFLIX_HUB = "https://coflix.domains/"
+FLEMMIX_HUB = "https://ww1.wiflix-adresses.fun/"
+
+DIRECTORIES = {
+    "coflix": (COFLIX_HUB, "coflix."),
+    "flemmix": (FLEMMIX_HUB, "flemmix."),
+}
+
+
+def directory_kind(title):
+    label = str(title or "").casefold()
+    for kind in DIRECTORIES:
+        if re.search(r"(?<![a-z])" + kind + r"(?![a-z])", label):
+            return kind
+    return None
+
+
+class StreamingDirectoryParser(HTMLParser):
+    """Liens dont la page d'annuaire déclare explicitement la disponibilité."""
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.entries = []
+        self.current = None
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "a":
+            self.current = {"href": dict(attrs).get("href"), "text": "",
+                            "after": ""}
+
+    def handle_data(self, value):
+        clean = re.sub(r"\s+", " ", value)
+        if self.current is not None:
+            self.current["text"] += " " + clean
+        elif self.entries:
+            self.entries[-1]["after"] += " " + clean
+
+    def handle_endtag(self, tag):
+        if tag == "a" and self.current is not None:
+            self.entries.append(self.current)
+            self.current = None
+
+
+def directory_candidates(html_text, hub, kind):
+    """Retourner les domaines dont l'annuaire confirme explicitement l'activité.
+
+    L'ordre est celui du site de référence. Leurs noms ne sont pas copiés
+    depuis des blogs externes et les clones signalés comme faux sont exclus.
+    """
+    parsed = StreamingDirectoryParser()
+    try:
+        parsed.feed(str(html_text or "")[:96000])
+    except (ValueError, AssertionError):
+        return []
+    expected = DIRECTORIES[kind][1]
+    candidates = []
+    for entry in parsed.entries:
+        proposed = clean_url(urljoin(hub, entry["href"] or "")) if entry["href"] else None
+        if not proposed or not domain(proposed).startswith(expected):
+            continue
+        descriptor = (entry["text"] + " " + entry["after"][:160]).casefold()
+        descriptor = re.sub(r"\s+", " ", descriptor)
+        if any(bad in descriptor for bad in ("bloqu", "ancien domaine",
+                                            "frauduleux", "faux domaine", "clone")):
+            continue
+        if kind == "coflix":
+            suitable = bool(re.search(r"adresse disponible|domaine actif|site actif",
+                                      descriptor))
+        else:
+            suitable = bool(re.search(
+                r"nom de domaine principal|domaine actif|nouveau site|"
+                r"lien principal flemmix officiel",
+                descriptor,
+            ))
+        if suitable and proposed not in candidates:
+            candidates.append(proposed)
+    return candidates[:8]
+
+
+def validated_directory_groups(linked, kind):
+    """Référence connue et adresse courante du répertoire (vérifiée séparément).
+
+    Aucun ancien domaine en panne DNS ne devient « actif » par défaut.
+    Lorsque l'annuaire ou la destination est inaccessible, afficher
+    l'incertitude dans la fiche, sans inventer une nouvelle adresse.
+    """
+    hub = DIRECTORIES[kind][0]
+    previous = []
+    for item in linked:
+        original = clean_url(item.get("site_url"))
+        if original and original != hub:
+            older = domain(original)
+            if older and older not in previous:
+                previous.append(older)
+
+    proposals = []
+    if check_site(hub).get("result") in ("online", "restricted"):
+        try:
+            page = fetch_html_page(hub, timeout=6)
+        except (OSError, TimeoutError, ValueError, UnicodeError):
+            page = None
+        if page:
+            proposals = directory_candidates(page["html"], hub, kind)
+
+    found = None
+    found_state = None
+    verified = False
+    for proposed in proposals:
+        result = check_site(proposed)
+        if result.get("result") != "online":
+            continue
+        identity = probe_site_name(proposed)
+        if identity and identity.get("page_health") == "empty_index":
+            continue
+        found = proposed
+        found_state = "online"
+        verified = bool(identity and identity.get("name"))
+        if verified:
+            break
+
+    if found:
+        current = found
+        status = found_state
+    elif proposals:
+        # L'annonce du portail est explicite, mais n'a pas passé les contrôles.
+        current = proposals[0]
+        status = "suspect"
+    else:
+        # Si aucun site actif n'est découvert, montrer le domaine historique
+        # comme indisponible/indéterminé et laisser le portail en référence.
+        former = next(
+            (item for item in linked
+             if clean_url(item.get("site_url")) != hub),
+            {},
+        )
+        current = clean_url(former.get("site_url")) or hub
+        status = former.get("status", "unknown")
+        if current == hub:
+            status = "unknown"
+    return [{
+        "url": current,
+        "name": domain(current),
+        "reference_url": hub if hub != current else None,
+        "older": [x for x in previous if x != domain(current)],
+        "announced": bool(proposals),
+        "verified": verified,
+        "status": status,
     }]
 
 
@@ -449,9 +613,12 @@ def sync_forum_updates(api, state, changed_events=()):
                 result["descriptions_found"] += 1
             else:
                 result["description_missing"] += 1
-            groups = (validated_movix_groups(linked)
-                      if is_movix_forum(info.get("title"))
-                      else site_groups(linked, info.get("title") or "Site"))
+            kind = directory_kind(info.get("title"))
+            groups = (
+                validated_movix_groups(linked) if is_movix_forum(info.get("title"))
+                else validated_directory_groups(linked, kind) if kind
+                else site_groups(linked, info.get("title") or "Site")
+            )
             credentials = credentials_from_author_posts(api, tid, bot_id)
             previous = tracked.get(tid, {})
             preview_url = clean_url(groups[0]["url"])
