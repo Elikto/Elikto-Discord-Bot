@@ -385,5 +385,27 @@ class BrandDetectionTests(unittest.TestCase):
 
 
 
+    def test_truncated_chunked_html_does_not_crash_entire_discord_scan(self):
+        import http.client
+        from unittest.mock import MagicMock
+        connection = MagicMock()
+        response = MagicMock()
+        response.status = 200
+        response.getheader.side_effect = lambda key: {
+            "Content-Type": "text/html; charset=utf-8",
+            "Content-Encoding": "identity",
+        }.get(key)
+        response.read.side_effect = http.client.IncompleteRead(
+            b"<html><title>CoFlix</title>", 13500
+        )
+        connection.getresponse.return_value = response
+        with patch("name_probe.resolve_public_ip", return_value="8.8.8.8"), patch(
+            "name_probe.PublicHTTPSConnection", return_value=connection
+        ):
+            self.assertIsNone(fetch_html_page("https://coflix.domains/"))
+        connection.close.assert_called_once()
+
+
+
 if __name__ == "__main__":
     unittest.main()
