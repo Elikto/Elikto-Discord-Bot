@@ -782,7 +782,7 @@
         "https://zinzov.com/",
         "https://didvip.com/"
       ],
-      "last_synced": "2026-11-18T00:24:38+00:00",
+      "last_synced": "2026-11-18T00:35:25+00:00",
       "target_states": {
         "https://nandov.com/": {
           "url": "https://nandov.com/",
@@ -1467,7 +1467,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1498,7 +1498,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 503,
       "reason": null,
@@ -1522,7 +1522,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1553,7 +1553,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1584,7 +1584,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1615,7 +1615,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1641,7 +1641,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1667,7 +1667,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1698,7 +1698,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1729,7 +1729,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1760,7 +1760,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": null,
       "reason": "TimeoutError",
@@ -1784,7 +1784,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1815,7 +1815,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 451,
       "reason": null,
@@ -1849,7 +1849,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1880,7 +1880,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 404,
       "reason": null,
@@ -1904,7 +1904,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1935,7 +1935,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 206,
       "reason": null,
@@ -1961,7 +1961,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1992,7 +1992,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2023,7 +2023,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2054,7 +2054,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 403,
       "reason": null,
@@ -2079,7 +2079,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": null,
       "reason": "gaierror",
@@ -2103,7 +2103,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2134,7 +2134,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2165,7 +2165,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 206,
       "reason": null,
@@ -2196,7 +2196,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2227,7 +2227,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2258,7 +2258,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2289,7 +2289,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2320,7 +2320,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2351,7 +2351,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 403,
       "reason": null,
@@ -2376,7 +2376,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2407,7 +2407,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": null,
       "reason": "OSError",
@@ -2431,7 +2431,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:24:39+00:00",
+      "last_seen": "2026-11-18T00:35:26+00:00",
       "active": true,
       "http_status": null,
       "reason": "OSError",
@@ -2440,9 +2440,9 @@
     }
   },
   "server_scan": {
-    "at": "2026-11-18T00:24:39+00:00",
+    "at": "2026-11-18T00:35:26+00:00",
     "counts": {
-      "messages_read": 48,
+      "messages_read": 75,
       "locations_scanned": 37,
       "links_found": 34,
       "locations_discovered": 37,
@@ -2456,127 +2456,157 @@
     "new_migration_checks": 0,
     "new_announced_address_checks": 0,
     "forum_updates": {
-      "created": 27,
-      "updated": 1,
+      "created": 0,
+      "updated": 28,
       "unchanged": 0,
       "skipped": 0,
       "descriptions_found": 28,
       "description_missing": 0,
+      "previews_created": 28,
+      "previews_updated": 0,
       "errors": []
     }
   },
   "forum_updates": {
     "1562067560856289411": {
       "message_id": "1572404196840575037",
-      "digest": "b2948bac44ccfc8b69d9fe0ac765a6e834a5730a6e6a54227a3dbd43cf534c37"
+      "digest": "2273779ab5e7e22e03ff6eca71d10efacfeba3e4c1af288b6d9cd36ca1b38ef9",
+      "preview_message_id": "1572410030114869258"
     },
     "1430989114265571459": {
       "message_id": "1572407208673681567",
-      "digest": "dfbc7ec4e304da64bb95fdce599b7bb840a493e0a075ac50460005f43a5c4105"
+      "digest": "70de61da4cf01692a6ca2085085a44c540abca9384a1172bed81c87ed938e687",
+      "preview_message_id": "1572409934606503956"
     },
     "1430989234264870912": {
       "message_id": "1572407211903287411",
-      "digest": "ccef80bc8a7d87691ed2c555a196eddc64fe28714dffaaa4d9067c471eff6f61"
+      "digest": "a9b7b59752f790a049bc7175119d3163e3a68e775d22cabcbcca98ad8e1f52ae",
+      "preview_message_id": "1572409938406416488"
     },
     "1430989583746732223": {
       "message_id": "1572407214906544171",
-      "digest": "c7a72fbda5144f3b0195b17aebf52715fb4ce7a1c2d7708816e118191e3fce78"
+      "digest": "0399434c0ad70ffad52441daa1fbf7e5facfc359fef459915473c3013b42524b",
+      "preview_message_id": "1572409943133389040"
     },
     "1430991985572839547": {
       "message_id": "1572407217414602883",
-      "digest": "642d5d5d0a1d47fc27ce73169e3c5e69dd92828b085f6f1b25a45910c32d3fdc"
+      "digest": "5b812f5d37dbe5aa6bf2732e1a1b368afbf6eb7433c1a17f3fd8dabeed24e1ca",
+      "preview_message_id": "1572409947394678915"
     },
     "1430996722745606224": {
       "message_id": "1572407220006817834",
-      "digest": "70d1d0dcc0b28d0c0d3e74424c422e53b726f836b0798224e1a090b0aac9386f"
+      "digest": "73f94d97973460e369bc2297aceb546aff33432894f92758544ee96510040a88",
+      "preview_message_id": "1572409953400918036"
     },
     "1431052564262162524": {
       "message_id": "1572407223437754462",
-      "digest": "509dd94ded8ee046e79a2f4b4a2bf4578170701dcfbf5b96d65decf71592cbcd"
+      "digest": "b767e8caca76088b1e21759e8d6c3519c4e5dac2a94b1c0a62d364bf129dad39",
+      "preview_message_id": "1572409957461270668"
     },
     "1431053281693532251": {
       "message_id": "1572407233508147251",
-      "digest": "61521adabd96a8c74ce1219fb9f7eecfddff3a71572ff1f20f03a3070e56b719"
+      "digest": "f40c8930bdae7bc463edd9a9b584fee400dba76afb2f9832bdc3a01a452048ea",
+      "preview_message_id": "1572409961995305021"
     },
     "1431054323852378264": {
       "message_id": "1572407237140553873",
-      "digest": "d6bbc75c48603d25af90bc844ff41b363405bc977bdacf9b825f2f5bc85b6179"
+      "digest": "854b2f411ba60756f33945f1f4646cd7aa71319006382486ab2e51913881c8ff",
+      "preview_message_id": "1572409966583873626"
     },
     "1431054520477024297": {
       "message_id": "1572407242010140752",
-      "digest": "0af1c255da0647b629df0dc7973084145480de9cf9ef19bec61618d18c37126a"
+      "digest": "597e4f15253bca7b3625f618375dd99fb8a4458fb41236fcd06197b674cc6558",
+      "preview_message_id": "1572409970908209212"
     },
     "1431056283565424650": {
       "message_id": "1572407245633749044",
-      "digest": "d2f269cb5b8eafd78159afae2529084b56dbbb5fdbac46514c71d6e57da830a6"
+      "digest": "2c636db99359b501e916bc6f06ce14eb36862aab8a7fb3b597c898033a0e89d1",
+      "preview_message_id": "1572409974750060544"
     },
     "1431057935034744865": {
       "message_id": "1572407248725082318",
-      "digest": "eab9716b3838933696e09755ee727bd077805262cb3dca1e991c50c97a7db2d6"
+      "digest": "49387d0f4e17eab873f5cf3d748cf80b03bb09463f2b4d27b62faf518c765662",
+      "preview_message_id": "1572409979086966814"
     },
     "1431059243968233632": {
       "message_id": "1572407252051296434",
-      "digest": "6d7e2d90ffe65779d9d4e1089a9271391d814bda0251a5e2bd26f57a50b3e9ce"
+      "digest": "dd80d1c924385df53f9089c139bbd3bf4f46cb5ad2067035dd47969f1607b37e",
+      "preview_message_id": "1572409984309002300"
     },
     "1431060081784655974": {
       "message_id": "1572407255733641305",
-      "digest": "b86a19791ef7b8f2b781095fa6be1027cdc89aca6920e11f45889673395b4068"
+      "digest": "7f147184f6fd76d898ad55fca1831555b52d7fdd97cc9fa70355dde80b1fad2a",
+      "preview_message_id": "1572409988154921001"
     },
     "1431060780584796270": {
       "message_id": "1572407258841620563",
-      "digest": "0d21533fe00c37fd6548c540cd430805f17eff9a61a2afdcf91b2325fc88f786"
+      "digest": "ddccd2ebf48063f5fd67d678f819c944605193e88841df36bac7fbe5596947fa",
+      "preview_message_id": "1572409992265343046"
     },
     "1431079041015742574": {
       "message_id": "1572407261673037958",
-      "digest": "a6b57d169c2d72215f88def6560ad8210fd51a4231336cabe35b2f4f527be8b0"
+      "digest": "78151ca122a5adf8e470bc572a8ded289a95d20e38cffadfecc63c6eb1215803",
+      "preview_message_id": "1572409996501590117"
     },
     "1431085822903455744": {
       "message_id": "1572407264495542285",
-      "digest": "049ebfddefaacf14bbe2a10f267bd80e7e4d99e58046e69084d702ce0cceb13e"
+      "digest": "c23e39e7e976e79b2f5f67b4f66bced38ed5f3ab26b320efb7189d57c892e8b6",
+      "preview_message_id": "1572410000679370924"
     },
     "1432836242453827704": {
       "message_id": "1572407267809034305",
-      "digest": "565dd747a11c57d6af5d158b5b9be5fd9d13bb124620fe378fdbe5b3fc151d42"
+      "digest": "c074392d5345a7f2eef258ba8d253a404e9cb8c0e156d0cfa8551d546191d7c0",
+      "preview_message_id": "1572410004244275351"
     },
     "1432836342093578306": {
       "message_id": "1572407273089798257",
-      "digest": "5c13767de243b4dedbf0605f77a732f5130307dbdf490bb53919a4b4b84e2918"
+      "digest": "af93ff93c90596efd8337666ef55a4332da941fec51da7d8510810c12536fcf0",
+      "preview_message_id": "1572410009403392026"
     },
     "1432841164574167070": {
       "message_id": "1572407276764008581",
-      "digest": "90a72f66a41713eea06c0e610b12d03fe5d3c093a09c69b4d130c2492e1dcd7f"
+      "digest": "e63ec63cbd441ac6a85a5f6f540298f5da2c55ebc1c40ecce3d909c8c068706a",
+      "preview_message_id": "1572410013870194842"
     },
     "1432848239517765632": {
       "message_id": "1572407279758741528",
-      "digest": "341ce1e5ae167992e8fbc395f519c9601a48ce3eedc1d92a233f4eed21a3b1b6"
+      "digest": "2e78abf17fe6de9e23eb650125a1ca6c61348eeb2f6d7c12cf79dae39207203c",
+      "preview_message_id": "1572410020363243652"
     },
     "1543963384339239032": {
       "message_id": "1572407282472583231",
-      "digest": "04c5d8fd7a7f6ac081a9e5586ee7aedca6e264fce55c584d05f245ef8b443fb3"
+      "digest": "3b91311bcb9a67f726133394728bdb34889e24c8d8a58ee818545b29356fa8f6",
+      "preview_message_id": "1572410025987670116"
     },
     "1565888855159341147": {
       "message_id": "1572407288604664021",
-      "digest": "53d92c4dbd17feab48ea40dfb31563105708571b13ee0d23510c55e0c0bebab4"
+      "digest": "30b6f890a8968509a48c787d855899aa2b4972537705a91775c4e078d2491a6d",
+      "preview_message_id": "1572410034896507131"
     },
     "1565889701225832448": {
       "message_id": "1572407292475875409",
-      "digest": "540bd2a31dbbda112975bace2fd033c50238a893bfe3ebecc746643cc470b708"
+      "digest": "836e24e11cc1c9fe0ffeec2aaa7d94d0f75e59e8ccca8b468ca2b218988cb80f",
+      "preview_message_id": "1572410039753380002"
     },
     "1565895227619803287": {
       "message_id": "1572407296556929137",
-      "digest": "80897cc970da4b795ae8f0b6c3ebd673c9040c3fbae049b57ae1e039955f36e2"
+      "digest": "1de55cbf0f484c795188515739f5125b6a3d9ee3443190ed95544ca9d5ade906",
+      "preview_message_id": "1572410044291612792"
     },
     "1565895933374496890": {
       "message_id": "1572407299673432256",
-      "digest": "a0b6680ec750fd402e87d961d1181cb41f537a5653a7a57da84db1e6076b2272"
+      "digest": "8d0b361b0350369f32958cd4959645cc20c30ff07c9ed8e047352b1a1749088a",
+      "preview_message_id": "1572410049060540426"
     },
     "1565898044518568187": {
       "message_id": "1572407302332350485",
-      "digest": "08df1c39f422c5caf06c435ecfd65905acf83386c485a8ebb1667c8bbcf58df7"
+      "digest": "c83802b572bf813c2a7c97835281a86a2836484abe7dba69a9662accf5ab85c7",
+      "preview_message_id": "1572410054110617610"
     },
     "1568377736723173376": {
       "message_id": "1572407305394196733",
-      "digest": "d7be2a7d663029474a559f02f4850bafada2a4c623b35f7d5c4a5692c278b4d2"
+      "digest": "c369a362e78854cf06129fda5c36a534d7a12d21e76a1d16ca4c9a5a575bf58d",
+      "preview_message_id": "1572410058321690754"
     }
   }
 }
