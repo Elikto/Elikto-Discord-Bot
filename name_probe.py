@@ -8,7 +8,7 @@ import html
 from html.parser import HTMLParser
 import re
 import unicodedata
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import urljoin, urlsplit, urlunsplit
 
 from site_probe import (
     clean_url, resolve_public_ip, PublicHTTPConnection, PublicHTTPSConnection,
@@ -367,7 +367,7 @@ def parse_site_name(html_text):
     return None
 
 
-def fetch_html_page(url, timeout=7):
+def fetch_html_page(url, timeout=7, *, browser_compatible=False):
     """GET borne, suivi securise d'au plus quatre redirections."""
     current = clean_url(url)
     if not current:
@@ -383,14 +383,28 @@ def fetch_html_page(url, timeout=7):
             PublicHTTPConnection(host, ip, port, timeout)
         )
         try:
-            connection.request("GET", parsed.path or "/", headers={
+            headers = {
                 "User-Agent": USER_AGENT,
                 "Accept": "text/html,application/xhtml+xml;q=0.9",
                 "Accept-Encoding": "identity",
-                # Ne pas demander de Range : de nombreux CDN refusent
-                # une requête partielle alors qu'un GET normal fonctionne.
-                # La lecture reste bornée à MAX_HTML octets ci-dessous.
-            })
+            }
+            if browser_compatible:
+                # Une navigation ordinaire peut être acceptée alors que
+                # l'agent de surveillance reçoit 403. Aucun cookie, JavaScript,
+                # CAPTCHA, proxy ou contournement de challenge n'est utilisé.
+                headers.update({
+                    "User-Agent": (
+                        "Mozilla/5.0 (X11; Linux x86_64; rv:128.0) "
+                        "Gecko/20100101 Firefox/128.0"
+                    ),
+                    "Accept": (
+                        "text/html,application/xhtml+xml,"
+                        "application/xml;q=0.9,*/*;q=0.8"
+                    ),
+                    "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.7",
+                })
+            # Pas de Range et lecture plafonnée à MAX_HTML octets.
+            connection.request("GET", parsed.path or "/", headers=headers)
             response = connection.getresponse()
             status = response.status
             location = response.getheader("Location")
@@ -495,24 +509,103 @@ def detect_wrong_page(html_text):
     return None
 
 
-def probe_site_name(url):
-    """Resultat structure ou None ; un seul GET borne par site et par jour."""
+def _brand_key(text):
+    """Comparer les noms sans accents ni ponctuation, sans utiliser le corps HTML."""
+    value = unicodedata.normalize("NFKD", str(text or "").casefold())
+    return "".join(char for char in value if char.isalnum()
+                   and not unicodedata.combining(char))
+
+
+def _expected_brand(url):
+    host = (urlsplit(url).hostname or "").removeprefix("www.")
+    labels = host.split(".")
+    # Prendre le nom de domaine, pas le sous-domaine régional (fr, en...).
+    return labels[-2] if len(labels) >= 2 else ""
+
+
+def _matching_brand_identity(html_text, identity, expected):
+    """Exiger une identité cohérente pour valider un site protégé (403).
+
+    Le nom peut être à la fin d'un titre long, comme
+    'Films et Séries ... | CinezZz'. Le texte du corps seul ne suffit pas.
+    """
+    brand = _brand_key(expected)
+    if len(brand) < 4:
+        return None
+    if identity and brand in _brand_key(identity.get("name")):
+        return identity
+    parser = BrandHTMLParser()
     try:
-        page = fetch_html_page(url)
-    except (OSError, ValueError, TimeoutError, UnicodeError):
+        parser.feed(str(html_text or "")[:MAX_HTML])
+    except (ValueError, AssertionError):
         return None
-    if not page:
+    titles = [" ".join(parser.title_parts)]
+    titles.extend(parser.meta.get(key, "") for key in
+                  ("og:site_name", "application-name", "og:title", "twitter:title"))
+    if any(brand in _brand_key(title) for title in titles):
+        return {"name": expected, "evidence": "html:title_brand",
+                "confidence": "medium"}
+    return None
+
+
+def probe_site_name(url, *, allow_www_fallback=False):
+    """Lire l'identité HTML. Repli prudent pour les sites HTTP restreints.
+
+    Jusqu'à trois GET publics si autorisé : sonde habituelle, requête HTML
+    compatible navigateur, puis variante www/non-www. Une page tierce, une
+    publicité ou un domaine parqué ne prouve jamais que le site fonctionne.
+    """
+    original = clean_url(url)
+    if not original:
         return None
-    if is_empty_directory_index(page["html"]):
-        return {"page_health": "empty_index", "evidence": "html:directory_index",
-                "final_url": page["final_url"]}
-    wrong = detect_wrong_page(page["html"])
-    if wrong:
-        wrong["final_url"] = page["final_url"]
-        return wrong
-    result = parse_site_name(page["html"])
-    if not result:
-        return None
-    result["final_url"] = page["final_url"]
-    result["page_health"] = "content"
-    return result
+    attempts = [(original, False)]
+    expected = _expected_brand(original)
+    if allow_www_fallback:
+        attempts.append((original, True))
+        parts = urlsplit(original)
+        host = parts.hostname or ""
+        alternate = host[4:] if host.startswith("www.") else "www." + host
+        if alternate and alternate != host:
+            attempts.append((
+                urlunsplit((parts.scheme, alternate, parts.path, "", "")), True
+            ))
+    inconclusive = None
+    for candidate, browser_headers in attempts:
+        try:
+            page = (fetch_html_page(candidate, browser_compatible=True)
+                    if browser_headers else fetch_html_page(candidate))
+        except (OSError, ValueError, TimeoutError, UnicodeError):
+            continue
+        if not page:
+            continue
+        final = clean_url(page.get("final_url"))
+        if not final:
+            continue
+        # Le repli www ne doit pas transformer une redirection publicitaire
+        # ou vers un tout autre domaine en preuve de disponibilité.
+        if (allow_www_fallback and
+                (urlsplit(final).hostname or "").removeprefix("www.")
+                != (urlsplit(original).hostname or "").removeprefix("www.")):
+            continue
+        if is_empty_directory_index(page["html"]):
+            inconclusive = {"page_health": "empty_index",
+                            "evidence": "html:directory_index",
+                            "final_url": final}
+            continue
+        wrong = detect_wrong_page(page["html"])
+        if wrong:
+            wrong["final_url"] = final
+            inconclusive = wrong
+            continue
+        result = parse_site_name(page["html"])
+        if allow_www_fallback:
+            result = _matching_brand_identity(page["html"], result, expected)
+        if not result:
+            continue
+        result["final_url"] = final
+        result["page_health"] = "content"
+        return result
+    return inconclusive
+
+
+
