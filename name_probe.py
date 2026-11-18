@@ -122,6 +122,94 @@ NOTICE_PATTERN = re.compile(
 )
 
 
+OFFICIAL_LINK_CUE = re.compile(
+    r"(?:url ephemere du moment|adresse officielle active|"
+    r"(?:la )?nouvelle adresse(?: officielle)?|adresse actuelle|"
+    r"adresse du moment|nouvelle url|nouveau domaine|"
+    r"lien officiel du moment|adresse du site(?: actuel)?|"
+    r"site officiel actuel|nouveau site officiel)"
+    r"\s*[:\-—]?\s*$",
+    flags=re.I,
+)
+OFFICIAL_LINK_LABEL = re.compile(
+    r"(?:nouvelle adresse|adresse officielle|nouveau site officiel|"
+    r"ouvrir le nouveau site|acceder au nouveau site)",
+    flags=re.I,
+)
+
+
+def _fold_notice_text(value):
+    value = unicodedata.normalize("NFKD", html.unescape(str(value or "")))
+    return "".join(ch for ch in value if not unicodedata.combining(ch)).casefold()
+
+
+class OfficialAddressLinkParser(HTMLParser):
+    """Liens associés à une annonce explicite sur le site lui-même.
+
+    « URL Éphémère Du moment » suivi d'un lien (ex. fstream.info),
+    « Nouvelle adresse officielle » ou « Adresse actuelle ».
+    Ne pas assimiler un lien IPTV/publicité/contact à une nouvelle adresse.
+    """
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.context = ""
+        self.current = None
+        self.links = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "a":
+            href = dict(attrs).get("href")
+            self.current = {
+                "href": href,
+                "before": self.context[-160:],
+                "parts": [],
+            }
+
+    def handle_data(self, data):
+        data = re.sub(r"\s+", " ", data)
+        if self.current is not None:
+            self.current["parts"].append(data)
+        else:
+            self.context = (self.context + " " + data)[-400:]
+
+    def handle_endtag(self, tag):
+        if tag == "a" and self.current is not None:
+            info = self.current
+            label = " ".join(info["parts"]).strip()
+            self.links.append((info["href"], info["before"], label))
+            self.context = (self.context + " " + label)[-400:]
+            self.current = None
+
+
+def announced_url_from_official_link(html_text, source):
+    try:
+        parser = OfficialAddressLinkParser()
+        parser.feed(str(html_text or "")[:MAX_HTML])
+    except (ValueError, AssertionError):
+        return None
+    source_host = (urlsplit(source).hostname or "").removeprefix("www.")
+    for href, preceding, label in parser.links:
+        if not href:
+            continue
+        cue = OFFICIAL_LINK_CUE.search(_fold_notice_text(preceding)[-110:])
+        direct = OFFICIAL_LINK_LABEL.search(_fold_notice_text(label))
+        if not (cue or direct):
+            continue
+        target = clean_url(urljoin(source, href))
+        if not target:
+            continue
+        target_host = (urlsplit(target).hostname or "").removeprefix("www.")
+        if target_host == source_host:
+            continue
+        return {
+            "announced_url": target,
+            "previous_url": source,
+            "evidence": "html:official_address_link",
+            "confidence": "announced",
+        }
+    return None
+
+
 def parse_site_migration(html_text, source_url):
     """Extraire une annonce 'Passe sur Webflix.surf, même compte'.
 
@@ -165,7 +253,7 @@ def parse_site_migration(html_text, source_url):
             "evidence": "html:migration_notice",
             "confidence": "announced",
         }
-    return None
+    return announced_url_from_official_link(html_text, source)
 
 
 def probe_site_migration(url):
