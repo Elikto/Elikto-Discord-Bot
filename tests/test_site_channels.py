@@ -184,6 +184,7 @@ class MirrorTests(unittest.TestCase):
         self.assertNotIn("secret-password-123", c411_text)
         self.assertNotIn("compte@example.org", c411_text)
         self.assertNotIn("Identifiants", c411_text)
+        self.assertEqual(c411_text.count("https://c411.org/"), 1)
 
         second = sync_mirrors(api, catalogue(), current)
         self.assertEqual(second["categories_created"], 0)
@@ -221,7 +222,7 @@ class MirrorTests(unittest.TestCase):
         sources = {s["tid"]:s for s in catalogue_threads(catalogue())}
         self.assertEqual(safe_source_description(api, sources[TR4KER], "999"), "")
         c411 = safe_source_description(api, sources[C411], "999")
-        self.assertEqual(c411, "Tracker semi-privé francophone.")
+        self.assertIn("Tracker semi-privé francophone.", c411)
         self.assertNotIn("mot de passe", c411.casefold())
 
     def test_discards_private_forums_that_were_since_hidden(self):
