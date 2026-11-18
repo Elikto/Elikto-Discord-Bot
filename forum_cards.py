@@ -11,6 +11,7 @@ from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
 from site_probe import clean_url
+from tr4ker_forum import SEED_MARKER, SITE_URL as TR4KER_URL
 
 V2_FLAG = 32768
 COLOR = 0x8271D8
@@ -50,9 +51,14 @@ def source_description(api, thread_id, bot_id):
         if "HTTP 404" in str(exc):
             return ""
         raise
+    raw = str(message.get("content") or "")
     if str((message.get("author") or {}).get("id")) == bot_id:
-        return ""
-    return str(message.get("content") or "")
+        # Une seule exception pour une fiche initiale contrôlée par le bot.
+        # Les autres cartes bot restent exclues comme avant.
+        if not (SEED_MARKER in raw and TR4KER_URL in raw):
+            return ""
+        raw = raw.replace(SEED_MARKER, "")
+    return raw.strip()
 
 
 def split_text(text, length=3850):
