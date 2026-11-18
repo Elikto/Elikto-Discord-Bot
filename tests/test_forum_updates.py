@@ -220,7 +220,7 @@ class ForumUpdatesTests(unittest.TestCase):
         published = api.messages[THREAD][-2]
         self.assertEqual(published["flags"], 32768)
         self.assertIn(original, shown(published))
-        self.assertIn("🌐 https://webflix.surf/", shown(published))
+        self.assertIn("**🌐 Site actif**\nhttps://webflix.surf/", shown(published))
         self.assertNotIn(MARKER, shown(published))
         self.assertNotIn("Message actualisé automatiquement", shown(published))
         same_id = published["id"]
@@ -257,7 +257,7 @@ class ForumUpdatesTests(unittest.TestCase):
         self.assertEqual(len(api.messages[THREAD]), 3)
         card = shown(api.messages[THREAD][1])
         self.assertIn("✦ Reseam Manager ✦", card)
-        self.assertIn("🌐 https://reseam.app/download/", card)
+        self.assertIn("**🌐 Site actif**\nhttps://reseam.app/download/", card)
         self.assertIn("📝 Description", card)
         self.assertIn("Youtube, Instagram, tiktok, twitter, twitch etc", card)
         self.assertEqual(card.count("https://reseam.app/download/"), 1)
@@ -276,8 +276,8 @@ class ForumUpdatesTests(unittest.TestCase):
              "status": "empty_index", "older": [], "announced": False},
         ]
         text = "\n".join(all_text(build_card(groups, "Films et séries", "Streaming")))
-        self.assertIn("🌐 https://varloz.com/47b6f3a/home/varloz", text)
-        self.assertIn("❌ 🌐 https://rogzov.com/93zjfyqk6llf/", text)
+        self.assertIn("**🌐 Site actif**\nhttps://varloz.com/47b6f3a/home/varloz", text)
+        self.assertIn("❌ **🌐 Site actif**\nhttps://rogzov.com/93zjfyqk6llf/", text)
         self.assertIn("Page vide : index de répertoire détecté", text)
 
     def test_credentials_in_a_separate_author_reply_appear_under_description(self):
@@ -359,6 +359,102 @@ class ForumUpdatesTests(unittest.TestCase):
         self.assertNotIn("secret-autre", body)
         self.assertNotIn("secret-bot", body)
 
+    def test_every_migrated_site_displays_reference_before_active(self):
+        from forum_cards import build_card
+        groups = site_groups([{
+            **record("https://fstream.info/", announced="https://fs05.lol/"),
+            "status": "online", "page_health": "content",
+            "announced_verified": True,
+        }], "French Stream")
+        self.assertEqual(groups[0]["reference_url"], "https://fstream.info/")
+        self.assertEqual(groups[0]["url"], "https://fs05.lol/")
+        card = build_card(groups, "Grand catalogue", "French Stream",
+                          preview_image_url="https://fs05.lol/poster.png")
+        parts = card[0]["components"]
+        texts = [p["content"] for p in parts if p["type"] == 10]
+        ref_idx = next(i for i, text in enumerate(texts)
+                       if "**🔎 Site de référence**" in text)
+        active_idx = next(i for i, text in enumerate(texts)
+                          if "**🌐 Site actif**" in text)
+        self.assertLess(ref_idx, active_idx)
+        self.assertIn("https://fstream.info/", texts[ref_idx])
+        self.assertIn("https://fs05.lol/", texts[active_idx])
+        self.assertEqual(parts[-1]["type"], 12)
+
+    def test_generic_site_without_reference_does_not_repeat_same_url(self):
+        from forum_cards import build_card
+        groups = site_groups([record("https://reseam.app/download/")],
+                             "Reseam Manager")
+        self.assertIsNone(groups[0].get("reference_url"))
+        body = "\n".join(all_text(build_card(groups, "Appli", "Reseam Manager")))
+        self.assertNotIn("Site de référence", body)
+        self.assertEqual(body.count("https://reseam.app/download/"), 1)
+
+    def test_coflix_directory_prefers_available_address_over_blocked_or_fake(self):
+        from forum_updates import directory_candidates, validated_directory_groups
+        from forum_cards import build_card
+        portal = "https://coflix.domains/"
+        content = (
+            '<main><a href="https://coflix.esq/">CoFlix.Esq Adresse disponible '
+            '27/07/2026</a><a href="https://coflix.ninja/">CoFlix.ninja '
+            'Bloqué par les FAI</a><a href="https://coflix.fyi/">'
+            'Coflix.fyi Faux site</a></main>'
+        )
+        self.assertEqual(directory_candidates(content, portal, "coflix"),
+                         ["https://coflix.esq/"])
+        old = [record("https://coflix.boo/", status="offline")]
+        with patch("forum_updates.check_site", return_value={
+            "result": "online",
+        }), patch("forum_updates.fetch_html_page", return_value={"html": content}), patch(
+            "forum_updates.probe_site_name", return_value={
+                "name": "Coflix", "evidence": "title"
+            }
+        ):
+            group = validated_directory_groups(old, "coflix")[0]
+        self.assertEqual(group["reference_url"], portal)
+        self.assertEqual(group["url"], "https://coflix.esq/")
+        self.assertTrue(group["verified"])
+        self.assertNotEqual(group["url"], "https://coflix.boo/")
+        body = "\n".join(all_text(build_card([group], "Description", "Coflix")))
+        self.assertLess(body.index("https://coflix.domains/"),
+                        body.index("https://coflix.esq/"))
+
+    def test_flemmix_directory_reads_declared_active_and_ignores_old_domains(self):
+        from forum_updates import directory_candidates, validated_directory_groups
+        html = (
+            '<section><a href="https://flemmix.casa/">flemmix.casa</a>'
+            '<p>Nom de domaine principal (Nouveau site)</p>'
+            '<a href="https://flemmix.prof/">flemmix.prof</a>'
+            '<p>Ancien domaine (bloqué)</p></section>'
+        )
+        portal = "https://ww1.wiflix-adresses.fun/"
+        self.assertEqual(directory_candidates(html, portal, "flemmix"),
+                         ["https://flemmix.casa/"])
+        with patch("forum_updates.check_site", return_value={"result": "online"}), patch(
+            "forum_updates.fetch_html_page", return_value={"html": html}
+        ), patch("forum_updates.probe_site_name",
+                 return_value={"name": "Flemmix"}):
+            group = validated_directory_groups(
+                [record("https://flemmix.mom/", status="offline")], "flemmix"
+            )[0]
+        self.assertEqual(group["reference_url"], portal)
+        self.assertEqual(group["url"], "https://flemmix.casa/")
+        self.assertTrue(group["verified"])
+
+    def test_unverified_destination_is_not_claimed_online(self):
+        from forum_updates import validated_directory_groups
+        html = ('<a href="https://coflix.esq/">Coflix.Esq '
+                'Adresse disponible 27/07/2026</a>')
+        with patch("forum_updates.check_site", side_effect=[
+            {"result": "online"}, {"result": "offline"}
+        ]), patch("forum_updates.fetch_html_page", return_value={"html": html}):
+            group = validated_directory_groups(
+                [record("https://coflix.boo/", status="offline")], "coflix"
+            )[0]
+        self.assertEqual(group["reference_url"], "https://coflix.domains/")
+        self.assertEqual(group["status"], "suspect")
+        self.assertFalse(group["verified"])
+
     def test_vip_secret_phrase_numbered_list_is_in_the_same_card(self):
         from forum_cards import build_card, split_vip_phrase
         example = (
@@ -422,7 +518,7 @@ class ForumUpdatesTests(unittest.TestCase):
         password_i = next(i for i, p in enumerate(parts)
                           if p["type"] == 10 and "Mot de passe" in p["content"])
         url_i = next(i for i, p in enumerate(parts)
-                     if p["type"] == 10 and "🌐 https://sample.example.org/" in p["content"])
+                     if p["type"] == 10 and "https://sample.example.org/" in p["content"])
         image_i = next(i for i, p in enumerate(parts) if p["type"] == 12)
         self.assertTrue(title_i < description_i < password_i < url_i)
         self.assertEqual(url_i + 1, image_i)
@@ -440,7 +536,7 @@ class ForumUpdatesTests(unittest.TestCase):
         )
         parts = components[0]["components"]
         self.assertIn("🔐 Accès VIP", parts[-3]["content"])
-        self.assertIn("🌐 https://movix.online/", parts[-2]["content"])
+        self.assertIn("https://movix.online/", parts[-2]["content"])
         self.assertEqual(parts[-1]["type"], 12)
 
     def test_opengraph_preview_image_inside_container_without_second_url(self):
