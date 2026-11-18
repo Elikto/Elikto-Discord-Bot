@@ -495,11 +495,12 @@ class MirrorWatchTests(unittest.TestCase):
         msg = api.bot_messages[0]
         self.assertEqual(msg["id"], "500")
         self.assertEqual(msg["flags"], 32768)
-        self.assertEqual(len(msg["components"]), 6)
+        self.assertEqual(len(msg["components"]), 2)
         self.assertTrue(all(comp["type"] == 17 for comp in msg["components"]))
         self.assertTrue(all(comp["components"][0]["type"] == 10
                             for comp in msg["components"]))
         self.assertEqual(msg["components"][1]["accent_color"], mirror_watch.CARD_ACCENT)
+        self.assertTrue(msg["components"][1]["spoiler"])
         self.assertIn("### ✦ [", msg["components"][1]["components"][0]["content"])
         api.calls.clear()
         with patch("mirror_watch.check_site"):
@@ -508,6 +509,27 @@ class MirrorWatchTests(unittest.TestCase):
                 "updated",
             )
         self.assertFalse(any(method in ("POST", "PATCH") for method, _, _ in api.calls))
+
+    def test_one_visible_primary_url_and_revealable_mirror_container(self):
+        items = [
+            {"name": "PRINCIPAL", "url": "https://principal.example.org/",
+             "status": "online", "source_urls": ["https://old.example.org/"]},
+            {"name": "MIROIR", "url": "https://miroir.example.org/",
+             "status": "online", "source_urls": []},
+            {"name": "VIDE", "url": "https://vide.example.org/",
+             "status": "empty_index", "source_urls": []},
+        ]
+        components = mirror_watch.render_site_cards(items, "Streaming HD")
+        self.assertEqual(len(components), 2)
+        visible = mirror_watch.component_text([components[0]])
+        hidden = mirror_watch.component_text([components[1]])
+        self.assertFalse(components[0].get("spoiler", False))
+        self.assertTrue(components[1]["spoiler"])
+        self.assertIn("https://principal.example.org/", "\n".join(visible))
+        self.assertNotIn("https://miroir.example.org/", "\n".join(visible))
+        self.assertNotIn("https://vide.example.org/", "\n".join(visible))
+        self.assertIn("https://miroir.example.org/", "\n".join(hidden))
+        self.assertIn("❌", "\n".join(hidden))
 
     def test_cards_support_many_sites_without_hiding_them(self):
         sites = [
@@ -532,7 +554,7 @@ class MirrorWatchTests(unittest.TestCase):
         rendered = api.bot_messages[0]["content"]
         for url in URLS:
             self.assertIn(url, rendered)
-        self.assertIn("## 🎬 CINÉMA HD · SITES ACTUELS", rendered)
+        self.assertIn("## 🎬 STREAMING HD", rendered)
         self.assertEqual(s["events"], [])
 
     def test_no_double_check_on_same_paris_calendar_day(self):
