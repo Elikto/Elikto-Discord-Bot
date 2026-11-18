@@ -1,5 +1,6 @@
 import unittest
 from unittest.mock import patch
+from forum_cards import all_text, BRAND
 from forum_updates import (
     MARKER, render_forum_update, site_groups, sync_forum_updates,
     upsert_forum_update,
@@ -29,6 +30,9 @@ def record(url, *, announced=None, status="online", older=(), name=None, active=
     }
 
 
+def shown(message):
+    return "\n".join(all_text(message.get("components") or []))
+
 class FakeAPI:
     def __init__(self):
         self.messages = {}
@@ -55,7 +59,9 @@ class FakeAPI:
             tid = path.split("/")[2]
             self.nextid += 1
             msg = {"id": str(self.nextid), "author": {"id": "bot"},
-                   "content": json["content"]}
+                   "content": json.get("content"),
+                   "components": json.get("components", []),
+                   "flags": json.get("flags", 0)}
             self.messages.setdefault(tid, []).append(msg)
             return dict(msg)
         if "/messages/" in path and method == "PATCH":
@@ -64,7 +70,9 @@ class FakeAPI:
                 if m["id"] == mid:
                     if m["author"]["id"] != "bot":
                         raise AssertionError("Tentative de modification d'un message utilisateur")
-                    m["content"] = json["content"]
+                    m["content"] = json.get("content")
+                    m["components"] = json.get("components", [])
+                    m["flags"] = json.get("flags", 0)
                     return dict(m)
         raise AssertionError(f"Unexpected API call: {method} {path}")
 
@@ -102,13 +110,14 @@ class ForumUpdatesTests(unittest.TestCase):
         self.assertIn(MARKER, result)
         self.assertNotIn("HTTP 200", result)
 
-    def test_no_initial_spam_when_nothing_changed(self):
+    def test_all_public_site_threads_receive_an_initial_card(self):
         data = state()
         del data["server_links"]["https://webflix.art/"]
         api = FakeAPI()
         summary = sync_forum_updates(api, data)
-        self.assertEqual(summary["created"], 0)
-        self.assertEqual(api.messages, {})
+        self.assertEqual(summary["created"], 1)
+        self.assertIn("webflixfr.github.io", shown(api.messages[THREAD][0]))
+        self.assertNotIn(OTHER, api.messages)
 
     def test_first_migration_creates_once_and_subsequent_change_edits(self):
         data = state()
@@ -117,7 +126,8 @@ class ForumUpdatesTests(unittest.TestCase):
         self.assertEqual(initial["created"], 1)
         self.assertEqual(len(api.messages[THREAD]), 1)
         original_id = api.messages[THREAD][0]["id"]
-        self.assertIn(MARKER, api.messages[THREAD][0]["content"])
+        self.assertIn(BRAND, shown(api.messages[THREAD][0]))
+        self.assertNotIn(MARKER, shown(api.messages[THREAD][0]))
         unchanged = sync_forum_updates(api, data)
         self.assertEqual(unchanged["unchanged"], 1)
         self.assertEqual(len(api.messages[THREAD]), 1)
@@ -126,7 +136,7 @@ class ForumUpdatesTests(unittest.TestCase):
         self.assertEqual(changed["updated"], 1)
         self.assertEqual(len(api.messages[THREAD]), 1)
         self.assertEqual(api.messages[THREAD][0]["id"], original_id)
-        self.assertIn("https://webflix.next/", api.messages[THREAD][0]["content"])
+        self.assertIn("https://webflix.next/", shown(api.messages[THREAD][0]))
 
     def test_existing_user_post_is_never_modified(self):
         data = state()
@@ -159,7 +169,7 @@ class ForumUpdatesTests(unittest.TestCase):
         event = [{"type": "server_site_added", "thread_id": THREAD}]
         result = sync_forum_updates(api, data, event)
         self.assertEqual(result["created"], 1)
-        self.assertIn("https://new.example.org/", api.messages[THREAD][0]["content"])
+        self.assertIn("https://new.example.org/", shown(api.messages[THREAD][0]))
 
     def test_per_forum_write_failure_is_recorded_not_silenced(self):
         data = state()
@@ -183,7 +193,50 @@ class ForumUpdatesTests(unittest.TestCase):
         result = sync_forum_updates(api, data)
         self.assertEqual(result["created"], 1)
         self.assertNotIn("333", api.messages)
-        self.assertNotIn("https://public.org/", api.messages[THREAD][0]["content"])
+        self.assertNotIn("https://public.org/", shown(api.messages[THREAD][0]))
+
+    def test_exact_description_is_embedded_and_updates_without_duplicate(self):
+        data = state()
+        api = FakeAPI()
+        original = "Dernières sorties en HD **sans pub**.\n\nGratuit - Illimité."
+        api.messages[THREAD] = [
+            {"id": THREAD, "author": {"id": "human"}, "content": original}
+        ]
+        result = sync_forum_updates(api, data)
+        self.assertEqual(result["created"], 1)
+        self.assertEqual(result["descriptions_found"], 1)
+        published = api.messages[THREAD][-1]
+        self.assertEqual(published["flags"], 32768)
+        self.assertIn(original, shown(published))
+        self.assertIn("[webflix.surf](https://webflix.surf/)", shown(published))
+        self.assertNotIn(MARKER, shown(published))
+        self.assertNotIn("Message actualisé automatiquement", shown(published))
+        same_id = published["id"]
+        result = sync_forum_updates(api, data)
+        self.assertEqual(result["unchanged"], 1)
+        self.assertEqual(len(api.messages[THREAD]), 2)
+        api.messages[THREAD][0]["content"] = original + "\n**Mise à jour du texte**"
+        result = sync_forum_updates(api, data)
+        self.assertEqual(result["updated"], 1)
+        self.assertEqual(api.messages[THREAD][-1]["id"], same_id)
+        self.assertIn("**Mise à jour du texte**", shown(api.messages[THREAD][-1]))
+        self.assertEqual(api.messages[THREAD][0]["content"],
+                         original + "\n**Mise à jour du texte**")
+
+    def test_missing_original_description_is_not_invented(self):
+        data = state()
+        api = FakeAPI()
+        result = sync_forum_updates(api, data)
+        self.assertEqual(result["description_missing"], 1)
+        self.assertNotIn("Description d'origine", shown(api.messages[THREAD][0]))
+
+    def test_primary_forum_link_used_if_global_scan_has_no_link(self):
+        data = state()
+        data["records"][OTHER]["site_url"] = "https://another.example.org/"
+        api = FakeAPI()
+        result = sync_forum_updates(api, data)
+        self.assertEqual(result["created"], 2)
+        self.assertIn("another.example.org", shown(api.messages[OTHER][0]))
 
     def test_mirror_maintains_its_own_bot_message(self):
         data = state()
