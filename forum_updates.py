@@ -862,8 +862,10 @@ def sync_forum_updates(api, state, changed_events=()):
             image = (cached_site_preview(
                 api, tid, preview_url, previous,
                 reference_url=groups[0].get("reference_url"),
-            ) if preview_url and groups[0].get("status") not in
-                     ("offline", "suspect", "empty_index") else None)
+            ) if preview_url and not groups[0].get("no_active") and
+                     groups[0].get("status") not in
+                     ("offline", "suspect", "empty_index", "parked",
+                      "interstitial", "blocked") else None)
             components = build_card(
                 groups, original, info.get("title") or "Site",
                 credentials=credentials, preview_image_url=image,
