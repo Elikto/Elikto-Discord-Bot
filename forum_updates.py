@@ -628,8 +628,9 @@ def validated_directory_groups(linked, kind):
     expected_prefix = DIRECTORIES[kind][1]
     for proposed in proposals:
         result = check_site(proposed)
-        if result.get("result") not in ("online", "restricted", "unknown"):
-            continue
+        if result.get("result") not in ("online", "restricted"):
+            if not (kind == "coflix" and result.get("result") == "unknown"):
+                continue
         destination = clean_url(result.get("final_url") or proposed)
         # Lien publicitaire/intermédiaire ou raccourcisseur : aucune coche verte.
         if not destination or not domain(destination).startswith(expected_prefix):
