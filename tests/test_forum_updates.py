@@ -441,6 +441,42 @@ class ForumUpdatesTests(unittest.TestCase):
         self.assertEqual(group["url"], "https://flemmix.casa/")
         self.assertTrue(group["verified"])
 
+    def test_directory_shortener_redirect_must_never_be_verified(self):
+        from forum_updates import validated_directory_groups
+        html = ('<a href="https://flemmix.casa/">flemmix.casa</a>'
+                '<p>Nom de domaine principal (Nouveau site)</p>')
+        with patch("forum_updates.check_site", side_effect=[
+            {"result": "online", "final_url": "https://ww1.wiflix-adresses.fun/"},
+            {"result": "online", "final_url": "https://www.dlink9.com/m6nL/"},
+        ]), patch("forum_updates.fetch_html_page", return_value={"html": html}), patch(
+            "forum_updates.probe_site_name"
+        ) as inspect:
+            result = validated_directory_groups(
+                [record("https://flemmix.mom/", status="offline")], "flemmix"
+            )[0]
+        inspect.assert_not_called()
+        self.assertEqual(result["reference_url"], "https://ww1.wiflix-adresses.fun/")
+        self.assertEqual(result["url"], "https://flemmix.casa/")
+        self.assertEqual(result["status"], "suspect")
+        self.assertFalse(result["verified"])
+
+    def test_directory_redirect_to_new_same_brand_domain_can_be_verified(self):
+        from forum_updates import validated_directory_groups
+        html = ('<a href="https://flemmix.casa/">flemmix.casa</a>'
+                '<p>Nom de domaine principal (Nouveau site)</p>')
+        with patch("forum_updates.check_site", side_effect=[
+            {"result": "online"}, {"result": "online",
+                                     "final_url": "https://flemmix.run/"},
+        ]), patch("forum_updates.fetch_html_page", return_value={"html": html}), patch(
+            "forum_updates.probe_site_name", return_value={"name": "Flemmix"}
+        ) as inspect:
+            result = validated_directory_groups(
+                [record("https://flemmix.mom/", status="offline")], "flemmix"
+            )[0]
+        inspect.assert_called_once_with("https://flemmix.run/")
+        self.assertEqual(result["url"], "https://flemmix.run/")
+        self.assertTrue(result["verified"])
+
     def test_unverified_destination_is_not_claimed_online(self):
         from forum_updates import validated_directory_groups
         html = ('<a href="https://coflix.esq/">Coflix.Esq '
