@@ -8,6 +8,7 @@ import html
 from html.parser import HTMLParser
 import re
 import unicodedata
+import zlib
 from urllib.parse import urljoin, urlsplit, urlunsplit
 
 from site_probe import (
@@ -402,6 +403,9 @@ def fetch_html_page(url, timeout=7, *, browser_compatible=False):
                         "application/xml;q=0.9,*/*;q=0.8"
                     ),
                     "Accept-Language": "fr-FR,fr;q=0.9,en-US;q=0.7",
+                    # Certains CDN diffèrent selon la négociation de
+                    # compression : décoder gzip/deflate en restant borné.
+                    "Accept-Encoding": "gzip, deflate",
                 })
             # Pas de Range et lecture plafonnée à MAX_HTML octets.
             connection.request("GET", parsed.path or "/", headers=headers)
@@ -419,9 +423,23 @@ def fetch_html_page(url, timeout=7, *, browser_compatible=False):
             content_type = (response.getheader("Content-Type") or "").lower()
             if "text/html" not in content_type and "application/xhtml+xml" not in content_type:
                 return None
-            if (response.getheader("Content-Encoding") or "identity").lower() not in ("identity", ""):
+            content_encoding = (
+                response.getheader("Content-Encoding") or "identity"
+            ).lower().strip()
+            if content_encoding not in ("identity", "", "gzip", "deflate"):
                 return None
+            # La taille lue ET la sortie décompressée restent plafonnées
+            # pour éviter qu'une page arbitraire ne consomme trop de RAM.
             body = response.read(MAX_HTML + 1)[:MAX_HTML]
+            if content_encoding in ("gzip", "deflate"):
+                try:
+                    inflater = zlib.decompressobj(
+                        16 + zlib.MAX_WBITS if content_encoding == "gzip"
+                        else zlib.MAX_WBITS
+                    )
+                    body = inflater.decompress(body, MAX_HTML + 1)[:MAX_HTML]
+                except zlib.error:
+                    return None
             if not body:
                 return None
             encoding = "utf-8"
