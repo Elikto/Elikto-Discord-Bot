@@ -59,6 +59,9 @@ def site_groups(records, forum_title):
             groups[key] = {
                 "url": url, "name": domain(url),
                 "older": [], "announced": bool(successor),
+                "verified": bool(rec.get("announced_verified")) if successor else bool(
+                    rec.get("status") == "online" and rec.get("page_health") == "content"
+                ),
                 "status": rec.get("announced_status") if successor else rec.get("status"),
             }
         entry = groups[key]
@@ -66,6 +69,7 @@ def site_groups(records, forum_title):
             entry["url"] = successor
             entry["announced"] = True
             entry["status"] = rec.get("announced_status")
+            entry["verified"] = bool(rec.get("announced_verified"))
             entry["name"] = domain(successor)
             for old in [original, *(rec.get("other_previous_urls") or [])]:
                 older = domain(old)
@@ -304,8 +308,8 @@ def render_forum_update(title, records):
         if group["older"]:
             lines.append("-# ↳ Ancien : " + ", ".join(group["older"]))
         if group["announced"]:
-            suffix = (" · Répond au contrôle HTTP" if group["status"] == "online"
-                      else " · Accessibilité à confirmer")
+            suffix = (" · Page HTML vérifiée" if group.get("verified")
+                      else " · Intégrité du site à confirmer")
             lines.append("-# 🔄 Nouveau domaine annoncé par le site" + suffix)
         lines.append("")
     if not groups:
