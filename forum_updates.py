@@ -84,6 +84,7 @@ def records_for_forum(state, thread_id):
         found.insert(0, {
             "site_url": link,
             "status": primary.get("status", "pending"),
+            "active": True,
         })
     return found
 
