@@ -80,6 +80,21 @@ def proven_html_content(record, now=None):
         return False
 
 
+def latest_check(*timestamps):
+    """Retourner uniquement la date d'une vraie vérification enregistrée."""
+    values = []
+    for raw in timestamps:
+        if not raw:
+            continue
+        try:
+            parsed = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+            if parsed.tzinfo is not None:
+                values.append(parsed.astimezone(timezone.utc))
+        except (ValueError, TypeError, OverflowError):
+            continue
+    return max(values).isoformat(timespec="seconds") if values else None
+
+
 def site_groups(records, forum_title):
     """Conserver la source d'une annonce ET sa destination actuelle.
 
@@ -107,13 +122,20 @@ def site_groups(records, forum_title):
             reference = None
         verified = (bool(rec.get("announced_verified")) if successor else
                     proven_html_content(rec))
+        # L'adresse annoncée doit avoir sa PROPRE heure de contrôle :
+        # le scan du domaine d'origine ne suffit pas.
+        checked_at = (latest_check(rec.get("announced_last_checked"))
+                      if successor else latest_check(
+                          rec.get("last_checked"), rec.get("name_attempted_at")))
         if key not in groups:
             groups[key] = {
                 "url": url, "name": domain(url), "reference_url": reference,
                 "older": [], "announced": bool(successor), "verified": verified,
                 "status": rec.get("announced_status") if successor else rec.get("status"),
+                "checked_at": checked_at,
             }
         entry = groups[key]
+        entry["checked_at"] = latest_check(entry.get("checked_at"), checked_at)
         if successor:
             entry["url"] = successor
             entry["announced"] = True
@@ -230,6 +252,7 @@ def validated_movix_groups(linked):
         "verified": target_verified,
         "status": target_status if target else hub_status,
         "directory_url": MOVIX_HUB if target else None,
+        "checked_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }]
 
 
@@ -354,6 +377,7 @@ def validated_purstream_groups(linked, previous=None):
             "url": verified_host, "name": domain(verified_host),
             "reference_url": PURSTREAM_HUB, "older": [], "announced": True,
             "verified": True, "status": status,
+            "checked_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         }]
 
     # Une source fiable peut annoncer une adresse que GitHub Actions ne
@@ -364,6 +388,7 @@ def validated_purstream_groups(linked, previous=None):
         "suggested_url": proposals[0] if proposals else None,
         "no_active": True, "announced": bool(proposals),
         "verified": False, "status": "unknown",
+        "checked_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }]
 
 
@@ -629,6 +654,7 @@ def validated_directory_groups(linked, kind):
         "announced": bool(proposals and found),
         "verified": verified,
         "status": "online" if found else "unknown",
+        "checked_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }]
 
 

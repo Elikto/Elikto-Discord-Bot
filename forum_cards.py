@@ -6,7 +6,9 @@ L'aperçu du lien est publié dans un second message Discord classique.
 import hashlib
 import json
 import re
+from datetime import datetime
 from urllib.parse import urlsplit
+from zoneinfo import ZoneInfo
 
 from site_probe import clean_url
 
@@ -24,6 +26,20 @@ def domain(url):
 def safe_title(value):
     title = str(value or "")
     return "".join(ch if ch not in "*[]()<>\n\r@" else " " for ch in title)[:90].strip()
+
+
+def last_check_line(value):
+    """Afficher l'heure du DERNIER contrôle réel, en heure française."""
+    try:
+        checked = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        if checked.tzinfo is None:
+            raise ValueError("timestamp sans fuseau")
+        paris = checked.astimezone(ZoneInfo("Europe/Paris"))
+        return ("\n-# 🕒 Dernier contrôle : "
+                + paris.strftime("%d/%m/%Y à %H:%M")
+                + " (Paris)")
+    except (TypeError, ValueError, OverflowError):
+        return "\n-# 🕒 Dernier contrôle : non disponible"
 
 
 def source_description(api, thread_id, bot_id):
@@ -292,6 +308,7 @@ def build_card(groups, description, title=None, credentials=None, preview_image_
                     "-# Anciennes adresses bloquées exclues."
                     + ("\n**🔎 Adresse annoncée (non vérifiée)**\n" + candidate
                        if candidate and candidate != reference else "")
+                    + last_check_line(group.get("checked_at"))
                 ),
             })
             continue
@@ -329,6 +346,7 @@ def build_card(groups, description, title=None, credentials=None, preview_image_
             line += "\n-# ↳ Ancien : " + ", ".join(group["older"])
         if group.get("announced") and not group.get("verified"):
             line += "\n-# 🔄 Nouvelle adresse annoncée · à confirmer"
+        line += last_check_line(group.get("checked_at"))
         parts.extend({"type": 10, "content": chunk} for chunk in split_text(line))
     if preview_image_url:
         # Le composant Media Gallery est inclus DANS le Container Components V2.

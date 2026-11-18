@@ -1196,5 +1196,56 @@ class ForumUpdatesTests(unittest.TestCase):
 
 
 
+    def test_last_check_shows_paris_time_with_summer_and_winter(self):
+        from forum_cards import last_check_line
+        self.assertIn(
+            "18/11/2026 à 23:30 (Paris)",
+            last_check_line("2026-11-18T22:30:00+00:00")
+        )
+        self.assertIn(
+            "18/07/2026 à 23:30 (Paris)",
+            last_check_line("2026-07-18T21:30:00Z")
+        )
+        self.assertIn("non disponible", last_check_line(None))
+        self.assertIn("non disponible", last_check_line("bad timestamp"))
+
+    def test_site_group_uses_last_real_check_not_last_seen(self):
+        from forum_cards import build_card
+        entry = record("https://cinezzz.club/", status="restricted")
+        entry["last_checked"] = "2026-11-18T19:00:00+00:00"
+        entry["name_attempted_at"] = "2026-11-18T22:30:00+00:00"
+        entry["last_seen"] = "2026-11-19T00:00:00+00:00"
+        group = site_groups([entry], "Cinezzz")[0]
+        content = "\n".join(all_text(build_card([group], "Catalogue", "Cinezzz")))
+        self.assertIn("18/11/2026 à 23:30 (Paris)", content)
+        self.assertNotIn("19/11/2026", content)
+        self.assertIn("Site (accès restreint)", content)
+
+    def test_new_domain_check_timestamp_is_not_old_domain_timestamp(self):
+        from forum_cards import build_card
+        entry = record("https://webflix.art/",
+                       announced="https://webflix.surf/")
+        entry["last_checked"] = "2026-11-18T22:30:00+00:00"
+        entry["name_attempted_at"] = "2026-11-18T22:30:00+00:00"
+        entry["announced_last_checked"] = "2026-11-18T17:00:00+00:00"
+        group = site_groups([entry], "Webflix")[0]
+        content = "\n".join(all_text(build_card([group], "Films", "Webflix")))
+        self.assertIn("18/11/2026 à 18:00 (Paris)", content)
+        self.assertNotIn("23:30", content)
+
+    def test_unverified_directory_also_displays_last_check(self):
+        from forum_cards import build_card
+        group = {
+            "url": "https://coflix.domains/",
+            "reference_url": "https://coflix.domains/",
+            "no_active": True, "verified": False, "status": "unknown",
+            "checked_at": "2026-11-18T22:30:00+00:00",
+        }
+        rendered = "\n".join(all_text(build_card([group], "Description", "Coflix")))
+        self.assertIn("18/11/2026 à 23:30 (Paris)", rendered)
+        self.assertNotIn("✅", rendered)
+
+
+
 if __name__ == "__main__":
     unittest.main()
