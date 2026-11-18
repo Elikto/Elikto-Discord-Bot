@@ -226,31 +226,12 @@ def credentials_from_author_posts(api, thread_id, bot_id):
 
 
 def build_card(groups, description, title=None, credentials=None, preview_image_url=None):
-    """Fiche au nom du site, adresse actuelle et description d'origine."""
+    """Fiche : nom, description, accès, URL puis aperçu visuel."""
     if not groups:
         return None
     host = domain(groups[0]["url"])
     heading = safe_title(title) or safe_title(host)
     parts = [{"type": 10, "content": "## ✦ " + heading + " ✦"}]
-    for group in groups:
-        url = clean_url(group.get("url"))
-        if not url:
-            continue
-        empty_index = group.get("status") == "empty_index"
-        line = ("❌ 🌐 " if empty_index else "🌐 ") + url
-        if empty_index:
-            line += "\n-# Page vide : index de répertoire détecté"
-        if group.get("directory_url"):
-            line += "\n-# ↳ Page de référence : " + group["directory_url"]
-        if group.get("older"):
-            line += "\n-# ↳ Ancien : " + ", ".join(group["older"])
-        if group.get("announced"):
-            line += ("\n-# 🟢 Nouvelle adresse annoncée · serveur accessible"
-                     if group.get("status") == "online"
-                     else "\n-# 🟡 Nouvelle adresse annoncée · à vérifier")
-        elif group.get("status") in ("offline", "suspect"):
-            line += "\n-# 🟠 Accessibilité à vérifier"
-        parts.extend({"type": 10, "content": chunk} for chunk in split_text(line))
     regular_description, original_credentials = split_credentials(description)
     regular_description, original_vip_phrase = split_vip_phrase(regular_description)
     credentials = {**(original_credentials or {}), **(credentials or {})}
@@ -276,6 +257,25 @@ def build_card(groups, description, title=None, credentials=None, preview_image_
             "content": "**🔐 Accès VIP**\n**🔑 Phrase secrète :** ||"
                        + credentials["vip_phrase"].replace("||", "| |") + "||",
         })
+    for group in groups:
+        url = clean_url(group.get("url"))
+        if not url:
+            continue
+        empty_index = group.get("status") == "empty_index"
+        line = ("❌ 🌐 " if empty_index else "🌐 ") + url
+        if empty_index:
+            line += "\n-# Page vide : index de répertoire détecté"
+        if group.get("directory_url"):
+            line += "\n-# ↳ Page de référence : " + group["directory_url"]
+        if group.get("older"):
+            line += "\n-# ↳ Ancien : " + ", ".join(group["older"])
+        if group.get("announced"):
+            line += ("\n-# 🟢 Nouvelle adresse annoncée · serveur accessible"
+                     if group.get("status") == "online"
+                     else "\n-# 🟡 Nouvelle adresse annoncée · à vérifier")
+        elif group.get("status") in ("offline", "suspect"):
+            line += "\n-# 🟠 Accessibilité à vérifier"
+        parts.extend({"type": 10, "content": chunk} for chunk in split_text(line))
     if preview_image_url:
         # Le composant Media Gallery est inclus DANS le Container Components V2.
         parts.append({
