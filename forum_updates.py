@@ -7,8 +7,10 @@ from __future__ import annotations
 
 import hashlib
 import re
-from urllib.parse import urlsplit
-from site_probe import clean_url
+from html.parser import HTMLParser
+from urllib.parse import urljoin, urlsplit
+from site_probe import clean_url, check_site
+from name_probe import fetch_html_page
 from forum_cards import (source_description, build_card, all_text, normalize,
                          is_own_card, card_digest, V2_FLAG)
 
@@ -69,6 +71,98 @@ def site_groups(records, forum_title):
                     entry["older"].append(older)
     return sorted(groups.values(), key=lambda item: (not item["announced"], item["url"]))
 
+
+
+MOVIX_HUB = "https://movix.online/"
+
+
+class MovixDirectoryParser(HTMLParser):
+    """Lit uniquement le premier lien sous « Adresse officielle active »."""
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.in_heading = False
+        self.heading = []
+        self.active_section = False
+        self.candidates = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag in ("h1", "h2", "h3", "h4"):
+            self.in_heading = True
+            self.heading = []
+            return
+        if tag == "a" and self.active_section:
+            href = dict(attrs).get("href")
+            if href:
+                self.candidates.append(href)
+
+    def handle_data(self, data):
+        if self.in_heading:
+            self.heading.append(data)
+
+    def handle_endtag(self, tag):
+        if tag in ("h1", "h2", "h3", "h4") and self.in_heading:
+            self.in_heading = False
+            self.active_section = "adresse officielle active" in (
+                " ".join(self.heading).casefold()
+            )
+
+
+def is_movix_forum(title):
+    return bool(re.search(r"(?i)(?<![a-z])movix(?![a-z])", str(title or "")))
+
+
+def validated_movix_groups(linked):
+    """Ne plus republier movix.club/Site (404) comme une adresse valide.
+
+    movix.online est l'annuaire indiqué par le propriétaire du forum :
+    une destination découverte dans sa rubrique dédiée n'est retenue
+    que si le serveur cible répond effectivement en HTTP.
+    """
+    previous = []
+    for item in linked:
+        for url in (item.get("site_url"), item.get("announced_url")):
+            old = clean_url(url)
+            if old and domain(old) != domain(MOVIX_HUB):
+                host = domain(old)
+                if host not in previous:
+                    previous.append(host)
+    hub_check = check_site(MOVIX_HUB)
+    hub_status = hub_check.get("result", "unknown")
+    target = None
+    target_status = None
+    if hub_status in ("online", "restricted"):
+        try:
+            page = fetch_html_page(MOVIX_HUB)
+        except (OSError, TimeoutError, ValueError, UnicodeError):
+            page = None
+        if page:
+            parser = MovixDirectoryParser()
+            try:
+                parser.feed(page["html"])
+            except (ValueError, AssertionError):
+                pass
+            for href in parser.candidates[:10]:
+                proposed = clean_url(urljoin(MOVIX_HUB, href))
+                if not proposed or domain(proposed) == domain(MOVIX_HUB):
+                    continue
+                if not domain(proposed).startswith("movix."):
+                    continue
+                result = check_site(proposed)
+                if result.get("result") == "online":
+                    target = proposed
+                    target_status = "online"
+                    break
+    # Si la destination est non vérifiée, montrer la page de référence,
+    # jamais l'ancienne URL 404 comme si elle était encore valide.
+    current = target or MOVIX_HUB
+    return [{
+        "url": current,
+        "name": domain(current),
+        "older": previous,
+        "announced": bool(target),
+        "status": target_status if target else hub_status,
+        "directory_url": MOVIX_HUB if target else None,
+    }]
 
 
 def records_for_forum(state, thread_id):
@@ -240,7 +334,9 @@ def sync_forum_updates(api, state, changed_events=()):
                 result["descriptions_found"] += 1
             else:
                 result["description_missing"] += 1
-            groups = site_groups(linked, info.get("title") or "Site")
+            groups = (validated_movix_groups(linked)
+                      if is_movix_forum(info.get("title"))
+                      else site_groups(linked, info.get("title") or "Site"))
             components = build_card(groups, original, info.get("title") or "Site")
             if not components:
                 result["skipped"] += 1
