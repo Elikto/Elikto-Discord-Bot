@@ -88,6 +88,74 @@ class MirrorWatchTests(unittest.TestCase):
         no_discovery.start()
         self.addCleanup(no_discovery.stop)
 
+    def test_internet_discovered_rogzov_uses_exact_path_and_red_dropdown_warning(self):
+        """Régression de la capture : 200 à la racine, Index of / sur le miroir."""
+        good = "https://varloz.com/47b6f3a/home/varloz"
+        bad = "https://rogzov.com/93zjfyqk6llf/"
+        api = FakeAPI([human_message()])
+        s = state()
+        tracked = s.setdefault("tracked_threads", {}).setdefault(mirror_watch.THREAD_ID, {})
+        # Ancienne donnée verte à la racine : ne doit pas être réutilisée.
+        tracked["target_states"] = {
+            "https://rogzov.com/": {
+                "url": "https://rogzov.com/",
+                "status": "online",
+                "http_status": 200,
+                "last_checked": self.now.isoformat(timespec="seconds"),
+            }
+        }
+        discovered = [
+            {"url": "https://rogzov.com/", "name": "ROGZOV",
+             "source_urls": [], "status": "pending", "previous_names": []},
+            {"url": "https://varloz.com/", "name": "VARLOZ",
+             "source_urls": [], "status": "pending", "previous_names": []},
+        ]
+        checked = []
+        inspected = []
+
+        def check(url):
+            checked.append(url)
+            return response(url=url)
+
+        def inspect(url):
+            inspected.append(url)
+            if url == bad:
+                return {"page_health": "empty_index", "evidence": "html:directory_index"}
+            if url == good:
+                return {"name": "VARLOZ", "confidence": "strong", "evidence": "title"}
+            return None
+
+        with patch("mirror_watch.candidate_groups", return_value=discovered), patch(
+            "mirror_watch.check_site", side_effect=check
+        ), patch("mirror_watch.probe_site_name", side_effect=inspect), patch.dict(
+            "os.environ", {"DISCORD_MIRROR_DROPDOWN_ENABLED": "1"}
+        ):
+            self.assertEqual(mirror_watch.sync_thread(api, s, self.now), "updated")
+
+        self.assertIn(bad, checked)
+        self.assertIn(good, checked)
+        self.assertIn(bad, inspected)
+        self.assertNotIn("https://rogzov.com/", checked)
+        record = s["tracked_threads"][mirror_watch.THREAD_ID]
+        self.assertEqual(record["target_states"][bad]["status"], "empty_index")
+        self.assertNotIn("https://rogzov.com/", record["target_states"])
+        displayed = {site["name"]: site for site in record["display_sites"]}
+        self.assertEqual(displayed["ROGZOV"]["url"], bad)
+        self.assertEqual(displayed["ROGZOV"]["status"], "empty_index")
+        self.assertEqual(displayed["VARLOZ"]["url"], good)
+        self.assertEqual(displayed["VARLOZ"]["status"], "online")
+        self.assertEqual(len(api.bot_messages), 1)
+        menus = [component for container in api.bot_messages[0]["components"]
+                 for row in container.get("components", [])
+                 for component in row.get("components", [])
+                 if component.get("type") == 3]
+        options = [option for menu in menus for option in menu.get("options", [])]
+        bad_option = next(o for o in options if o["label"] == "ROGZOV")
+        self.assertEqual(bad_option["value"], bad)
+        self.assertIn("❌", bad_option["description"])
+        good_option = next(o for o in options if o["label"] == "VARLOZ")
+        self.assertIn("✅", good_option["description"])
+
     def test_root_domains_use_exact_reported_landing_paths(self):
         good = "https://varloz.com/47b6f3a/home/varloz"
         empty = "https://rogzov.com/93zjfyqk6llf/"
