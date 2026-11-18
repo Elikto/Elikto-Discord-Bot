@@ -163,6 +163,55 @@ def upsert_forum_update(api, tid, bot_id, components, tracking):
     return str(posted["id"]), "created"
 
 
+def is_preview_message(message, bot_id):
+    """Lien seul, publié par ce bot sans Components V2."""
+    return (str((message.get("author") or {}).get("id")) == bot_id
+            and not (message.get("components") or [])
+            and bool(re.fullmatch(r"https?://[^\\s]+",
+                                  str(message.get("content") or "").strip())))
+
+
+def find_preview(api, tid, bot_id, known=None, urls=()):
+    """Réutiliser le message d'aperçu, y compris après perte de l'état."""
+    if known:
+        try:
+            old = api.call("GET", f"/channels/{tid}/messages/{known}")
+            if is_preview_message(old, bot_id):
+                return old
+        except RuntimeError as exc:
+            if "HTTP 404" not in str(exc):
+                raise
+    before = None
+    for _ in range(10):
+        params = {"limit": 100}
+        if before:
+            params["before"] = before
+        batch = api.call("GET", f"/channels/{tid}/messages", params=params)
+        for msg in batch:
+            if is_preview_message(msg, bot_id) and (
+                    str(msg.get("content") or "").strip() in urls):
+                return msg
+        if len(batch) < 100:
+            break
+        before = str(batch[-1]["id"])
+    return None
+
+
+def upsert_preview(api, tid, bot_id, url, tracking, candidates=()):
+    """L'aperçu natif nécessite un autre message : V2 interdit content/embeds."""
+    old = find_preview(api, tid, bot_id, tracking.get("preview_message_id"),
+                       (url, *candidates))
+    if old:
+        if str(old.get("content") or "").strip() != url:
+            api.call("PATCH", f"/channels/{tid}/messages/{old['id']}",
+                     json={"content": url, "allowed_mentions": {"parse": []}})
+            return str(old["id"]), "updated"
+        return str(old["id"]), "unchanged"
+    posted = api.call("POST", f"/channels/{tid}/messages",
+                      json={"content": url, "allowed_mentions": {"parse": []}})
+    return str(posted["id"]), "created"
+
+
 def sync_forum_updates(api, state, changed_events=()):
     """Initialiser tous les forums publics, puis synchroniser les changements.
 
@@ -176,7 +225,8 @@ def sync_forum_updates(api, state, changed_events=()):
     tracked = state.setdefault("forum_updates", {})
     result = {
         "created": 0, "updated": 0, "unchanged": 0, "skipped": 0,
-        "descriptions_found": 0, "description_missing": 0, "errors": [],
+        "descriptions_found": 0, "description_missing": 0,
+        "previews_created": 0, "previews_updated": 0, "errors": [],
     }
     bot_id = str(api.call("GET", "/users/@me")["id"])
     for tid, info in sorted(forums.items()):
@@ -190,16 +240,34 @@ def sync_forum_updates(api, state, changed_events=()):
                 result["descriptions_found"] += 1
             else:
                 result["description_missing"] += 1
-            components = build_card(site_groups(linked, info.get("title") or "Site"), original)
+            groups = site_groups(linked, info.get("title") or "Site")
+            components = build_card(groups, original, info.get("title") or "Site")
             if not components:
                 result["skipped"] += 1
                 continue
             digest = card_digest(components)
+            previous = tracked.get(tid, {})
             message_id, outcome = upsert_forum_update(
-                api, tid, bot_id, components, tracked.get(tid, {})
+                api, tid, bot_id, components, previous
             )
-            tracked[tid] = {"message_id": message_id, "digest": digest}
+            # Enregistrer le message immédiatement pour éviter une seconde
+            # carte si Discord refuse temporairement l'aperçu.
+            tracked[tid] = {**previous, "message_id": message_id, "digest": digest}
             result[outcome] += 1
+            preview_url = clean_url(groups[0]["url"])
+            if preview_url:
+                # Le contenu URL seul déclenche l'aperçu natif de Discord
+                # lorsque le site autorise son robot d'indexation.
+                candidates = tuple(
+                    clean_url(item.get("site_url"))
+                    for item in linked if item.get("site_url")
+                )
+                preview_id, preview_outcome = upsert_preview(
+                    api, tid, bot_id, preview_url, tracked[tid], candidates
+                )
+                tracked[tid]["preview_message_id"] = preview_id
+                if preview_outcome != "unchanged":
+                    result["previews_" + preview_outcome] += 1
         except (RuntimeError, ValueError) as exc:
             result["errors"].append({
                 "thread_id": tid,
