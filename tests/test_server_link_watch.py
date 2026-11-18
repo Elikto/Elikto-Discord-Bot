@@ -312,6 +312,42 @@ class ServerWatchTests(unittest.TestCase):
         self.assertEqual(html_probe.call_count, 2)
         migration.assert_called_once_with(url)
 
+    def test_parked_and_interstitial_http_200_are_not_active_websites(self):
+        cases = {
+            "https://flemmix.mom/": "parked",
+            "https://flemmix.casa/": "interstitial",
+        }
+        found = {
+            u: {"source_count": 1, "sources": [{
+                "url": f"https://discord.com/channels/1/{i}/201",
+                "channel": "Streaming", "kind": "fil"
+            }]}
+            for i, u in enumerate(cases, 21)
+        }
+        def discover(_):
+            return found, {"unique_urls": len(found)}, []
+        def inspect(url):
+            return {
+                "page_health": cases[url],
+                "evidence": "html:" + cases[url],
+                "final_url": ("https://www.dlink9.com/m6nL/"
+                              if url.endswith("casa/") else url),
+            }
+        with patch("server_link_watch.check_site", side_effect=lambda url: response(url)), patch(
+            "server_link_watch.probe_site_name", side_effect=inspect
+        ):
+            s = state()
+            report, _ = watch.watch_server_links(
+                FakeDiscord(), s, NOW, discover=discover
+            )
+        self.assertEqual(report["new_http_checks"], 2)
+        for url, expected in cases.items():
+            entry = s["server_links"][url]
+            self.assertEqual(entry["http_status"], 200)
+            self.assertEqual(entry["page_health"], expected)
+            self.assertEqual(entry["status"], expected)
+            self.assertNotEqual(entry["status"], "online")
+
     def test_directory_index_is_not_counted_as_a_working_streaming_site(self):
         good = "https://varloz.com/47b6f3a/home/varloz"
         empty = "https://rogzov.com/93zjfyqk6llf/"
