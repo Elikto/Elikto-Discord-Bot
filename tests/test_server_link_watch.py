@@ -235,10 +235,11 @@ class ServerWatchTests(unittest.TestCase):
             watch.watch_server_links(api, s, NOW)
         later = NOW + timedelta(days=1)
         with patch("server_link_watch.check_site", side_effect=lambda url: response(url)), patch(
-            "server_link_watch.probe_site_migration", return_value={
+            "server_link_watch.probe_site_migration",
+            side_effect=lambda url: {
                 "announced_url": "https://webflix.next/",
                 "evidence": "html:migration_notice",
-            }
+            } if url == "https://webflix.art/" else None
         ), patch("server_link_watch.probe_site_name", return_value=None):
             _, alerts = watch.watch_server_links(api, s, later)
         rec = s["server_links"]["https://webflix.art/"]
