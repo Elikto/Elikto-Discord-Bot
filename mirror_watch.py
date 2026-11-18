@@ -280,8 +280,23 @@ def grouped_current_sites(items):
     return list(groups.values())
 
 
+def actual_landing_url(url):
+    """Choisir le chemin à vérifier pour toutes les provenances (forums ET web).
+
+    Les candidats découverts sur Internet utilisent généralement la racine du
+    domaine. Ces deux sites nécessitent un chemin précis pour vérifier si un
+    vrai catalogue s'affiche ou si le serveur expose « Index of /... ».
+    """
+    clean = clean_url(url)
+    return STREAMING_LANDING_PATHS.get(clean, clean) if clean else None
+
+
 def decorate_destinations(groups, source_items, target_states, now, state):
     """Contrôler les nouveaux domaines, y compris leurs renommages ultérieurs.
+
+    Les miroirs issus des blogs et les liens des forums passent TOUS par
+    actual_landing_url ; sinon le cache d'une racine HTTP 200 masque
+    un sous-chemin « Index of / » (ex. ROGZOV).
 
     Chaque cible est vérifiée une seule fois par jour. Un second changement
     annoncé dans le HTML suit la même procédure, jusqu'à trois transitions
@@ -294,6 +309,7 @@ def decorate_destinations(groups, source_items, target_states, now, state):
     for initial in groups:
         group = {
             **initial,
+            "url": actual_landing_url(initial["url"]),
             "previous_names": list(initial.get("previous_names", [])),
             "source_urls": list(initial.get("source_urls", [])),
         }
@@ -348,7 +364,8 @@ def decorate_destinations(groups, source_items, target_states, now, state):
                 group["announced"] = True
                 continue
 
-            for field in ("status", "last_checked", "http_status", "redirect_url"):
+            for field in ("status", "last_checked", "http_status", "redirect_url",
+                          "page_health", "reason"):
                 group[field] = observation.get(field)
             break
 
