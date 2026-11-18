@@ -295,7 +295,7 @@ class StreamingDirectoryParser(HTMLParser):
             self.blocked_category = True
             self.active_category = False
         elif re.search(
-            r"^(?:domaines actifs?|liens? principaux?|"
+            r"^(?:domaines actifs?|liens? (?:principal|principaux)|"
             r"adresses disponibles?|adresses officielles?|"
             r"nouveaux? domaines?|nos sites)\b",
             folded,
