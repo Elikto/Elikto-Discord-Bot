@@ -19,10 +19,14 @@ GUILD_ID = "1430984645012357263"
 MARKER = "[elikto-suivi-miroirs:v2]"
 STATE_PATH = Path("data/monitor_state.json")
 PARIS = ZoneInfo("Europe/Paris")
+HTML_CONTENT_PROBE_VERSION = 3  # Recheck sites after parking/shortener detection
 
 STATUS = {
     "online": "🟢 Accessible",
     "empty_index": "❌ Index vide / page sans site",
+    "parked": "❌ Domaine expiré / parqué",
+    "interstitial": "❌ Publicité / raccourcisseur",
+    "blocked": "🟡 Protection anti-bot",
     "restricted": "🟠 Accès limité",
     "suspect": "🟡 À vérifier",
     "offline": "🔴 Inaccessible",
@@ -164,10 +168,21 @@ def update_name(item, identity, now, state, first_run=False):
     Si la page est inaccessible, protégée ou ne fournit aucun nom crédible,
     le dernier nom fiable reste inchangé.
     """
-    if identity and identity.get("page_health") == "empty_index":
-        item["status"] = "empty_index"
-        item["page_health"] = "empty_index"
-        item["reason"] = "Répertoire de fichiers au lieu du site attendu"
+    health = (identity or {}).get("page_health")
+    failed_pages = {
+        "empty_index": "Répertoire de fichiers au lieu du site attendu",
+        "parked": "Domaine expiré ou parqué",
+        "interstitial": "Page intermédiaire ou raccourcisseur publicitaire",
+    }
+    if health in failed_pages:
+        item["status"] = health
+        item["page_health"] = health
+        item["reason"] = failed_pages[health]
+        return
+    if health == "blocked":
+        item["status"] = "unknown"
+        item["page_health"] = "blocked"
+        item["reason"] = "Contrôle automatique bloqué par le site"
         return
     if not identity or not identity.get("name"):
         if item.get("page_health") == "empty_index" and item.get("status") == "online":
@@ -353,8 +368,11 @@ def decorate_destinations(groups, source_items, target_states, now, state):
                         observation, check_site(target), now, state, first_run=is_new
                     )
                 if (observation.get("status") == "online"
-                        and (force_scan or not is_checked_today(observation.get("name_attempted_at"), now))):
+                        and (force_scan or
+                             int(observation.get("html_content_probe_version") or 0) < HTML_CONTENT_PROBE_VERSION
+                             or not is_checked_today(observation.get("name_attempted_at"), now))):
                     observation["name_attempted_at"] = now.isoformat(timespec="seconds")
+                    observation["html_content_probe_version"] = HTML_CONTENT_PROBE_VERSION
                     update_name(
                         observation, probe_site_name(target), now, state,
                         first_run=is_new,
@@ -511,7 +529,11 @@ def render_site_cards(items, thread_name, dropdown_enabled=False):
                 label = str(site.get("name") or urlsplit(url).hostname)
                 label = label.replace("@", "@\u200b")[:100]
                 entry = {"label": label, "value": url}
-                if (site.get("status") == "empty_index"
+                if site.get("page_health") == "parked":
+                    entry["description"] = "❌ Domaine expiré / parqué"
+                elif site.get("page_health") == "interstitial":
+                    entry["description"] = "❌ Page publicitaire / intermédiaire"
+                elif (site.get("status") == "empty_index"
                         or site.get("page_health") == "empty_index"):
                     entry["description"] = "❌ Index vide"
                 elif site.get("status") == "online":
@@ -720,8 +742,11 @@ def sync_thread(api, state, now=None):
         # Analyser les noms dès l'installation sans refaire les tests HTTP
         # déjà effectués dans la journée.
         if (item.get("status") == "online" and
-                (force_scan or not is_checked_today(item.get("name_attempted_at"), now))):
+                (force_scan or
+                 int(item.get("html_content_probe_version") or 0) < HTML_CONTENT_PROBE_VERSION
+                 or not is_checked_today(item.get("name_attempted_at"), now))):
             item["name_attempted_at"] = now.isoformat(timespec="seconds")
+            item["html_content_probe_version"] = HTML_CONTENT_PROBE_VERSION
             identity = probe_site_name(item["url"])
             update_name(item, identity, now, state, first_run=is_first)
             names_checked += 1
