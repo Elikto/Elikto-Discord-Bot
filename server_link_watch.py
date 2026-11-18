@@ -512,10 +512,9 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
                 elif target_html and target_html.get("name"):
                     # Un changement de domaine pendant le GET HTML nécessite
                     # une nouvelle validation indépendante de la destination.
-                    from urllib.parse import urlsplit as _urlsplit
-                    requested_host = (_urlsplit(target).hostname or "").removeprefix("www.")
-                    http_host = (_urlsplit(checked_target.get("final_url") or target).hostname or "").removeprefix("www.")
-                    html_host = (_urlsplit(target_html.get("final_url") or target).hostname or "").removeprefix("www.")
+                    requested_host = (urlsplit(target).hostname or "").removeprefix("www.")
+                    http_host = (urlsplit(checked_target.get("final_url") or target).hostname or "").removeprefix("www.")
+                    html_host = (urlsplit(target_html.get("final_url") or target).hostname or "").removeprefix("www.")
                     if requested_host == http_host == html_host:
                         rec["announced_page_health"] = "content"
             rec["announced_verified"] = (
