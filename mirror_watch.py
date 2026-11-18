@@ -411,7 +411,7 @@ CARD_ACCENT = 0x6174C6
 HEADER_ACCENT = 0xA17AFF
 
 
-def render_site_cards(items, thread_name):
+def render_site_cards(items, thread_name, dropdown_enabled=False):
     """Une seule URL principale, le reste en spoiler Discord Components V2.
 
     Le spoiler du Container se révèle par un clic sans service interactif.
@@ -460,14 +460,45 @@ def render_site_cards(items, thread_name):
     if mirrors:
         main_content += (
             f"\n\n🔽 **{len(mirrors)} sites miroirs** · "
-            "Clique sur le panneau masqué ci-dessous pour les afficher."
+            + ("Choisis un site dans le menu déroulant." if dropdown_enabled
+               else "Clique sur le panneau masqué ci-dessous pour les afficher.")
         )
     components = [{
         "type": 17, "accent_color": HEADER_ACCENT,
         "components": [{"type": 10, "content": main_content}],
     }]
 
-    if mirrors:
+    if mirrors and dropdown_enabled:
+        if len(mirrors) > 125:
+            raise ValueError("Plus de 125 miroirs : limitation des menus Discord")
+        for i in range(0, len(mirrors), 25):
+            options = []
+            for site in mirrors[i:i + 25]:
+                url = clean_url(site.get("url"))
+                if not url or len(url) > 100:
+                    raise ValueError("Lien miroir trop long pour Discord")
+                label = str(site.get("name") or urlsplit(url).hostname)
+                label = label.replace("@", "@\u200b")[:100]
+                entry = {"label": label, "value": url}
+                if site.get("status") == "empty_index":
+                    entry["description"] = "❌ Index vide"
+                elif site.get("status") == "online":
+                    entry["description"] = "✅ Accessible au dernier contrôle"
+                else:
+                    entry["description"] = "Disponibilité à vérifier"
+                options.append(entry)
+            components[0]["components"].append({
+                "type": 1,
+                "components": [{
+                    "type": 3,
+                    "custom_id": f"streaming_hd_mirrors:v1:{i // 25}",
+                    "placeholder": ("Choisir un site miroir" if i == 0
+                                    else "Autres sites miroirs"),
+                    "min_values": 1, "max_values": 1,
+                    "options": options,
+                }],
+            })
+    elif mirrors:
         lines = ["**✦ SITES MIROIRS**", *(card_line(site) for site in mirrors)]
         chunks = []
         current = ""
@@ -497,7 +528,9 @@ def component_signature(components):
     """Comparer le rendu, en ignorant les identifiants ajoutés par Discord."""
     return tuple(
         (entry.get("type"), entry.get("accent_color"), entry.get("spoiler"),
-         entry.get("content"),
+         entry.get("content"), entry.get("custom_id"), entry.get("placeholder"),
+         tuple((opt.get("label"), opt.get("value"), opt.get("description"))
+               for opt in entry.get("options") or []),
          component_signature(entry.get("components") or []))
         for entry in (components or [])
     )
@@ -680,7 +713,9 @@ def sync_thread(api, state, now=None):
         site for site in sites
         if site.get("source_urls") or site.get("status") == "online"
     ]
-    cards = render_site_cards(sites, thread_name)
+    # Ne créer un menu interactif que lorsqu'un serveur Discord répond aux clics.
+    dropdown_enabled = os.environ.get("DISCORD_MIRROR_DROPDOWN_ENABLED") == "1"
+    cards = render_site_cards(sites, thread_name, dropdown_enabled=dropdown_enabled)
     try:
         message_id = upsert_bot_message(api, tracked, bot_id, cards)
     except RuntimeError:
