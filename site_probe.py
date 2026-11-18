@@ -139,7 +139,8 @@ def single_request(url: str, method: str, timeout: float = 7) -> tuple[int, str 
             "User-Agent": USER_AGENT,
             "Accept": "text/html,application/xhtml+xml,*/*",
             "Accept-Encoding": "identity",
-            "Range": "bytes=0-1024" if method == "GET" else "bytes=0-0",
+            # Pas de Range sur HEAD/GET : certains CDN le rejettent alors
+            # qu'ils répondent normalement à une navigation standard.
         })
         response = connection.getresponse()
         return response.status, response.getheader("Location")
@@ -161,7 +162,20 @@ def check_site(url: str) -> dict:
             # au HEAD alors que la vraie navigation GET fonctionne.
             # Refaire la requête GET avant toute conclusion négative.
             if code >= 400:
-                code, location = single_request(current, "GET")
+                head_code = code
+                try:
+                    code, location = single_request(current, "GET")
+                except (OSError, TimeoutError, ValueError, ssl.SSLError,
+                        http.client.HTTPException) as exc:
+                    # HEAD 503 puis GET bloqué ne prouve aucune panne.
+                    if head_code >= 500 or head_code in (403, 429):
+                        return {
+                            "result": "unknown", "http_status": head_code,
+                            "final_url": current,
+                            "reason": f"GET indéterminé après HEAD {head_code} "
+                                      f"({type(exc).__name__[:32]})",
+                        }
+                    raise
             if code in (301, 302, 303, 307, 308) and location:
                 destination = clean_url(urljoin(current, location))
                 if not destination:
