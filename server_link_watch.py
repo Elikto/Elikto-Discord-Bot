@@ -77,6 +77,13 @@ def record_migration(state, rec, observation, now, *, first_run):
     if previous == announced:
         return False
     rec["announced_url"] = announced
+    # Chaque nouvelle adresse doit être contrôlée indépendamment.
+    # Ne jamais recycler une preuve HTML obtenue sur le domaine précédent.
+    rec["announced_last_checked"] = None
+    rec["announced_html_probe_version"] = 0
+    rec["announced_page_health"] = "unknown"
+    rec["announced_verified"] = False
+    rec["announced_status"] = "pending"
     rec["migration_evidence"] = observation.get("evidence", "html:migration_notice")
     rec["migration_observed_at"] = stamp(now)
     if observation.get("other_previous"):
@@ -327,6 +334,7 @@ def update_identity(state, record, observation, now, *, first_run):
 # meme si une ancienne inspection a deja eu lieu le meme jour.
 MIGRATION_PROBE_VERSION = 3
 HTML_HEALTH_PROBE_VERSION = 4  # Reinspect restricted sites after HTML fallback upgrade
+ANNOUNCED_HTML_PROBE_VERSION = 1  # Recheck legacy destinations missing HTML proof
 
 
 def watch_server_links(api, state, now=None, *, discover=find_server_links):
@@ -459,7 +467,15 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
             )
 
         target = rec.get("announced_url")
-        if target and (force_scan or due_daily(rec.get("announced_last_checked"), now)):
+        # Les anciennes observations stockent "HTTP 200" sans preuve HTML.
+        # Ne pas attendre demain : exécuter une nouvelle sonde dès qu'une
+        # version de reconnaissance plus récente est déployée.
+        announced_upgrade = (
+            int(rec.get("announced_html_probe_version") or 0)
+            < ANNOUNCED_HTML_PROBE_VERSION
+        )
+        if target and (force_scan or announced_upgrade
+                       or due_daily(rec.get("announced_last_checked"), now)):
             if target not in new_address_checks:
                 new_address_checks[target] = check_site(target)
             checked_target = new_address_checks[target]
@@ -467,23 +483,43 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
             rec["announced_status"] = status
             rec["announced_http_status"] = checked_target.get("http_status")
             rec["announced_last_checked"] = stamp(now)
-            # Le contrôle HTTP seul ne prouve pas qu'un nouveau domaine
-            # propose le site annoncé : vérifier aussi le HTML de la cible.
+            rec["announced_html_probe_version"] = ANNOUNCED_HTML_PROBE_VERSION
+            # HTTP 200 seul ne prouve pas la bonne application. Rechercher
+            # son vrai titre/métadonnées, et refuser les pages publicitaires.
             rec["announced_page_health"] = "unknown"
-            if status == "online":
-                target_html = probe_site_name(target)
+            if status in ("online", "restricted"):
+                target_html = (probe_site_name(target, allow_www_fallback=True)
+                               if status == "restricted"
+                               else probe_site_name(target))
+                # Un site peut répondre à GET comme un navigateur, mais pas
+                # à la sonde standard (ou utiliser un frontend JS minimal).
+                if status == "online" and not (
+                    target_html and (
+                        target_html.get("name")
+                        or target_html.get("page_health") in (
+                            "parked", "interstitial", "empty_index", "blocked"
+                        )
+                    )
+                ):
+                    target_html = probe_site_name(target, allow_www_fallback=True)
                 target_health = (target_html or {}).get("page_health")
                 if target_health in ("empty_index", "parked", "interstitial"):
                     rec["announced_page_health"] = target_health
                     rec["announced_status"] = target_health
                 elif target_health == "blocked":
                     rec["announced_page_health"] = "blocked"
-                    rec["announced_status"] = "unknown"
+                    rec["announced_status"] = "restricted" if status == "restricted" else "unknown"
                 elif target_html and target_html.get("name"):
-                    rec["announced_page_health"] = "content"
-                # Page JavaScript, anti-bot ou HTML inaccessible : indéterminé.
+                    # Un changement de domaine pendant le GET HTML nécessite
+                    # une nouvelle validation indépendante de la destination.
+                    from urllib.parse import urlsplit as _urlsplit
+                    requested_host = (_urlsplit(target).hostname or "").removeprefix("www.")
+                    http_host = (_urlsplit(checked_target.get("final_url") or target).hostname or "").removeprefix("www.")
+                    html_host = (_urlsplit(target_html.get("final_url") or target).hostname or "").removeprefix("www.")
+                    if requested_host == http_host == html_host:
+                        rec["announced_page_health"] = "content"
             rec["announced_verified"] = (
-                rec["announced_status"] == "online"
+                rec["announced_status"] in ("online", "restricted")
                 and rec["announced_page_health"] == "content"
             )
 
