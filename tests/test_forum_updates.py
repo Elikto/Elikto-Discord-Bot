@@ -64,6 +64,11 @@ class FakeAPI:
                    "flags": json.get("flags", 0)}
             self.messages.setdefault(tid, []).append(msg)
             return dict(msg)
+        if "/messages/" in path and method == "DELETE":
+            tid, mid = path.split("/")[2], path.split("/")[-1]
+            items = self.messages.get(tid, [])
+            self.messages[tid] = [m for m in items if m["id"] != mid]
+            return None
         if "/messages/" in path and method == "PATCH":
             tid, mid = path.split("/")[2], path.split("/")[-1]
             for m in self.messages.get(tid, []):
@@ -98,6 +103,13 @@ def state():
 
 
 class ForumUpdatesTests(unittest.TestCase):
+    def setUp(self):
+        # Les tests de synchronisation n'accèdent jamais aux sites externes.
+        no_html = patch("forum_updates.fetch_html_page", return_value=None)
+        no_html.start()
+        self.addCleanup(no_html.stop)
+
+
     def test_webflix_displays_current_address_and_previous_domains(self):
         result = render_forum_update("WebFlix", list(state()["server_links"].values()))
         self.assertIn("https://webflix.surf/", result)
@@ -346,6 +358,98 @@ class ForumUpdatesTests(unittest.TestCase):
         self.assertNotIn("Identifiants", body)
         self.assertNotIn("secret-autre", body)
         self.assertNotIn("secret-bot", body)
+
+    def test_vip_secret_phrase_numbered_list_is_in_the_same_card(self):
+        from forum_cards import build_card, split_vip_phrase
+        example = (
+            "Films et séries sans pubs.\n\n"
+            "1. Connexion VIP par phrase secrète pour enlever les pubs :\n"
+            "2. **montagne maison rouge tulipe souris montagne**\n"
+            "3.\n"
+        )
+        cleaned, phrase = split_vip_phrase(example)
+        self.assertEqual(phrase, "montagne maison rouge tulipe souris montagne")
+        self.assertIn("Films et séries", cleaned)
+        self.assertNotIn("montagne maison rouge", cleaned)
+        card = build_card(
+            [{"url": "https://movix.online/", "status": "online",
+              "older": [], "announced": False}],
+            example, "Movix"
+        )
+        body = "\n".join(all_text(card))
+        self.assertIn("🔐 Accès VIP", body)
+        self.assertIn(
+            "Phrase secrète :** ||montagne maison rouge tulipe souris montagne||",
+            body
+        )
+        self.assertEqual(body.count("montagne maison rouge tulipe souris montagne"), 1)
+
+    def test_vip_phrase_in_separate_author_message(self):
+        data = state()
+        data["records"][THREAD]["title"] = "Autre site VIP"
+        api = FakeAPI()
+        api.messages[THREAD] = [
+            {"id": THREAD, "author": {"id": "human"}, "content": "Films HD sans pub"},
+            {"id": str(int(THREAD) + 1), "author": {"id": "human"},
+             "content": "Connexion VIP par phrase secrète :\n"
+                        "**cinéma orange violet lundi jeudi avion**"},
+        ]
+        result = sync_forum_updates(api, data)
+        self.assertEqual(result["created"], 1)
+        card = next(m for m in api.messages[THREAD] if m.get("components"))
+        self.assertIn("🔐 Accès VIP", shown(card))
+        self.assertIn("||cinéma orange violet lundi jeudi avion||", shown(card))
+        self.assertNotIn("cinéma orange violet lundi jeudi avion", repr(data))
+
+    def test_opengraph_preview_image_inside_container_without_second_url(self):
+        data = state()
+        data["records"][THREAD]["title"] = "Reseam Manager"
+        data["server_links"] = {
+            "https://reseam.app/download/": record("https://reseam.app/download/")
+        }
+        api = FakeAPI()
+        api.messages[THREAD] = [{
+            "id": THREAD, "author": {"id": "human"}, "content": "Appli de patch",
+            "embeds": [{
+                "url": "https://reseam.app/download/",
+                "image": {"url": "https://reseam.app/static/cover.webp"},
+            }],
+        }]
+        result = sync_forum_updates(api, data)
+        self.assertEqual(result["created"], 1)
+        self.assertEqual(result["previews_created"], 0)
+        card = api.messages[THREAD][-1]
+        self.assertEqual(card["flags"], 32768)
+        container = card["components"][0]
+        media = [x for x in container["components"] if x["type"] == 12]
+        self.assertEqual(len(media), 1)
+        self.assertEqual(media[0]["items"][0]["media"]["url"],
+                         "https://reseam.app/static/cover.webp")
+        self.assertEqual(len(api.messages[THREAD]), 2)
+        sync_forum_updates(api, data)
+        self.assertEqual(len(api.messages[THREAD]), 2)
+
+    def test_link_message_is_removed_when_image_becomes_available(self):
+        data = state()
+        api = FakeAPI()
+        api.messages[THREAD] = [
+            {"id": THREAD, "author": {"id": "human"}, "content": "Films récents"},
+        ]
+        sync_forum_updates(api, data)
+        self.assertEqual(len(api.messages[THREAD]), 3)
+        record_state = data["forum_updates"][THREAD]
+        record_state["preview_image_checked_at"] = "2024-01-01T00:00:00+00:00"
+        with patch("forum_updates.fetch_html_page", return_value={
+            "html": '<meta property="og:image" content="https://webflix.surf/banner.jpg">',
+            "final_url": "https://webflix.surf/",
+        }):
+            sync_forum_updates(api, data)
+        self.assertEqual(len(api.messages[THREAD]), 2)
+        card = next(m for m in api.messages[THREAD] if m.get("components"))
+        self.assertTrue(any(comp["type"] == 12
+                            for comp in card["components"][0]["components"]))
+        self.assertFalse(any((m.get("content") or "").startswith("https://")
+                             for m in api.messages[THREAD]))
 
     def test_missing_original_description_is_not_invented(self):
         data = state()
