@@ -480,5 +480,65 @@ class ServerWatchTests(unittest.TestCase):
                          "SECOND")
 
 
+    def test_cinezzz_http_403_can_be_verified_by_independent_html(self):
+        from forum_updates import site_groups
+        from forum_cards import build_card, all_text
+        url = "https://cinezzz.club/"
+        found = {url: {"source_count": 1, "sources": [{
+            "url": "https://discord.com/channels/1/100/110",
+            "channel": "Cinezzz", "kind": "fil",
+        }]}}
+        def discover(_):
+            return found, {"unique_urls": 1}, []
+        def check(_):
+            return {"result": "restricted", "http_status": 403,
+                    "final_url": url}
+        with patch("server_link_watch.check_site", side_effect=check), patch(
+            "server_link_watch.probe_site_name",
+            return_value={"name": "cinezzz", "evidence": "html:title_brand",
+                          "page_health": "content", "final_url": url},
+        ) as html_probe, patch(
+            "server_link_watch.probe_site_migration", return_value=None
+        ):
+            s = state()
+            watch.watch_server_links(FakeDiscord(), s, NOW, discover=discover)
+        html_probe.assert_called_once_with(url, allow_www_fallback=True)
+        rec = s["server_links"][url]
+        self.assertEqual(rec["status"], "restricted")
+        self.assertEqual(rec["http_status"], 403)
+        self.assertEqual(rec["page_health"], "content")
+        group = site_groups([rec], "Cinezzz")[0]
+        self.assertTrue(group["verified"])
+        content = "\n".join(all_text(build_card([group], "Films", "Cinezzz")))
+        self.assertIn("✅", content)
+        self.assertIn("accès HTTP direct limité (403)", content)
+
+    def test_cinezzz_http_403_without_html_stays_unverified(self):
+        from forum_updates import site_groups
+        from forum_cards import build_card, all_text
+        url = "https://cinezzz.club/"
+        found = {url: {"source_count": 1, "sources": [{
+            "url": "https://discord.com/channels/1/100/110",
+            "channel": "Cinezzz", "kind": "fil",
+        }]}}
+        def discover(_):
+            return found, {"unique_urls": 1}, []
+        with patch("server_link_watch.check_site", return_value={
+            "result": "restricted", "http_status": 403, "final_url": url
+        }), patch("server_link_watch.probe_site_name", return_value=None), patch(
+            "server_link_watch.probe_site_migration", return_value=None
+        ):
+            s = state()
+            watch.watch_server_links(FakeDiscord(), s, NOW, discover=discover)
+        rec = s["server_links"][url]
+        self.assertEqual(rec["status"], "restricted")
+        group = site_groups([rec], "Cinezzz")[0]
+        self.assertFalse(group["verified"])
+        content = "\n".join(all_text(build_card([group], "Films", "Cinezzz")))
+        self.assertIn("🟠", content)
+        self.assertNotIn("✅", content)
+
+
+
 if __name__ == "__main__":
     unittest.main()
