@@ -312,15 +312,23 @@ class StreamingDirectoryParser(HTMLParser):
         clean = re.sub(r"\s+", " ", value)
         if not clean.strip():
             return
+        was_blocked = self.blocked_category
+        was_active = self.active_category
+        if self.heading_tag is None:
+            self._section(clean)
+        category_changed = (
+            was_blocked != self.blocked_category
+            or was_active != self.active_category
+        )
         if self.heading_tag is not None:
             self.heading_text.append(clean)
         if self.current is not None:
             self.current["text"] += " " + clean
-        elif self.entries and self.heading_tag is None:
+        elif self.entries and self.heading_tag is None and not category_changed:
+            # Ne jamais inclure l'en-tête « Bloqués par les FAI » dans le
+            # texte du site actif précédent : cela donnait un faux rejet.
             self.entries[-1]["after"] += " " + clean
         self.recent_text = (self.recent_text + " " + clean)[-500:]
-        if self.heading_tag is None:
-            self._section(clean)
         if self.blocked_category:
             self.blocked_hosts.update(
                 match.group().lower() for match in self.DOMAIN_TOKEN.finditer(clean)
