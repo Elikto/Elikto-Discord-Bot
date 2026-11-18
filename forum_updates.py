@@ -270,6 +270,22 @@ def purstream_directory_candidates(html_text):
     raw = html.unescape(str(html_text or "")[:96000])
     raw = (raw.replace(r"\/", "/").replace(r"\u002f", "/")
               .replace(r"\u002F", "/"))
+    # Certains portails placent "URL Officielle" dans un élément voisin
+    # du bouton. Le parseur générique ne reconnaît pas toujours ce libellé.
+    for anchor in re.finditer(
+        r"""(?is)<a\b[^>]*\bhref\s*=\s*["'](?P<href>[^"']+)["'][^>]*>"""
+        r"""(?P<label>.*?)</a\s*>""", raw,
+    ):
+        href = purstream_direct_url(urljoin(PURSTREAM_HUB, anchor.group("href")))
+        if not href:
+            continue
+        before = re.sub(r"(?s)<[^>]+>", " ", raw[max(0, anchor.start()-200):anchor.start()])
+        label = re.sub(r"(?s)<[^>]+>", " ", anchor.group("label"))
+        if (re.search(r"(?i)(?:url|adresse)\s+officiell?e?|official\s+url", before)
+                or re.search(r"(?i)(?:acc[eé]dez\s+[aà]\s+purstream|access\s+purstream)",
+                             label)):
+            if href not in found:
+                found.append(href)
     pattern = re.compile(
         r"(?i)(?:https?://)?(?:www\.)?purstream\.[a-z0-9-]{2,24}\b"
     )
