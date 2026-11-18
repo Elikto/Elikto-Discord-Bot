@@ -373,6 +373,19 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
         if rec.get("status") == "online" and due_daily(rec.get("name_attempted_at"), now):
             rec["name_attempted_at"] = stamp(now)
             identity = probe_site_name(rec["site_url"])
+            if identity and identity.get("page_health") == "empty_index":
+                # HTTP 200 ne signifie pas qu'une vraie page de site s'affiche.
+                rec["status"] = "empty_index"
+                rec["page_health"] = "empty_index"
+                rec["reason"] = "Répertoire de fichiers au lieu du site attendu"
+            elif identity and identity.get("name"):
+                rec["page_health"] = "content"
+                if rec.get("reason") == "Répertoire de fichiers au lieu du site attendu":
+                    rec["reason"] = None
+            elif rec.get("page_health") == "empty_index":
+                # Inspection HTML impossible : ne pas annuler une anomalie
+                # connue sur la seule foi d'un HTTP 200.
+                rec["status"] = "empty_index"
             update_identity(state, rec, identity, now, first_run=first_run)
             identity_checks += 1
 
