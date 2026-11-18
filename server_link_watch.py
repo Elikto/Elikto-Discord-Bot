@@ -20,6 +20,7 @@ import re
 from site_probe import RE_URL, clean_url, check_site
 from name_probe import probe_site_name, probe_site_migration
 from browser_probe import probe_browser_site
+from tr4ker_forum import SEED_MARKER, SITE_URL as TR4KER_URL
 from forum_updates import sync_forum_updates
 from site_monitor import (
     STATE_PATH, load_state, event, record_check, notify_discord, stamp,
@@ -269,7 +270,19 @@ def find_server_links(api, *, existing=None):
                 counts["messages_read"] += 1
                 author = message.get("author") or {}
                 if str(author.get("id")) == bot_id:
-                    continue
+                    # Les messages ordinaires du bot sont exclus pour éviter
+                    # de surveiller ses propres cartes et leurs liens répétés.
+                    # Exception stricte : le premier message de la fiche
+                    # Tr4ker créée par ce bot dans le forum Torrent.
+                    seed = (
+                        str(message.get("id")) == cid
+                        and target.get("kind") == "fil"
+                        and str(target.get("name", "")).casefold() == "tr4ker"
+                        and SEED_MARKER in str(message.get("content") or "")
+                        and TR4KER_URL in str(message.get("content") or "")
+                    )
+                    if not seed:
+                        continue
                 for url in extract_links(message):
                     rec = seen_urls.setdefault(url, {
                         "url": url, "source_count": 0, "sources": [],
