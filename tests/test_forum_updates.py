@@ -124,17 +124,17 @@ class ForumUpdatesTests(unittest.TestCase):
         api = FakeAPI()
         initial = sync_forum_updates(api, data)
         self.assertEqual(initial["created"], 1)
-        self.assertEqual(len(api.messages[THREAD]), 1)
+        self.assertEqual(len(api.messages[THREAD]), 2)
         original_id = api.messages[THREAD][0]["id"]
         self.assertIn(BRAND, shown(api.messages[THREAD][0]))
         self.assertNotIn(MARKER, shown(api.messages[THREAD][0]))
         unchanged = sync_forum_updates(api, data)
         self.assertEqual(unchanged["unchanged"], 1)
-        self.assertEqual(len(api.messages[THREAD]), 1)
+        self.assertEqual(len(api.messages[THREAD]), 2)
         data["server_links"]["https://webflix.art/"]["announced_url"] = "https://webflix.next/"
         changed = sync_forum_updates(api, data)
         self.assertEqual(changed["updated"], 1)
-        self.assertEqual(len(api.messages[THREAD]), 1)
+        self.assertEqual(len(api.messages[THREAD]), 2)
         self.assertEqual(api.messages[THREAD][0]["id"], original_id)
         self.assertIn("https://webflix.next/", shown(api.messages[THREAD][0]))
 
@@ -146,7 +146,7 @@ class ForumUpdatesTests(unittest.TestCase):
         }]
         sync_forum_updates(api, data)
         self.assertEqual(api.messages[THREAD][0]["content"], "Ancien lien")
-        self.assertEqual(len(api.messages[THREAD]), 2)
+        self.assertEqual(len(api.messages[THREAD]), 3)
         self.assertEqual(api.messages[THREAD][1]["author"]["id"], "bot")
 
     def test_rediscover_message_if_state_was_not_saved(self):
@@ -157,7 +157,7 @@ class ForumUpdatesTests(unittest.TestCase):
         data.pop("forum_updates")
         result = sync_forum_updates(api, data)
         self.assertEqual(result["unchanged"], 1)
-        self.assertEqual(len(api.messages[THREAD]), 1)
+        self.assertEqual(len(api.messages[THREAD]), 2)
         self.assertEqual(data["forum_updates"][THREAD]["message_id"], message_id)
 
     def test_new_url_event_updates_existing_forum(self):
@@ -205,10 +205,10 @@ class ForumUpdatesTests(unittest.TestCase):
         result = sync_forum_updates(api, data)
         self.assertEqual(result["created"], 1)
         self.assertEqual(result["descriptions_found"], 1)
-        published = api.messages[THREAD][-1]
+        published = api.messages[THREAD][-2]
         self.assertEqual(published["flags"], 32768)
         self.assertIn(original, shown(published))
-        self.assertIn("[webflix.surf](https://webflix.surf/)", shown(published))
+        self.assertIn("🌐 https://webflix.surf/", shown(published))
         self.assertNotIn(MARKER, shown(published))
         self.assertNotIn("Message actualisé automatiquement", shown(published))
         same_id = published["id"]
@@ -218,8 +218,8 @@ class ForumUpdatesTests(unittest.TestCase):
         api.messages[THREAD][0]["content"] = original + "\n**Mise à jour du texte**"
         result = sync_forum_updates(api, data)
         self.assertEqual(result["updated"], 1)
-        self.assertEqual(api.messages[THREAD][-1]["id"], same_id)
-        self.assertIn("**Mise à jour du texte**", shown(api.messages[THREAD][-1]))
+        self.assertEqual(api.messages[THREAD][-2]["id"], same_id)
+        self.assertIn("**Mise à jour du texte**", shown(api.messages[THREAD][-2]))
         self.assertEqual(api.messages[THREAD][0]["content"],
                          original + "\n**Mise à jour du texte**")
 
