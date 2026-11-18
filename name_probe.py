@@ -450,6 +450,9 @@ PARKING_MARKERS = (
     r"\b(?:website|account) (?:is )?suspended\b",
 )
 SHORTENER_MARKERS = (
+    r"\bthe link has been removed\b",
+    r"\bthis link (?:has been )?(?:removed|deleted|expired)\b",
+    r"\bce lien (?:a ete )?(?:supprime|retire|expire)\b",
     r"\bplease wait \d{1,3} seconds? before viewing the link\b",
     r"\bplease wait\b.{0,90}\b(?:link|destination|redirect)\b",
     r"\byour link will be available in \d{1,3} seconds?\b",
