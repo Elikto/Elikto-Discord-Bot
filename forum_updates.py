@@ -416,7 +416,9 @@ def validated_directory_groups(linked, kind):
         "name": domain(found or hub),
         "reference_url": hub,
         "no_active": not bool(found),
-        "older": [x for x in previous if x != domain(found or hub)],
+        # Historique conservé dans le suivi, pas dans la carte : ne pas
+        # republier d'anciens domaines marqués Bloqué par les FAI.
+        "older": [],
         "announced": bool(proposals and found),
         "verified": verified,
         "status": "online" if found else "unknown",
