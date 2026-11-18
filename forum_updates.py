@@ -11,8 +11,9 @@ from html.parser import HTMLParser
 from urllib.parse import urljoin, urlsplit
 from site_probe import clean_url, check_site
 from name_probe import fetch_html_page
-from forum_cards import (source_description, build_card, all_text, normalize,
-                         is_own_card, card_digest, V2_FLAG)
+from forum_cards import (source_description, credentials_from_author_posts,
+                         build_card, all_text, normalize, is_own_card,
+                         card_digest, V2_FLAG)
 
 MARKER = "[elikto-forum-suivi:v1]"
 MIRROR_THREAD = "1430988094374547559"
@@ -337,7 +338,11 @@ def sync_forum_updates(api, state, changed_events=()):
             groups = (validated_movix_groups(linked)
                       if is_movix_forum(info.get("title"))
                       else site_groups(linked, info.get("title") or "Site"))
-            components = build_card(groups, original, info.get("title") or "Site")
+            credentials = credentials_from_author_posts(api, tid, bot_id)
+            components = build_card(
+                groups, original, info.get("title") or "Site",
+                credentials=credentials,
+            )
             if not components:
                 result["skipped"] += 1
                 continue
