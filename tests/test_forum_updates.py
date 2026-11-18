@@ -255,6 +255,19 @@ class ForumUpdatesTests(unittest.TestCase):
         self.assertEqual(len(api.messages[THREAD]), 3)
         self.assertEqual(api.messages[THREAD][0]["content"], original)
 
+    def test_streaming_forum_marks_directory_listing_with_red_cross(self):
+        from forum_cards import build_card
+        groups = [
+            {"url": "https://varloz.com/47b6f3a/home/varloz",
+             "status": "online", "older": [], "announced": False},
+            {"url": "https://rogzov.com/93zjfyqk6llf/",
+             "status": "empty_index", "older": [], "announced": False},
+        ]
+        text = "\n".join(all_text(build_card(groups, "Films et séries", "Streaming")))
+        self.assertIn("🌐 https://varloz.com/47b6f3a/home/varloz", text)
+        self.assertIn("❌ 🌐 https://rogzov.com/93zjfyqk6llf/", text)
+        self.assertIn("Page vide : index de répertoire détecté", text)
+
     def test_missing_original_description_is_not_invented(self):
         data = state()
         api = FakeAPI()
