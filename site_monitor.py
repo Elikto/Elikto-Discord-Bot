@@ -17,6 +17,7 @@ from site_probe import check_site, extract_candidate_urls, other_domain
 
 
 INTERVAL = timedelta(hours=20)
+HTTP_PROBE_VERSION = 2  # Nouvelle politique : 5xx temporaires ne confirment pas une panne
 PARIS = ZoneInfo("Europe/Paris")
 STATE_PATH = Path("data/monitor_state.json")
 PUBLIC_PATH = Path("site/monitoring.json")
@@ -121,6 +122,10 @@ def pick_site_url(api, thread_id: str, title: str) -> str | None:
 def record_check(state: dict, record: dict, observation: dict, now: datetime) -> list[dict]:
     """Evite les fausses pannes : deux controles independants sont necessaires."""
     result = observation.get("result", "unknown")
+    # Défense supplémentaire lorsque l'observation provient d'un ancien
+    # format de cache ou d'une autre méthode d'analyse.
+    if result == "failed" and int(observation.get("http_status") or 0) >= 500:
+        result = "unknown"
     old_status = record.get("status", "pending")
     old_redirect = record.get("redirect_url")
     alerts = []
@@ -170,6 +175,14 @@ def record_check(state: dict, record: dict, observation: dict, now: datetime) ->
             state, "site_recovered", record, now,
             previous="offline", current=record["status"],
             note="Le serveur répond de nouveau à la vérification HTTP.",
+            alert=True,
+        ))
+    elif old_status == "offline" and record["status"] == "unknown":
+        alerts.append(event(
+            state, "site_check_inconclusive", record, now,
+            previous="offline", current="unknown",
+            note="Ancienne alerte de panne invalidée : HTTP 5xx/protection "
+                 "ou test réseau non concluant. Fonctionnement à confirmer.",
             alert=True,
         ))
     return alerts
@@ -309,9 +322,17 @@ def watch_catalogue(api, catalogue: dict, state: dict, now=None) -> tuple[dict, 
                                     alert=True,
                                 ))
 
-                if record.get("site_url") and (force_scan or due(record.get("last_checked"), now)):
+                uncertain_old_result = (
+                    record.get("status") in ("offline", "suspect")
+                    and int(record.get("http_status") or 0) >= 500
+                    and int(record.get("http_probe_version") or 0) < HTTP_PROBE_VERSION
+                )
+                if record.get("site_url") and (
+                    force_scan or uncertain_old_result or due(record.get("last_checked"), now)
+                ):
                     observation = check_site(record["site_url"])
                     alerts.extend(record_check(state, record, observation, now))
+                    record["http_probe_version"] = HTTP_PROBE_VERSION
                 elif not record.get("site_url"):
                     record["status"] = "missing_url"
 
@@ -468,6 +489,7 @@ def notify_discord(api, guild_id: str, alerts: list[dict]) -> int:
         "address_changed": "🔄 Adresse modifiée",
         "redirect_detected": "🔀 Autre domaine détecté",
         "site_unreachable": "🔴 Site inaccessible (confirmé)",
+        "site_check_inconclusive": "🟡 Panne non confirmée : test temporairement bloqué",
         "site_recovered": "🟢 Site de nouveau joignable",
         "mirror_added": "🆕 Nouvelle adresse miroir",
         "mirror_removed": "➖ Adresse miroir retirée",
