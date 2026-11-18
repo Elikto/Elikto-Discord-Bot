@@ -818,7 +818,7 @@
         "https://zinzov.com/",
         "https://didvip.com/"
       ],
-      "last_synced": "2026-11-18T03:00:48+00:00",
+      "last_synced": "2026-11-18T03:06:39+00:00",
       "target_states": {
         "https://nandov.com/": {
           "url": "https://nandov.com/",
@@ -951,24 +951,6 @@
           "final_url": "https://pobram.com/",
           "name_attempted_at": "2026-11-17T23:01:48+00:00"
         },
-        "https://rogzov.com/": {
-          "url": "https://rogzov.com/",
-          "label": "ROGZOV",
-          "site_name": "ROGZOV",
-          "status": "online",
-          "last_checked": "2026-11-17T23:01:48+00:00",
-          "http_status": 206,
-          "failures": 0,
-          "reason": null,
-          "redirect_url": null,
-          "final_url": "https://rogzov.com/",
-          "name_attempted_at": "2026-11-17T23:01:48+00:00",
-          "name_last_checked": "2026-11-17T23:01:48+00:00",
-          "name_evidence": "title",
-          "pending_name": "rogzov rogzov.com",
-          "pending_seen_at": "2026-11-17T23:01:48+00:00",
-          "pending_count": 1
-        },
         "https://tiprov.com/": {
           "url": "https://tiprov.com/",
           "label": "TIPROV",
@@ -993,19 +975,6 @@
           "reason": null,
           "redirect_url": null,
           "final_url": "https://trimav.com/",
-          "name_attempted_at": "2026-11-17T23:01:48+00:00"
-        },
-        "https://varloz.com/": {
-          "url": "https://varloz.com/",
-          "label": "VARLOZ",
-          "site_name": "VARLOZ",
-          "status": "online",
-          "last_checked": "2026-11-17T23:01:48+00:00",
-          "http_status": 200,
-          "failures": 0,
-          "reason": null,
-          "redirect_url": null,
-          "final_url": "https://varloz.com/",
           "name_attempted_at": "2026-11-17T23:01:48+00:00"
         },
         "https://watof.com/": {
@@ -1038,6 +1007,39 @@
           "redirect_url": null,
           "final_url": "https://woovaz.com/",
           "name_attempted_at": "2026-11-17T23:01:48+00:00"
+        },
+        "https://rogzov.com/93zjfyqk6llf/": {
+          "url": "https://rogzov.com/93zjfyqk6llf/",
+          "label": "ROGZOV",
+          "site_name": "ROGZOV",
+          "status": "empty_index",
+          "last_checked": "2026-11-18T03:06:39+00:00",
+          "http_status": 200,
+          "failures": 0,
+          "reason": "Répertoire de fichiers au lieu du site attendu",
+          "redirect_url": null,
+          "final_url": "https://rogzov.com/93zjfyqk6llf/",
+          "name_attempted_at": "2026-11-18T03:06:39+00:00",
+          "page_health": "empty_index"
+        },
+        "https://varloz.com/47b6f3a/home/varloz": {
+          "url": "https://varloz.com/47b6f3a/home/varloz",
+          "label": "VARLOZ",
+          "site_name": "VARLOZ",
+          "status": "online",
+          "last_checked": "2026-11-18T03:06:39+00:00",
+          "http_status": 200,
+          "failures": 0,
+          "reason": null,
+          "redirect_url": null,
+          "final_url": "https://varloz.com/47b6f3a/home/varloz",
+          "name_attempted_at": "2026-11-18T03:06:39+00:00",
+          "page_health": "content",
+          "name_last_checked": "2026-11-18T03:06:39+00:00",
+          "name_evidence": "title",
+          "pending_name": null,
+          "pending_seen_at": null,
+          "pending_count": 0
         }
       },
       "display_sites": [
@@ -1059,7 +1061,9 @@
           "status": "online",
           "last_checked": "2026-11-17T22:37:26+00:00",
           "http_status": 200,
-          "redirect_url": null
+          "redirect_url": null,
+          "page_health": null,
+          "reason": null
         },
         {
           "url": "https://dotivoz.com/",
@@ -1079,7 +1083,9 @@
           "status": "online",
           "last_checked": "2026-11-17T22:37:26+00:00",
           "http_status": 200,
-          "redirect_url": null
+          "redirect_url": null,
+          "page_health": null,
+          "reason": null
         },
         {
           "url": "https://farsov.com/",
@@ -1097,7 +1103,9 @@
           "status": "online",
           "last_checked": "2026-11-17T22:37:26+00:00",
           "http_status": 200,
-          "redirect_url": null
+          "redirect_url": null,
+          "page_health": null,
+          "reason": null
         },
         {
           "url": "https://timbov.com/",
@@ -1119,7 +1127,9 @@
           "status": "online",
           "last_checked": "2026-11-17T22:37:26+00:00",
           "http_status": 200,
-          "redirect_url": null
+          "redirect_url": null,
+          "page_health": null,
+          "reason": null
         },
         {
           "url": "https://bimdav.com/",
@@ -1138,7 +1148,9 @@
           "status": "online",
           "last_checked": "2026-11-17T23:01:48+00:00",
           "http_status": 200,
-          "redirect_url": null
+          "redirect_url": null,
+          "page_health": null,
+          "reason": null
         },
         {
           "url": "https://bintov.com/",
@@ -1153,7 +1165,9 @@
           "status": "online",
           "last_checked": "2026-11-17T23:01:48+00:00",
           "http_status": 200,
-          "redirect_url": null
+          "redirect_url": null,
+          "page_health": null,
+          "reason": null
         },
         {
           "url": "https://bodlav.com/",
@@ -1166,7 +1180,9 @@
           "status": "online",
           "last_checked": "2026-11-17T23:01:48+00:00",
           "http_status": 200,
-          "redirect_url": null
+          "redirect_url": null,
+          "page_health": null,
+          "reason": null
         },
         {
           "url": "https://limdav.com/",
@@ -1183,7 +1199,9 @@
           "status": "online",
           "last_checked": "2026-11-17T23:01:48+00:00",
           "http_status": 200,
-          "redirect_url": null
+          "redirect_url": null,
+          "page_health": null,
+          "reason": null
         },
         {
           "url": "https://padmov.com/",
@@ -1200,7 +1218,9 @@
           "status": "online",
           "last_checked": "2026-11-17T23:01:48+00:00",
           "http_status": 200,
-          "redirect_url": null
+          "redirect_url": null,
+          "page_health": null,
+          "reason": null
         },
         {
           "url": "https://pobram.com/",
@@ -1219,20 +1239,9 @@
           "status": "online",
           "last_checked": "2026-11-17T23:01:48+00:00",
           "http_status": 200,
-          "redirect_url": null
-        },
-        {
-          "url": "https://rogzov.com/",
-          "name": "ROGZOV",
-          "previous_names": [],
-          "source_urls": [],
-          "announced": false,
-          "pending": false,
-          "discovered": true,
-          "status": "online",
-          "last_checked": "2026-11-17T23:01:48+00:00",
-          "http_status": 206,
-          "redirect_url": null
+          "redirect_url": null,
+          "page_health": null,
+          "reason": null
         },
         {
           "url": "https://tiprov.com/",
@@ -1252,7 +1261,9 @@
           "status": "online",
           "last_checked": "2026-11-17T23:01:48+00:00",
           "http_status": 200,
-          "redirect_url": null
+          "redirect_url": null,
+          "page_health": null,
+          "reason": null
         },
         {
           "url": "https://trimav.com/",
@@ -1271,10 +1282,12 @@
           "status": "online",
           "last_checked": "2026-11-17T23:01:48+00:00",
           "http_status": 200,
-          "redirect_url": null
+          "redirect_url": null,
+          "page_health": null,
+          "reason": null
         },
         {
-          "url": "https://varloz.com/",
+          "url": "https://varloz.com/47b6f3a/home/varloz",
           "name": "VARLOZ",
           "previous_names": [
             "PALKAD",
@@ -1288,9 +1301,11 @@
           "pending": false,
           "discovered": true,
           "status": "online",
-          "last_checked": "2026-11-17T23:01:48+00:00",
+          "last_checked": "2026-11-18T03:06:39+00:00",
           "http_status": 200,
-          "redirect_url": null
+          "redirect_url": null,
+          "page_health": "content",
+          "reason": null
         },
         {
           "url": "https://watof.com/",
@@ -1303,7 +1318,9 @@
           "status": "online",
           "last_checked": "2026-11-17T23:01:48+00:00",
           "http_status": 200,
-          "redirect_url": null
+          "redirect_url": null,
+          "page_health": null,
+          "reason": null
         },
         {
           "url": "https://woovaz.com/",
@@ -1316,7 +1333,9 @@
           "status": "online",
           "last_checked": "2026-11-17T23:01:48+00:00",
           "http_status": 200,
-          "redirect_url": null
+          "redirect_url": null,
+          "page_health": null,
+          "reason": null
         }
       ],
       "discovered_candidates": {
@@ -1503,7 +1522,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1534,7 +1553,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 503,
       "reason": null,
@@ -1558,7 +1577,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1589,7 +1608,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1620,7 +1639,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1651,7 +1670,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1677,7 +1696,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1703,7 +1722,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1734,7 +1753,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1765,7 +1784,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1796,7 +1815,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": null,
       "reason": "TimeoutError",
@@ -1820,7 +1839,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1851,7 +1870,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 451,
       "reason": null,
@@ -1885,7 +1904,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1940,7 +1959,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1971,7 +1990,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 206,
       "reason": null,
@@ -1997,7 +2016,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2028,7 +2047,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2059,7 +2078,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2090,7 +2109,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 403,
       "reason": null,
@@ -2115,7 +2134,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": null,
       "reason": "gaierror",
@@ -2139,7 +2158,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2170,7 +2189,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2201,7 +2220,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 206,
       "reason": null,
@@ -2232,7 +2251,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2263,7 +2282,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2294,7 +2313,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2325,7 +2344,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2356,7 +2375,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2387,7 +2406,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 403,
       "reason": null,
@@ -2412,7 +2431,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2443,7 +2462,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": null,
       "reason": "OSError",
@@ -2467,7 +2486,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": null,
       "reason": "OSError",
@@ -2491,7 +2510,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2522,7 +2541,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T03:00:49+00:00",
+      "last_seen": "2026-11-18T03:06:41+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2538,7 +2557,7 @@
     }
   },
   "server_scan": {
-    "at": "2026-11-18T03:00:49+00:00",
+    "at": "2026-11-18T03:06:41+00:00",
     "counts": {
       "messages_read": 90,
       "locations_scanned": 37,
