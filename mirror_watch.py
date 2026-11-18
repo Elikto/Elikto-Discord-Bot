@@ -412,61 +412,91 @@ HEADER_ACCENT = 0xA17AFF
 
 
 def render_site_cards(items, thread_name):
-    """Cartes Discord V2 : bordure colorée et liens bleus cliquables.
+    """Une seule URL principale, le reste en spoiler Discord Components V2.
 
-    Un contenant par site tant que le budget Discord le permet ; au-delà,
-    plusieurs fiches partagent une carte afin de ne rien masquer.
+    Le spoiler du Container se révèle par un clic sans service interactif.
+    Toutes les URL restent suivies indépendamment par le scanner quotidien.
     """
-    header = (
-        "## 🎬 CINÉMA HD · SITES ACTUELS\n"
-        "Dernière sortie cinéma en HD **sans pub**, mais petit catalogue.\n"
-        "✨ **Gratuit - Illimité - Ajouts quotidiens - Zéro pub**"
-    )
-    cards = []
-    for site in items:
+    available = [site for site in items if clean_url(site.get("url"))]
+    if not available:
+        return [{
+            "type": 17, "accent_color": HEADER_ACCENT,
+            "components": [{"type": 10,
+                            "content": "## 🎬 STREAMING HD\nAucune adresse disponible."}],
+        }]
+
+    # Priorité aux adresses accessibles provenant du fil d'origine.
+    primary = next(
+        (site for site in available
+         if site.get("status") == "online" and site.get("source_urls")), None
+    ) or next(
+        (site for site in available if site.get("status") == "online"), None
+    ) or available[0]
+    mirrors = [site for site in available if site is not primary]
+
+    def card_line(site):
         url = clean_url(site.get("url"))
-        if not url:
-            continue
         name = str(site.get("name") or urlsplit(url).hostname).strip()
         name = name.replace("@", "@\u200b").replace("]", "").replace("[", "")[:48]
-        old_names = []
-        for raw in site.get("previous_names", []):
-            old = str(raw).replace("@", "@\u200b")[:40]
-            if old and old not in old_names:
-                old_names.append(old)
         indicator = "❌ " if site.get("status") == "empty_index" else ""
         content = f"### {indicator}✦ [{name}]({url})"
         if indicator:
             content += "\n-# Page vide : index de répertoire détecté"
+        old_names = []
+        for raw in site.get("previous_names", []):
+            former = str(raw).replace("@", "@\u200b")[:40]
+            if former and former not in old_names:
+                old_names.append(former)
         if old_names:
             content += "\n-# ↳ Ancien : " + ", ".join(old_names)
-        cards.append(content)
+        return content
 
-    card_groups = (
-        [[content] for content in cards] if len(cards) <= 18
-        else [cards[i:i + 3] for i in range(0, len(cards), 3)]
+    header = (
+        "## 🎬 STREAMING HD\n"
+        "Dernière sortie cinéma en HD **sans pub**, mais petit catalogue.\n"
+        "✨ **Gratuit - Illimité - Ajouts quotidiens - Zéro pub**"
     )
-    components = [
-        {"type": 17, "accent_color": HEADER_ACCENT,
-         "components": [{"type": 10, "content": header}]}
-    ]
-    for group in card_groups:
+    main_content = header + "\n\n**🌐 Adresse principale**\n" + card_line(primary)
+    if mirrors:
+        main_content += (
+            f"\n\n🔽 **{len(mirrors)} sites miroirs** · "
+            "Clique sur le panneau masqué ci-dessous pour les afficher."
+        )
+    components = [{
+        "type": 17, "accent_color": HEADER_ACCENT,
+        "components": [{"type": 10, "content": main_content}],
+    }]
+
+    if mirrors:
+        lines = ["**✦ SITES MIROIRS**", *(card_line(site) for site in mirrors)]
+        chunks = []
+        current = ""
+        for line in lines:
+            addition = line if not current else "\n\n" + line
+            if len(current) + len(addition) > 3900 and current:
+                chunks.append(current)
+                current = line
+            else:
+                current += addition
+        if current:
+            chunks.append(current)
+        if len(chunks) > 10:
+            raise ValueError("Trop de miroirs pour une seule section masquée.")
         components.append({
-            "type": 17, "accent_color": CARD_ACCENT,
-            "components": [{"type": 10, "content": "\n\n".join(group)}],
+            "type": 17, "accent_color": CARD_ACCENT, "spoiler": True,
+            "components": [{"type": 10, "content": value} for value in chunks],
         })
-    total = len(components) * 2
-    if total > 40:
-        raise ValueError("Trop de composants Discord : la liste ne sera pas tronquée.")
-    if sum(len(card) for card in cards) + len(header) > 3900:
-        raise ValueError("La liste dépasse la limite de texte Discord : aucune fiche masquée.")
+    if len(main_content) > 3900:
+        raise ValueError("Adresse principale trop longue pour Discord.")
+    if sum(len(chunk) for chunk in component_text(components)) > 3900:
+        raise ValueError("Liste trop longue pour un seul message Discord.")
     return components
 
 
 def component_signature(components):
     """Comparer le rendu, en ignorant les identifiants ajoutés par Discord."""
     return tuple(
-        (entry.get("type"), entry.get("accent_color"),
+        (entry.get("type"), entry.get("accent_color"), entry.get("spoiler"),
          entry.get("content"),
          component_signature(entry.get("components") or []))
         for entry in (components or [])
