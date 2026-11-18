@@ -32,6 +32,9 @@ on:
       - 'tests/test_mirror_watch.py'
       - 'tests/test_thread_watch.py'
       - 'site_probe.py'
+      - 'browser_probe.py'
+      - 'requirements.txt'
+      - 'tests/test_browser_probe.py'
       - 'tests/test_site_monitor.py'
       - 'tests/test_dashboard_unique.py'
       - 'site/**'
@@ -64,6 +67,9 @@ jobs:
         run: python -m pip install -r requirements.txt
       - name: Tester le projet
         run: python -m unittest discover -s tests -v
+      - name: Installer Chromium gratuit pour les sondes difficiles
+        # Runner Linux standard du dépôt public : aucun service payant.
+        run: python -m playwright install --with-deps chromium --only-shell
       - name: Verifier le JavaScript du site
         run: node --check site/app.js
       - name: Tester le menu Discord
@@ -116,6 +122,8 @@ jobs:
           # Adresse indiquée par une capture du wiki le 18/11/2026.
           # Proposition seulement : le contenu du domaine est vérifié séparément.
           PURSTREAM_OBSERVED_MAIN: 'https://purstream.gg/'
+          # Repli Chromium pour les cas 403 / application JavaScript.
+          PLAYWRIGHT_BROWSER_FALLBACK: '1'
           FORCE_DAILY_INTEGRITY_SCAN: ${{ github.event_name == 'schedule' && '1' || '0' }}
         run: python server_link_watch.py
       - name: Surveiller les sites publics et alimenter l'historique

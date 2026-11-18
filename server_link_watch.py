@@ -19,6 +19,7 @@ import re
 
 from site_probe import RE_URL, clean_url, check_site
 from name_probe import probe_site_name, probe_site_migration
+from browser_probe import probe_browser_site
 from forum_updates import sync_forum_updates
 from site_monitor import (
     STATE_PATH, load_state, event, record_check, notify_discord, stamp,
@@ -333,8 +334,8 @@ def update_identity(state, record, observation, now, *, first_run):
 # Chaque site public est alors reinspecte une fois lors de la mise a jour,
 # meme si une ancienne inspection a deja eu lieu le meme jour.
 MIGRATION_PROBE_VERSION = 3
-HTML_HEALTH_PROBE_VERSION = 5  # Reinspect 403 HTML with browser gzip/deflate fallback
-ANNOUNCED_HTML_PROBE_VERSION = 1  # Recheck legacy destinations missing HTML proof
+HTML_HEALTH_PROBE_VERSION = 6  # Attempt Chromium for otherwise unreadable HTML
+ANNOUNCED_HTML_PROBE_VERSION = 2  # Recheck destinations with optional Chromium
 
 
 def watch_server_links(api, state, now=None, *, discover=find_server_links):
@@ -380,6 +381,18 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
     identity_checks = 0
     migration_checks = 0
     new_address_checks = {}
+    browser_cache = {}
+    browser_enabled = os.environ.get("PLAYWRIGHT_BROWSER_FALLBACK") == "1"
+
+    def browser_identity(target):
+        if not browser_enabled:
+            return None
+        # Au plus 24 origines difficiles par exécution; toutes les URL
+        # continuent à recevoir leur test HTTP quotidien habituel.
+        if target not in browser_cache and len(browser_cache) < 24:
+            browser_cache[target] = probe_browser_site(target)
+        return browser_cache.get(target)
+
     for rec in records.values():
         if not rec.get("active"):
             continue
@@ -416,6 +429,12 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
             restricted_http = rec.get("status") == "restricted"
             identity = (probe_site_name(rec["site_url"], allow_www_fallback=True)
                         if restricted_http else probe_site_name(rec["site_url"]))
+            # Chromium ne sert qu'aux pages indéterminées. Un domaine
+            # expiré ou un raccourcisseur reste refusé sans autre essai.
+            if not identity or identity.get("page_health") == "blocked":
+                browser_result = browser_identity(rec["site_url"])
+                if browser_result:
+                    identity = browser_result
             bad_html = (identity or {}).get("page_health")
             negative = {
                 "empty_index": "Répertoire de fichiers au lieu du site attendu",
@@ -435,6 +454,7 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
                 # Même si la sonde HTTP initiale reçoit 403, une vraie
                 # page du même site avec identité cohérente est une preuve.
                 rec["page_health"] = "content"
+                rec["verification_method"] = identity.get("verification_method", "html")
                 rec["reason"] = ("HTTP 403 pour la sonde ; HTML vérifié"
                                  if restricted_http else None)
             elif rec.get("page_health") in negative:
@@ -502,6 +522,10 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
                     )
                 ):
                     target_html = probe_site_name(target, allow_www_fallback=True)
+                if not target_html or target_html.get("page_health") == "blocked":
+                    browser_result = browser_identity(target)
+                    if browser_result:
+                        target_html = browser_result
                 target_health = (target_html or {}).get("page_health")
                 if target_health in ("empty_index", "parked", "interstitial"):
                     rec["announced_page_health"] = target_health
@@ -517,6 +541,9 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
                     html_host = (urlsplit(target_html.get("final_url") or target).hostname or "").removeprefix("www.")
                     if requested_host == http_host == html_host:
                         rec["announced_page_health"] = "content"
+                        rec["announced_verification_method"] = target_html.get(
+                            "verification_method", "html"
+                        )
             rec["announced_verified"] = (
                 rec["announced_status"] in ("online", "restricted")
                 and rec["announced_page_health"] == "content"
@@ -530,6 +557,7 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
         "new_name_checks": identity_checks,
         "new_migration_checks": migration_checks,
         "new_announced_address_checks": len(new_address_checks),
+        "browser_checks": len(browser_cache),
     }
     active_records = [rec for rec in records.values() if rec.get("active")]
     report = {
