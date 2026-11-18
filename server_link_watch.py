@@ -396,12 +396,12 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
     for rec in records.values():
         if not rec.get("active"):
             continue
-        previous_503 = (
+        previous_uncertain_failure = (
             rec.get("status") in ("offline", "suspect")
-            and int(rec.get("http_status") or 0) >= 500
+            and int(rec.get("http_status") or 0) not in (404, 410)
             and int(rec.get("http_probe_version") or 0) < HTTP_PROBE_VERSION
         )
-        if force_scan or previous_503 or due_daily(rec.get("last_checked"), now):
+        if force_scan or previous_uncertain_failure or due_daily(rec.get("last_checked"), now):
             observation = check_site(rec["site_url"])
             record_check(state, rec, observation, now)
             rec["http_probe_version"] = HTTP_PROBE_VERSION
@@ -417,7 +417,7 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
                      "evidence": "http:cross_domain_redirect"},
                     now, first_run=first_run,
                 )
-        if rec.get("status") in ("online", "restricted") and (
+        if rec.get("status") in ("online", "restricted", "unknown") and (
             force_scan
             or int(rec.get("html_health_probe_version") or 0) < HTML_HEALTH_PROBE_VERSION
             or due_daily(rec.get("name_attempted_at"), now)
@@ -427,8 +427,10 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
             # Un HTTP 403 ne prouve pas une panne : tenter aussi un GET
             # HTML indépendant, puis www/non-www, sans résoudre de CAPTCHA.
             restricted_http = rec.get("status") == "restricted"
+            uncertain_http = rec.get("status") == "unknown"
             identity = (probe_site_name(rec["site_url"], allow_www_fallback=True)
-                        if restricted_http else probe_site_name(rec["site_url"]))
+                        if restricted_http or uncertain_http
+                        else probe_site_name(rec["site_url"]))
             # Chromium ne sert qu'aux pages indéterminées. Un domaine
             # expiré ou un raccourcisseur reste refusé sans autre essai.
             if not identity or identity.get("page_health") == "blocked":
@@ -451,8 +453,10 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
                 rec["page_health"] = "blocked"
                 rec["reason"] = "Protection anti-bot : intégrité indéterminée"
             elif identity and identity.get("name"):
-                # Même si la sonde HTTP initiale reçoit 403, une vraie
-                # page du même site avec identité cohérente est une preuve.
+                # Une page HTML réellement lue et identifiée peut corriger
+                # une erreur DNS/timeout d'une autre requête GitHub.
+                if uncertain_http and identity.get("page_health") == "content":
+                    rec["status"] = "online"
                 rec["page_health"] = "content"
                 rec["verification_method"] = identity.get("verification_method", "html")
                 rec["reason"] = ("HTTP 403 pour la sonde ; HTML vérifié"
