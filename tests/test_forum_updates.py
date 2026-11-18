@@ -497,6 +497,83 @@ class ForumUpdatesTests(unittest.TestCase):
         self.assertEqual(group["url"], "https://flemmix.casa/")
         self.assertTrue(group["verified"])
 
+    def test_excludes_all_isp_blocked_entries_even_when_servers_reply_200(self):
+        from forum_updates import directory_candidates, validated_directory_groups
+        from forum_cards import build_card
+        hub = "https://coflix.domains/"
+        html = """
+          <h2>Adresses disponibles</h2>
+          <a href="https://coflix.esq/">CoFlix.Esq Adresse disponible 27/07/2026</a>
+          <h2>Bloqué par les FAI</h2>
+          <a href="https://coflix.ninja/">Coflix.ninja Adresse disponible</a>
+          <a href="https://coflix.observer/">Coflix.observer Domaine actif</a>
+          <h2>Adresses disponibles</h2>
+          <a href="https://coflix.space/">Coflix.space Bloqué par les FAI</a>
+        """
+        candidates = directory_candidates(html, hub, "coflix")
+        self.assertEqual(candidates, ["https://coflix.esq/"])
+        # Malgré la réponse HTTP 200 des anciens domaines bloqués,
+        # le bot ne contrôle et n'affiche que la vraie adresse éligible.
+        with patch("forum_updates.check_site", return_value={"result": "online"}), patch(
+            "forum_updates.fetch_html_page", return_value={"html": html}
+        ), patch("forum_updates.probe_site_name",
+                 return_value={"name": "Coflix", "page_health": "content"}) as name_probe:
+            group = validated_directory_groups(
+                [record("https://coflix.ninja/", status="online")],
+                "coflix",
+            )[0]
+        self.assertEqual(group["url"], "https://coflix.esq/")
+        self.assertTrue(group["verified"])
+        name_probe.assert_called_once_with("https://coflix.esq/")
+        txt = "\n".join(all_text(build_card([group], "Description", "CoFlix")))
+        self.assertNotIn("coflix.ninja", txt)
+        self.assertNotIn("coflix.space", txt)
+
+    def test_all_domains_blocked_by_fai_shows_reference_and_no_active_site(self):
+        from forum_updates import validated_directory_groups
+        from forum_cards import build_card
+        html = """
+          <h2>Bloqué par les FAI</h2>
+          <a href="https://coflix.ninja/">Coflix.ninja Domaine actif</a>
+          <a href="https://coflix.observer/">Coflix.observer Adresse disponible</a>
+        """
+        with patch("forum_updates.check_site", return_value={"result": "online"}) as check, patch(
+            "forum_updates.fetch_html_page", return_value={"html": html}
+        ), patch("forum_updates.probe_site_name") as probe:
+            group = validated_directory_groups(
+                [record("https://coflix.ninja/", status="online")], "coflix"
+            )[0]
+        self.assertEqual(check.call_count, 1)
+        probe.assert_not_called()
+        self.assertTrue(group["no_active"])
+        self.assertFalse(group["verified"])
+        body = "\n".join(all_text(build_card([group], "Coflix", "Coflix")))
+        self.assertIn("https://coflix.domains/", body)
+        self.assertIn("Aucune adresse active vérifiée", body)
+        self.assertNotIn("coflix.ninja", body)
+        self.assertNotIn("coflix.observer", body)
+        self.assertEqual(body.count("https://coflix.domains/"), 1)
+
+    def test_expired_parking_and_shortener_never_pass_directory_validation(self):
+        from forum_updates import validated_directory_groups
+        hub = "https://ww1.wiflix-adresses.fun/"
+        html = ('<a href="https://flemmix.casa/">flemmix.casa</a>'
+                '<p>Nom de domaine principal (Nouveau site)</p>')
+        for health in ("parked", "interstitial", "empty_index", "blocked"):
+            with self.subTest(health=health):
+                with patch("forum_updates.check_site", return_value={"result":"online"}), patch(
+                    "forum_updates.fetch_html_page", return_value={"html":html}
+                ), patch("forum_updates.probe_site_name", return_value={
+                    "page_health": health,
+                    "final_url": "https://flemmix.casa/",
+                }):
+                    group = validated_directory_groups(
+                        [record("https://flemmix.mom/", status="online")], "flemmix"
+                    )[0]
+                self.assertTrue(group["no_active"])
+                self.assertFalse(group["verified"])
+                self.assertEqual(group["reference_url"], hub)
+
     def test_directory_shortener_redirect_must_never_be_verified(self):
         from forum_updates import validated_directory_groups
         html = ('<a href="https://flemmix.casa/">flemmix.casa</a>'
@@ -512,8 +589,9 @@ class ForumUpdatesTests(unittest.TestCase):
             )[0]
         inspect.assert_not_called()
         self.assertEqual(result["reference_url"], "https://ww1.wiflix-adresses.fun/")
-        self.assertEqual(result["url"], "https://flemmix.casa/")
-        self.assertEqual(result["status"], "suspect")
+        self.assertEqual(result["url"], "https://ww1.wiflix-adresses.fun/")
+        self.assertTrue(result["no_active"])
+        self.assertEqual(result["status"], "unknown")
         self.assertFalse(result["verified"])
 
     def test_directory_redirect_to_new_same_brand_domain_can_be_verified(self):
@@ -544,7 +622,9 @@ class ForumUpdatesTests(unittest.TestCase):
                 [record("https://coflix.boo/", status="offline")], "coflix"
             )[0]
         self.assertEqual(group["reference_url"], "https://coflix.domains/")
-        self.assertEqual(group["status"], "suspect")
+        self.assertEqual(group["url"], "https://coflix.domains/")
+        self.assertTrue(group["no_active"])
+        self.assertEqual(group["status"], "unknown")
         self.assertFalse(group["verified"])
 
     def test_vip_secret_phrase_numbered_list_is_in_the_same_card(self):
