@@ -202,6 +202,34 @@ class ServerWatchTests(unittest.TestCase):
         self.assertTrue(groups[0]["verified"])
         self.assertEqual(report["new_addresses_checked"], 1)
 
+    def test_official_http_redirect_updates_address_for_any_site(self):
+        original = "https://example-old.org/"
+        new = "https://example-new.org/"
+        found = {original: {"source_count": 1, "sources": [{
+            "url": "https://discord.com/channels/1/100/110",
+            "channel": "Films", "kind": "forum"
+        }]}}
+        def discover(_):
+            return found, {"unique_urls": 1}, []
+        def checking(url):
+            out = response(url)
+            if url == original:
+                out["final_url"] = new
+            return out
+        with patch("server_link_watch.check_site", side_effect=checking), patch(
+            "server_link_watch.probe_site_name",
+            return_value={"name": "Example", "evidence": "title"}
+        ):
+            s = state()
+            report, _ = watch.watch_server_links(
+                FakeDiscord(), s, NOW, discover=discover
+            )
+        rec = s["server_links"][original]
+        self.assertEqual(rec["redirect_url"], new)
+        self.assertEqual(rec["announced_url"], new)
+        self.assertTrue(rec["announced_verified"])
+        self.assertEqual(report["new_addresses_checked"], 1)
+
     def test_scheduled_18h_forces_even_if_checked_earlier_today(self):
         url = "https://fstream.info/"
         proposed = "https://fs99.lol/"
