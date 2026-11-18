@@ -66,6 +66,41 @@ def strip_duplicate_source_url(description, groups):
     return "\n".join(lines).strip()
 
 
+ACCOUNT_LINE = re.compile(
+    r"^\s*(?:[-•*]\s*)?(?:\*\*)?(?:👤|🔑|🔐|🆔)?\s*(?:\*\*)?"
+    r"(?P<label>nom d['’]utilisateur|utilisateur|identifiant|identifiants|"
+    r"username|login|user|pseudo|mot de passe|mdp|password|pass)"
+    r"(?:\*\*)?\s*[:：=\-]\s*(?P<value>\S.*?)\s*$",
+    flags=re.I,
+)
+USER_LABELS = {"nom d'utilisateur", "nom d’utilisateur", "utilisateur", "identifiant",
+               "identifiants", "username", "login", "user", "pseudo"}
+
+
+def split_credentials(description):
+    """Déplacer uniquement un couple explicite déjà public dans le message source.
+
+    N'extrait jamais des identifiants d'autres messages ou d'un site externe.
+    """
+    lines = str(description or "").splitlines()
+    matched = {}
+    consumed = set()
+    for i, line in enumerate(lines):
+        match = ACCOUNT_LINE.fullmatch(line)
+        if not match:
+            continue
+        category = "user" if match.group("label").casefold() in USER_LABELS else "password"
+        value = match.group("value").strip()
+        if not value or len(value) > 200:
+            continue
+        matched[category] = value
+        consumed.add(i)
+    if not {"user", "password"}.issubset(matched):
+        return description, None
+    remaining = [line for i, line in enumerate(lines) if i not in consumed]
+    return "\n".join(remaining).strip(), matched
+
+
 def build_card(groups, description, title=None):
     """Fiche au nom du site, adresse actuelle et description d'origine."""
     if not groups:
@@ -87,13 +122,21 @@ def build_card(groups, description, title=None):
         elif group.get("status") in ("offline", "suspect"):
             line += "\n-# 🟠 Accessibilité à vérifier"
         parts.extend({"type": 10, "content": chunk} for chunk in split_text(line))
-    cleaned = strip_duplicate_source_url(description, groups)
+    regular_description, credentials = split_credentials(description)
+    cleaned = strip_duplicate_source_url(regular_description, groups)
     if cleaned:
         for i, chunk in enumerate(split_text(cleaned, 3800)):
             parts.append({
                 "type": 10,
                 "content": ("**📝 Description**\n" if i == 0 else "") + chunk,
             })
+    if credentials:
+        parts.append({
+            "type": 10,
+            "content": "**🔐 Identifiants**\n**👤 Utilisateur :** "
+                       + credentials["user"] + "\n**🔑 Mot de passe :** "
+                       + credentials["password"],
+        })
     if len(parts) > 38:
         raise ValueError("Description trop longue pour une carte Discord")
     return [{"type": 17, "accent_color": COLOR, "components": parts}]
