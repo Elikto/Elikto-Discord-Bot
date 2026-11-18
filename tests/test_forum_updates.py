@@ -475,6 +475,74 @@ class ForumUpdatesTests(unittest.TestCase):
         self.assertLess(body.index("https://coflix.domains/"),
                         body.index("https://coflix.esq/"))
 
+    def test_flemmix_observed_url_is_only_announced_until_validated(self):
+        from forum_updates import validated_directory_groups
+        from forum_cards import build_card
+        hub = "https://ww1.wiflix-adresses.fun/"
+        stale_html = (
+            '<h2>Nom de domaine principal (Nouveau site)</h2>'
+            '<a href="https://flemmix.casa/">flemmix.casa</a>'
+            '<div>Domaine actif</div>'
+        )
+        env = {
+            "FLEMMIX_OBSERVED_MAIN": "https://flemmix.uno/",
+            "FLEMMIX_FAI_BLOCKED_HOSTS": "flemmix.casa,flemmix.prof",
+        }
+        def check(url):
+            if url == hub:
+                return {"result": "online", "final_url": hub}
+            if url == "https://flemmix.uno/":
+                return {"result": "unknown", "http_status": 503}
+            raise AssertionError("An old FAI-blocked domain was checked: " + url)
+        with patch.dict("os.environ", env), patch(
+            "forum_updates.check_site", side_effect=check
+        ) as checks, patch(
+            "forum_updates.fetch_html_page", return_value={"html": stale_html}
+        ), patch("forum_updates.probe_site_name") as identity:
+            group = validated_directory_groups(
+                [record("https://flemmix.mom/", status="parked")], "flemmix"
+            )[0]
+        self.assertEqual(checks.call_count, 2)
+        identity.assert_not_called()
+        self.assertTrue(group["no_active"])
+        self.assertFalse(group["verified"])
+        self.assertIsNone(group["url"] if not group["no_active"] else None)
+        self.assertEqual(group["suggested_url"], "https://flemmix.uno/")
+        body = "\n".join(all_text(build_card([group], "Flemmix", "Flemmix")))
+        self.assertIn("https://ww1.wiflix-adresses.fun/", body)
+        self.assertIn("Adresse annoncée (non vérifiée)", body)
+        self.assertIn("https://flemmix.uno/", body)
+        self.assertNotIn("https://flemmix.casa/", body)
+        self.assertNotIn("https://flemmix.mom/", body)
+        self.assertNotIn("✅", body)
+
+    def test_flemmix_observed_url_can_become_green_only_after_html_probe(self):
+        from forum_updates import validated_directory_groups
+        hub = "https://ww1.wiflix-adresses.fun/"
+        env = {
+            "FLEMMIX_OBSERVED_MAIN": "https://flemmix.uno/",
+            "FLEMMIX_FAI_BLOCKED_HOSTS": "flemmix.casa",
+        }
+        with patch.dict("os.environ", env), patch(
+            "forum_updates.check_site", side_effect=lambda url: {
+                "result": "online", "final_url": url
+            }
+        ), patch("forum_updates.fetch_html_page", return_value={
+            "html": "<h2>ANCIENS DOMAINES - BLOQUÉS PAR LES FAI</h2>"
+                    "<a href='https://flemmix.casa/'>flemmix.casa</a>"
+        }), patch("forum_updates.probe_site_name", return_value={
+            "name": "Flemmix", "page_health": "content",
+            "final_url": "https://flemmix.uno/"
+        }) as html:
+            group = validated_directory_groups(
+                [record("https://flemmix.mom/", status="parked")], "flemmix"
+            )[0]
+        html.assert_called_once_with("https://flemmix.uno/")
+        self.assertEqual(group["url"], "https://flemmix.uno/")
+        self.assertFalse(group["no_active"])
+        self.assertTrue(group["verified"])
+        self.assertIsNone(group["suggested_url"])
+
     def test_flemmix_2026_active_uno_and_isp_blocked_list(self):
         from forum_updates import directory_candidates, validated_directory_groups
         from forum_cards import build_card
