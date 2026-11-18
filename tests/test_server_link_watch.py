@@ -172,7 +172,9 @@ class ServerWatchTests(unittest.TestCase):
         s = state()
         s["server_links"] = {original: {
             "site_url": original, "title": "French Stream",
-            "thread_id": "100", "status": "online", "active": True,
+            "thread_id": "100",
+            "discord_url": "https://discord.com/channels/1/100/110",
+            "status": "online", "active": True,
             "last_checked": NOW.isoformat(),
             "name_attempted_at": NOW.isoformat(),
             "migration_attempted_at": NOW.isoformat(),
