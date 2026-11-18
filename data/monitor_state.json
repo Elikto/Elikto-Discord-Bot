@@ -651,9 +651,45 @@
       "current": "https://webflix.surf/",
       "detail": "Nouvelle adresse affichée sur le site, à vérifier indépendamment.",
       "alert": true
+    },
+    {
+      "id": 14,
+      "type": "server_site_added",
+      "at": "2026-11-18T00:40:45+00:00",
+      "thread_id": "1430991985572839547",
+      "title": "movix.online",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1430991985572839547/1430991985572839547",
+      "previous": null,
+      "current": "https://movix.online/",
+      "detail": "Lien de site découvert dans un message public du serveur.",
+      "alert": true
+    },
+    {
+      "id": 15,
+      "type": "server_site_added",
+      "at": "2026-11-18T00:40:45+00:00",
+      "thread_id": "1430991985572839547",
+      "title": "movix.miami",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1430991985572839547/1430991985572839547",
+      "previous": null,
+      "current": "https://movix.miami/",
+      "detail": "Lien de site découvert dans un message public du serveur.",
+      "alert": true
+    },
+    {
+      "id": 16,
+      "type": "server_site_removed",
+      "at": "2026-11-18T00:40:45+00:00",
+      "thread_id": "1430991985572839547",
+      "title": "movix.club",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1430991985572839547/1430991985572839547",
+      "previous": "https://movix.club/Site",
+      "current": "retiré",
+      "detail": "Site non retrouvé dans les messages publics du serveur.",
+      "alert": true
     }
   ],
-  "event_sequence": 13,
+  "event_sequence": 16,
   "tracked_threads": {
     "1430988094374547559": {
       "url_states": {
@@ -782,7 +818,7 @@
         "https://zinzov.com/",
         "https://didvip.com/"
       ],
-      "last_synced": "2026-11-18T00:35:25+00:00",
+      "last_synced": "2026-11-18T00:40:45+00:00",
       "target_states": {
         "https://nandov.com/": {
           "url": "https://nandov.com/",
@@ -1467,7 +1503,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1498,7 +1534,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": 503,
       "reason": null,
@@ -1522,7 +1558,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1553,7 +1589,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1584,7 +1620,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1615,7 +1651,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1641,7 +1677,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1667,7 +1703,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1698,7 +1734,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1729,7 +1765,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1760,7 +1796,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": null,
       "reason": "TimeoutError",
@@ -1784,7 +1820,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1815,7 +1851,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": 451,
       "reason": null,
@@ -1849,7 +1885,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1881,7 +1917,7 @@
         }
       ],
       "last_seen": "2026-11-18T00:35:26+00:00",
-      "active": true,
+      "active": false,
       "http_status": 404,
       "reason": null,
       "final_url": "https://movix.club/Site",
@@ -1904,7 +1940,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1935,7 +1971,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": 206,
       "reason": null,
@@ -1961,7 +1997,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1992,7 +2028,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2023,7 +2059,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2054,7 +2090,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": 403,
       "reason": null,
@@ -2079,7 +2115,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": null,
       "reason": "gaierror",
@@ -2103,7 +2139,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2134,7 +2170,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2165,7 +2201,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": 206,
       "reason": null,
@@ -2196,7 +2232,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2227,7 +2263,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2258,7 +2294,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2289,7 +2325,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2320,7 +2356,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2351,7 +2387,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": 403,
       "reason": null,
@@ -2376,7 +2412,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2407,7 +2443,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": null,
       "reason": "OSError",
@@ -2431,38 +2467,100 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T00:35:26+00:00",
+      "last_seen": "2026-11-18T00:40:45+00:00",
       "active": true,
       "http_status": null,
       "reason": "OSError",
       "final_url": "https://hellojoko.app.link/tyX38HoTyP",
       "redirect_url": null
+    },
+    "https://movix.online/": {
+      "thread_id": "1430991985572839547",
+      "title": "movix.online",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1430991985572839547/1430991985572839547",
+      "site_url": "https://movix.online/",
+      "first_seen": "2026-11-18T00:40:45+00:00",
+      "status": "online",
+      "last_checked": "2026-11-18T00:40:45+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1430991985572839547/1430991985572839547",
+          "channel": "#1 Movix",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-18T00:40:45+00:00",
+      "active": true,
+      "http_status": 200,
+      "reason": null,
+      "final_url": "https://movix.online/",
+      "redirect_url": null,
+      "name_attempted_at": "2026-11-18T00:40:45+00:00",
+      "name_checked_at": "2026-11-18T00:40:45+00:00",
+      "name_evidence": "og:site_name",
+      "site_name": "Movix",
+      "pending_name": null,
+      "pending_name_at": null,
+      "migration_attempted_at": "2026-11-18T00:40:45+00:00"
+    },
+    "https://movix.miami/": {
+      "thread_id": "1430991985572839547",
+      "title": "movix.miami",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1430991985572839547/1430991985572839547",
+      "site_url": "https://movix.miami/",
+      "first_seen": "2026-11-18T00:40:45+00:00",
+      "status": "online",
+      "last_checked": "2026-11-18T00:40:45+00:00",
+      "consecutive_failures": 0,
+      "source_count": 1,
+      "sources": [
+        {
+          "url": "https://discord.com/channels/1430984645012357263/1430991985572839547/1430991985572839547",
+          "channel": "#1 Movix",
+          "kind": "fil"
+        }
+      ],
+      "last_seen": "2026-11-18T00:40:45+00:00",
+      "active": true,
+      "http_status": 200,
+      "reason": null,
+      "final_url": "https://movix.miami/",
+      "redirect_url": null,
+      "name_attempted_at": "2026-11-18T00:40:45+00:00",
+      "name_checked_at": "2026-11-18T00:40:45+00:00",
+      "name_evidence": "og:site_name",
+      "site_name": "Movix",
+      "pending_name": null,
+      "pending_name_at": null,
+      "migration_attempted_at": "2026-11-18T00:40:45+00:00"
     }
   },
   "server_scan": {
-    "at": "2026-11-18T00:35:26+00:00",
+    "at": "2026-11-18T00:40:45+00:00",
     "counts": {
-      "messages_read": 75,
+      "messages_read": 103,
       "locations_scanned": 37,
-      "links_found": 34,
+      "links_found": 35,
       "locations_discovered": 37,
-      "unique_urls": 34,
+      "unique_urls": 35,
       "scan_failures": 0
     },
     "errors": [],
     "all_public_sources_scanned": true,
-    "new_http_checks": 0,
-    "new_name_checks": 0,
-    "new_migration_checks": 0,
+    "new_http_checks": 2,
+    "new_name_checks": 2,
+    "new_migration_checks": 2,
     "new_announced_address_checks": 0,
     "forum_updates": {
       "created": 0,
-      "updated": 28,
-      "unchanged": 0,
+      "updated": 1,
+      "unchanged": 27,
       "skipped": 0,
       "descriptions_found": 28,
       "description_missing": 0,
-      "previews_created": 28,
+      "previews_created": 0,
       "previews_updated": 0,
       "errors": []
     }
@@ -2490,7 +2588,7 @@
     },
     "1430991985572839547": {
       "message_id": "1572407217414602883",
-      "digest": "5b812f5d37dbe5aa6bf2732e1a1b368afbf6eb7433c1a17f3fd8dabeed24e1ca",
+      "digest": "92b88f14431b87ec69202b77c02a6df976bb9ed7b1af09abd15d3a121505ed0a",
       "preview_message_id": "1572409947394678915"
     },
     "1430996722745606224": {
