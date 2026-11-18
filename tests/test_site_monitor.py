@@ -156,6 +156,45 @@ class MonitorTests(unittest.TestCase):
         self.assertEqual(report["monitored"], 1)
         self.assertEqual(alerts[0]["type"], "address_changed")
 
+    def test_webflix_migration_appears_in_forum_and_server_report(self):
+        class FakeAPI:
+            pass
+        thread_id = "1562067560856289411"
+        current = state()
+        current["records"][thread_id] = {
+            "thread_id": thread_id, "title": "WebFlix",
+            "discord_url": f"https://discord.com/channels/1/{thread_id}",
+            "site_url": "https://webflix.art/", "status": "unknown",
+            "last_checked": self.now.isoformat(),
+            "last_discovery": self.now.isoformat(),
+        }
+        current["server_links"] = {
+            "https://webflix.art/": {
+                "thread_id": thread_id, "title": "webflix.art",
+                "discord_url": f"https://discord.com/channels/1/{thread_id}/{thread_id}",
+                "site_url": "https://webflix.art/", "active": True,
+                "status": "unknown", "last_checked": self.now.isoformat(),
+                "announced_url": "https://webflix.surf/",
+                "announced_status": "online", "announced_http_status": 200,
+                "migration_evidence": "captures:2026-11-17",
+            }
+        }
+        cat = {"categories": [{"name": "Streaming", "channels": [{
+            "name": "films-et-series", "kind": "forum",
+            "items": [{"title": "WebFlix",
+                       "url": f"https://discord.com/channels/1/{thread_id}"}],
+        }]}]}
+        with patch("site_monitor.check_site") as check:
+            report, _ = watch_catalogue(FakeAPI(), cat, current, self.now)
+        check.assert_not_called()
+        self.assertEqual(
+            cat["categories"][0]["channels"][0]["items"][0]["monitor"]["announced_url"],
+            "https://webflix.surf/"
+        )
+        self.assertEqual(report["server_sites"][0]["announced_url"],
+                         "https://webflix.surf/")
+        self.assertEqual(report["server_sites"][0]["announced_status"], "online")
+
     def test_mirror_urls_are_exported_and_counted_individually(self):
         class FakeAPI: pass
         thread_id = "1430988094374547559"
