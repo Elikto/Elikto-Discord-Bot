@@ -1159,5 +1159,42 @@ class ForumUpdatesTests(unittest.TestCase):
         self.assertIn("✅", card)
 
 
+    def test_cinezzz_www_source_url_is_not_repeated_in_card(self):
+        from forum_cards import build_card
+        original = (
+            "Archaïque, beaucoup de lecteurs disponibles, grand catalogue.\n"
+            "https://www.cinezzz.club/"
+        )
+        groups = site_groups([{
+            **record("https://cinezzz.club/", status="restricted"),
+            "page_health": "unknown",
+        }], "Cinezzz")
+        text = "\n".join(all_text(build_card(groups, original, "Cinezzz")))
+        self.assertEqual(text.count("cinezzz.club/"), 1)
+        self.assertNotIn("www.cinezzz.club", text)
+        self.assertIn("Archaïque, beaucoup de lecteurs", text)
+        self.assertIn("Site (accès restreint)", text)
+        self.assertNotIn("✅", text)
+
+    def test_www_dedup_keeps_distinct_paths_and_inline_urls(self):
+        from forum_cards import build_card
+        url = "https://cinezzz.club/"
+        original = (
+            "Site accessible aussi sur http://www.cinezzz.club/ dans une phrase.\n"
+            "https://www.cinezzz.club/\n"
+            "https://www.cinezzz.club/guide\n"
+            "https://another.example.org/"
+        )
+        groups = [{"url": url, "name": "cinezzz.club",
+                   "status": "online", "verified": True, "older": []}]
+        content = "\n".join(all_text(build_card(groups, original, "Cinezzz")))
+        self.assertEqual(content.count("https://www.cinezzz.club/\n"), 0)
+        self.assertIn("Site accessible aussi sur http://www.cinezzz.club/", content)
+        self.assertIn("https://www.cinezzz.club/guide", content)
+        self.assertIn("https://another.example.org/", content)
+        self.assertEqual(content.count(url), 1)
+
+
+
 if __name__ == "__main__":
     unittest.main()
