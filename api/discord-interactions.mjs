@@ -150,9 +150,16 @@ export async function handleInteraction(request, publicKey) {
   return json(replyToInteraction(body));
 }
 
-export default async function handler(request) {
+// Le runtime Vercel attend un export Web Handler nommé (POST/GET).
+// Une fonction default qui renvoie Response est interprétée comme l'ancienne
+// signature (req, res), et son résultat est ignoré par Vercel.
+export async function POST(request) {
   if (!process.env.DISCORD_PUBLIC_KEY) {
     return json({ error: "DISCORD_PUBLIC_KEY is not configured" }, 503);
   }
   return handleInteraction(request, process.env.DISCORD_PUBLIC_KEY);
+}
+
+export function GET() {
+  return json({ error: "Method Not Allowed" }, 405);
 }
