@@ -497,10 +497,16 @@ def render_site_cards(items, thread_name, dropdown_enabled=False):
                 label = str(site.get("name") or urlsplit(url).hostname)
                 label = label.replace("@", "@\u200b")[:100]
                 entry = {"label": label, "value": url}
-                if site.get("status") == "empty_index":
+                if (site.get("status") == "empty_index"
+                        or site.get("page_health") == "empty_index"):
                     entry["description"] = "❌ Index vide"
                 elif site.get("status") == "online":
-                    entry["description"] = "✅ Accessible au dernier contrôle"
+                    # HTTP 200/206 ne prouve pas que le catalogue s'affiche.
+                    entry["description"] = (
+                        "✅ Page du site vérifiée"
+                        if site.get("page_health") == "content"
+                        else "🟡 Serveur OK · contenu non vérifié"
+                    )
                 else:
                     entry["description"] = "Disponibilité à vérifier"
                 options.append(entry)
