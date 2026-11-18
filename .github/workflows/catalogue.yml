@@ -20,6 +20,8 @@ on:
       - 'thread_watch.py'
       - 'mirror_watch.py'
       - 'discord_endpoint_setup.py'
+      - 'api/**'
+      - 'tests/test_discord_interactions.mjs'
       - 'tests/test_discord_endpoint_setup.py'
       - 'site_discovery.py'
       - 'tests/test_site_discovery.py'
