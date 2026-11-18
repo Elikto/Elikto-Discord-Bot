@@ -45,6 +45,35 @@ def forum_sources(record, forum_ids):
     return ids - {MIRROR_THREAD}
 
 
+def proven_html_content(record, now=None):
+    """Proof of a site page, not just HTTP 200.
+
+    Historical scans stored the HTML <title>/OG identity but no page_health.
+    Upgrade that existing observation when it is recent; never promote
+    HTTP-only, stale, blocked or directory-index results to green.
+    """
+    if record.get("page_health") == "content":
+        return record.get("status") == "online"
+    if record.get("page_health") in ("unknown", "empty_index", "parked", "blocked"):
+        return False
+    if record.get("status") != "online":
+        return False
+    evidence = record.get("name_evidence")
+    last = record.get("name_checked_at")
+    if evidence not in ("og:site_name", "application-name", "title",
+                        "og:title", "twitter:title") or not last:
+        return False
+    try:
+        checked = datetime.fromisoformat(last.replace("Z", "+00:00"))
+        now = now or datetime.now(timezone.utc)
+        if checked.tzinfo is None:
+            return False
+        age = now - checked
+        return timedelta(0) <= age <= timedelta(hours=48)
+    except (ValueError, TypeError, OverflowError):
+        return False
+
+
 def site_groups(records, forum_title):
     """Conserver la source d'une annonce ET sa destination actuelle.
 
@@ -71,8 +100,7 @@ def site_groups(records, forum_title):
         if reference == url:
             reference = None
         verified = (bool(rec.get("announced_verified")) if successor else
-                    bool(rec.get("status") == "online" and
-                         rec.get("page_health") == "content"))
+                    proven_html_content(rec))
         if key not in groups:
             groups[key] = {
                 "url": url, "name": domain(url), "reference_url": reference,
