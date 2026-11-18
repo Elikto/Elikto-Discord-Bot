@@ -88,6 +88,27 @@ class MirrorWatchTests(unittest.TestCase):
         no_discovery.start()
         self.addCleanup(no_discovery.stop)
 
+    def test_mirror_cards_show_red_cross_only_for_directory_index(self):
+        good = "https://varloz.com/47b6f3a/home/varloz"
+        empty = "https://rogzov.com/93zjfyqk6llf/"
+        api = FakeAPI([human_message([good, empty])])
+        s = state()
+        def probe(url):
+            if url == empty:
+                return {"page_health": "empty_index", "evidence": "html:directory_index"}
+            return {"name": "VARLOZ", "confidence": "strong", "evidence": "title"}
+        with patch("mirror_watch.check_site", side_effect=lambda url: response(url=url)), patch(
+            "mirror_watch.probe_site_name", side_effect=probe
+        ):
+            mirror_watch.sync_thread(api, s, self.now)
+        entries = s["tracked_threads"][mirror_watch.THREAD_ID]["url_states"]
+        self.assertEqual(entries[good]["status"], "online")
+        self.assertEqual(entries[empty]["status"], "empty_index")
+        card = api.bot_messages[0]["content"]
+        self.assertIn("❌ ✦ [rogzov.com]", card)
+        self.assertNotIn("❌ ✦ [VARLOZ]", card)
+        self.assertIn("Page vide : index de répertoire détecté", card)
+
     def test_first_html_scan_creates_a_baseline_without_false_rename(self):
         api = FakeAPI([human_message()])
         s = state()
