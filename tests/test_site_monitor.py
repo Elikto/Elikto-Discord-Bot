@@ -78,6 +78,15 @@ class MonitorTests(unittest.TestCase):
         self.assertEqual(result["http_status"], 503)
         self.assertIn("temporaire", result["reason"])
 
+    def test_503_head_followed_by_blocked_get_is_unknown(self):
+        with patch("site_probe.single_request", side_effect=[
+            (503, None), TimeoutError("GET temporarily blocked"),
+        ]):
+            result = check_site("https://fr.z-library.ec/")
+        self.assertEqual(result["result"], "unknown")
+        self.assertEqual(result["http_status"], 503)
+        self.assertIn("HEAD 503", result["reason"])
+
     def test_head_404_get_200_does_not_mark_a_working_site_down(self):
         with patch("site_probe.single_request", side_effect=[
             (404, None), (200, None),
