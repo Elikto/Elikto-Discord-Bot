@@ -735,9 +735,21 @@
       "current": "https://fs05.lol/",
       "detail": "Nouvelle adresse affichée sur le site, à vérifier indépendamment.",
       "alert": true
+    },
+    {
+      "id": 21,
+      "type": "server_site_removed",
+      "at": "2026-11-18T20:33:48+00:00",
+      "thread_id": "1565898044518568187",
+      "title": "tracker.teamflix.cc",
+      "discord_url": "https://discord.com/channels/1430984645012357263/1565898044518568187/1565898044518568187",
+      "previous": "https://tracker.teamflix.cc/",
+      "current": "retiré",
+      "detail": "Site non retrouvé dans les messages publics du serveur.",
+      "alert": true
     }
   ],
-  "event_sequence": 20,
+  "event_sequence": 21,
   "tracked_threads": {
     "1430988094374547559": {
       "url_states": {
@@ -872,7 +884,7 @@
         "https://zinzov.com/",
         "https://didvip.com/"
       ],
-      "last_synced": "2026-11-18T18:49:42+00:00",
+      "last_synced": "2026-11-18T20:33:44+00:00",
       "target_states": {
         "https://nandov.com/": {
           "url": "https://nandov.com/",
@@ -1419,7 +1431,8 @@
             "WADROX"
           ],
           "source": "relevés publics 10-12/11/2026",
-          "origin": "seed"
+          "origin": "seed",
+          "last_observed": "2026-11-18T20:33:44+00:00"
         },
         "https://trimav.com/": {
           "name": "TRIMAV",
@@ -1431,7 +1444,8 @@
             "VATRAB"
           ],
           "source": "relevés publics 10-12/11/2026",
-          "origin": "seed"
+          "origin": "seed",
+          "last_observed": "2026-11-18T20:33:44+00:00"
         },
         "https://varloz.com/": {
           "name": "VARLOZ",
@@ -1443,7 +1457,8 @@
             "VADBAK"
           ],
           "source": "relevés publics 10-12/11/2026",
-          "origin": "seed"
+          "origin": "seed",
+          "last_observed": "2026-11-18T20:33:44+00:00"
         },
         "https://pobram.com/": {
           "name": "POBRAM",
@@ -1455,7 +1470,8 @@
             "SORLAV"
           ],
           "source": "relevés publics 10-12/11/2026",
-          "origin": "seed"
+          "origin": "seed",
+          "last_observed": "2026-11-18T20:33:44+00:00"
         },
         "https://bimdav.com/": {
           "name": "BIMDAV",
@@ -1467,7 +1483,8 @@
             "IMBRAV"
           ],
           "source": "relevés publics 10-12/11/2026",
-          "origin": "seed"
+          "origin": "seed",
+          "last_observed": "2026-11-18T20:33:44+00:00"
         },
         "https://limdav.com/": {
           "name": "LIMDAV",
@@ -1477,7 +1494,8 @@
             "IRAMIV"
           ],
           "source": "relevés publics 10-12/11/2026",
-          "origin": "seed"
+          "origin": "seed",
+          "last_observed": "2026-11-18T20:33:44+00:00"
         },
         "https://padmov.com/": {
           "name": "PADMOV",
@@ -1487,7 +1505,8 @@
             "PADRAZ"
           ],
           "source": "relevés publics 10-12/11/2026",
-          "origin": "seed"
+          "origin": "seed",
+          "last_observed": "2026-11-18T20:33:44+00:00"
         },
         "https://bintov.com/": {
           "name": "BINTOV",
@@ -1495,7 +1514,8 @@
             "MIVDIP"
           ],
           "source": "relevés publics 10-12/11/2026",
-          "origin": "seed"
+          "origin": "seed",
+          "last_observed": "2026-11-18T20:33:44+00:00"
         },
         "https://watof.com/": {
           "name": "WATOF",
@@ -1533,7 +1553,8 @@
             "ZINZOV"
           ],
           "source": "relevés publics 10-12/11/2026",
-          "origin": "seed"
+          "origin": "seed",
+          "last_observed": "2026-11-18T20:33:44+00:00"
         },
         "https://nandov.com/": {
           "name": "NANDOV",
@@ -1544,7 +1565,8 @@
             "VOZGOV"
           ],
           "source": "relevés publics 10-12/11/2026",
-          "origin": "seed"
+          "origin": "seed",
+          "last_observed": "2026-11-18T20:33:44+00:00"
         },
         "https://dotivoz.com/": {
           "name": "DOTIVOZ",
@@ -1554,7 +1576,8 @@
             "ZOMATOP"
           ],
           "source": "relevés publics 10-12/11/2026",
-          "origin": "seed"
+          "origin": "seed",
+          "last_observed": "2026-11-18T20:33:44+00:00"
         },
         "https://farsov.com/": {
           "name": "FARSOV",
@@ -1562,10 +1585,11 @@
             "DOVLIP"
           ],
           "source": "relevés publics 10-12/11/2026",
-          "origin": "seed"
+          "origin": "seed",
+          "last_observed": "2026-11-18T20:33:44+00:00"
         }
       },
-      "last_internet_discovery": "2026-11-17T23:01:48+00:00",
+      "last_internet_discovery": "2026-11-18T20:33:44+00:00",
       "discovery_sources": {
         "https://natchecker.com/fr/blog/domgrav-nouveau-nom": "lue",
         "https://alexitauzin.com/top-50-meilleurs-sites-streaming-gratuits/": "lue",
@@ -1591,7 +1615,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1623,7 +1647,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 503,
       "reason": null,
@@ -1647,7 +1671,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1680,7 +1704,7 @@
         }
       ],
       "last_seen": "2026-11-18T18:49:44+00:00",
-      "active": true,
+      "active": false,
       "http_status": 200,
       "reason": null,
       "final_url": "https://tracker.teamflix.cc/login",
@@ -1711,7 +1735,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1743,7 +1767,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1770,7 +1794,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1797,7 +1821,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1829,7 +1853,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1861,7 +1885,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1893,7 +1917,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": null,
       "reason": "TimeoutError",
@@ -1917,7 +1941,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1949,7 +1973,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 451,
       "reason": null,
@@ -1984,7 +2008,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2040,7 +2064,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2072,7 +2096,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 206,
       "reason": null,
@@ -2099,7 +2123,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2131,7 +2155,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2163,7 +2187,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2203,7 +2227,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 403,
       "reason": null,
@@ -2229,7 +2253,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": null,
       "reason": "gaierror",
@@ -2253,7 +2277,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2285,7 +2309,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2317,7 +2341,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 206,
       "reason": null,
@@ -2349,7 +2373,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2381,7 +2405,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2413,7 +2437,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2445,7 +2469,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2477,7 +2501,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2509,7 +2533,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 403,
       "reason": null,
@@ -2535,7 +2559,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2567,7 +2591,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": null,
       "reason": "OSError",
@@ -2591,7 +2615,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": null,
       "reason": "OSError",
@@ -2615,7 +2639,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2647,7 +2671,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T18:49:44+00:00",
+      "last_seen": "2026-11-18T20:33:48+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2664,13 +2688,13 @@
     }
   },
   "server_scan": {
-    "at": "2026-11-18T18:49:44+00:00",
+    "at": "2026-11-18T20:33:48+00:00",
     "counts": {
-      "messages_read": 90,
+      "messages_read": 88,
       "locations_scanned": 37,
-      "links_found": 35,
+      "links_found": 34,
       "locations_discovered": 37,
-      "unique_urls": 35,
+      "unique_urls": 34,
       "scan_failures": 0
     },
     "errors": [],
@@ -2681,13 +2705,14 @@
     "new_announced_address_checks": 0,
     "forum_updates": {
       "created": 0,
-      "updated": 13,
-      "unchanged": 15,
+      "updated": 21,
+      "unchanged": 7,
       "skipped": 0,
-      "descriptions_found": 28,
-      "description_missing": 0,
+      "descriptions_found": 27,
+      "description_missing": 1,
       "previews_created": 0,
       "previews_updated": 0,
+      "duplicate_links_removed": 15,
       "errors": []
     }
   },
@@ -2700,24 +2725,21 @@
     },
     "1430989114265571459": {
       "message_id": "1572407208673681567",
-      "preview_message_id": "1572409934606503956",
       "preview_image_source": "https://flemmix.mom/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T01:08:52+00:00"
+      "preview_image_checked_at": "2026-11-18T20:34:04+00:00"
     },
     "1430989234264870912": {
       "message_id": "1572407211903287411",
-      "preview_message_id": "1572409938406416488",
       "preview_image_source": "https://coflix.red/",
       "preview_image_url": null,
       "preview_image_checked_at": "2026-11-18T18:44:31+00:00"
     },
     "1430989583746732223": {
       "message_id": "1572407214906544171",
-      "preview_message_id": "1572409943133389040",
       "preview_image_source": "https://purstream.wiki/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T01:08:54+00:00"
+      "preview_image_checked_at": "2026-11-18T20:34:24+00:00"
     },
     "1430991985572839547": {
       "message_id": "1572407217414602883",
@@ -2727,17 +2749,15 @@
     },
     "1430996722745606224": {
       "message_id": "1572407220006817834",
-      "preview_message_id": "1572409953400918036",
       "preview_image_source": "https://yggreborn.org/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T01:08:59+00:00"
+      "preview_image_checked_at": "2026-11-18T20:34:29+00:00"
     },
     "1431052564262162524": {
       "message_id": "1572407223437754462",
-      "preview_message_id": "1572409957461270668",
       "preview_image_source": "https://adnauseam.io/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T01:09:02+00:00"
+      "preview_image_checked_at": "2026-11-18T20:34:32+00:00"
     },
     "1431053281693532251": {
       "message_id": "1572407233508147251",
@@ -2747,17 +2767,15 @@
     },
     "1431054323852378264": {
       "message_id": "1572407237140553873",
-      "preview_message_id": "1572409966583873626",
       "preview_image_source": "https://skidrowreloaded.com/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T01:09:05+00:00"
+      "preview_image_checked_at": "2026-11-18T20:34:35+00:00"
     },
     "1431054520477024297": {
       "message_id": "1572407242010140752",
-      "preview_message_id": "1572409970908209212",
       "preview_image_source": "https://fitgirl-repacks.site/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T01:09:11+00:00"
+      "preview_image_checked_at": "2026-11-18T20:34:38+00:00"
     },
     "1431056283565424650": {
       "message_id": "1572407245633749044",
@@ -2772,8 +2790,7 @@
       "preview_image_checked_at": "2026-11-18T01:09:14+00:00"
     },
     "1431059243968233632": {
-      "message_id": "1572407252051296434",
-      "preview_message_id": "1572409984309002300"
+      "message_id": "1572407252051296434"
     },
     "1431060081784655974": {
       "message_id": "1572407255733641305",
@@ -2783,27 +2800,24 @@
     },
     "1431060780584796270": {
       "message_id": "1572407258841620563",
-      "preview_message_id": "1572409992265343046",
       "preview_image_source": "https://www7.bookys-ebooks.com/magazines/new",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T01:09:18+00:00"
+      "preview_image_checked_at": "2026-11-18T20:34:47+00:00"
     },
     "1431079041015742574": {
       "message_id": "1572407261673037958",
-      "preview_message_id": "1572409996501590117",
       "preview_image_source": "https://cinezzz.club/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T01:09:19+00:00"
+      "preview_image_checked_at": "2026-11-18T20:34:49+00:00"
     },
     "1431085822903455744": {
       "message_id": "1572407264495542285",
       "preview_image_source": "https://fs05.lol/",
-      "preview_image_url": "https://fs05.lol/logo22.png",
-      "preview_image_checked_at": "2026-11-18T18:25:58+00:00"
+      "preview_image_url": "https://fstream.info/fs3.jpg",
+      "preview_image_checked_at": "2026-11-18T20:34:53+00:00"
     },
     "1432836242453827704": {
-      "message_id": "1572407267809034305",
-      "preview_message_id": "1572410004244275351"
+      "message_id": "1572407267809034305"
     },
     "1432836342093578306": {
       "message_id": "1572407273089798257",
@@ -2812,8 +2826,7 @@
       "preview_image_checked_at": "2026-11-18T01:09:22+00:00"
     },
     "1432841164574167070": {
-      "message_id": "1572407276764008581",
-      "preview_message_id": "1572410013870194842"
+      "message_id": "1572407276764008581"
     },
     "1432848239517765632": {
       "message_id": "1572407279758741528",
@@ -2828,8 +2841,7 @@
       "preview_image_checked_at": "2026-11-18T01:09:25+00:00"
     },
     "1565888855159341147": {
-      "message_id": "1572407288604664021",
-      "preview_message_id": "1572410034896507131"
+      "message_id": "1572407288604664021"
     },
     "1565889701225832448": {
       "message_id": "1572407292475875409",
@@ -2839,17 +2851,15 @@
     },
     "1565895227619803287": {
       "message_id": "1572407296556929137",
-      "preview_message_id": "1572410044291612792",
       "preview_image_source": "https://v3x.club/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T01:09:30+00:00"
+      "preview_image_checked_at": "2026-11-18T20:35:10+00:00"
     },
     "1565895933374496890": {
       "message_id": "1572407299673432256",
-      "preview_message_id": "1572410049060540426",
       "preview_image_source": "https://torrent9.to/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T01:09:31+00:00"
+      "preview_image_checked_at": "2026-11-18T20:35:12+00:00"
     },
     "1565898044518568187": {
       "message_id": "1572407302332350485",
