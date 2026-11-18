@@ -2,7 +2,9 @@ name: Synchroniser Discord et publier le catalogue web
 
 on:
   schedule:
-    - cron: '23 */6 * * *'
+    # Vérification intégrale chaque jour à 18 h, heure de Paris, été comme hiver.
+    - cron: '0 18 * * *'
+      timezone: "Europe/Paris"
   workflow_dispatch:
   push:
     branches: [main]
@@ -97,17 +99,20 @@ jobs:
           # 1 uniquement si Discord a confirmé l'endpoint signé :
           # aucun menu inutilisable n'est publié en cas d'échec.
           DISCORD_MIRROR_DROPDOWN_ENABLED: ${{ steps.discord_dropdown.outputs.enabled }}
+          FORCE_DAILY_INTEGRITY_SCAN: ${{ github.event_name == 'schedule' && '1' || '0' }}
         run: python mirror_watch.py
       - name: Recenser et vérifier quotidiennement tous les liens des salons et forums publics
         env:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           DISCORD_GUILD_ID: '1430984645012357263'
           EXCLUDED_CHANNEL_IDS: ${{ vars.EXCLUDED_CHANNEL_IDS }}
+          FORCE_DAILY_INTEGRITY_SCAN: ${{ github.event_name == 'schedule' && '1' || '0' }}
         run: python server_link_watch.py
       - name: Surveiller les sites publics et alimenter l'historique
         env:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           DISCORD_GUILD_ID: '1430984645012357263'
+          FORCE_DAILY_INTEGRITY_SCAN: ${{ github.event_name == 'schedule' && '1' || '0' }}
         run: python site_monitor.py
       - name: Verifier le catalogue web genere
         run: |
