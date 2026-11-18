@@ -8,6 +8,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 import json
+import re
 import os
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -96,6 +97,10 @@ DISCOVERY_COUNTS = {"unreadable": 0, "empty_message": 0, "readable": 0, "with_ur
 
 
 def pick_site_url(api, thread_id: str, title: str) -> str | None:
+    # L'annuaire Movix remplace le lien historique movix.club/Site (404).
+    if re.search(r"(?i)(?<![a-z])movix(?![a-z])", title or ""):
+        DISCOVERY_COUNTS["with_url"] += 1
+        return "https://movix.online/"
     # Le corps du message de depart est prioritaire. Ne pas scanner des
     # conversations d'autres membres pour eviter de prendre un lien parasite.
     message = read_starter_message(api, thread_id)
