@@ -1048,5 +1048,116 @@ class ForumUpdatesTests(unittest.TestCase):
 
 
 
+    def test_purstream_directory_extracts_official_link_not_wiki(self):
+        from forum_updates import purstream_directory_candidates
+        html = (
+            "<html><h2>URL Officielle</h2>"
+            "<a href='https://purstream.gg/'>Accédez à Purstream</a>"
+            "<a href='https://brave.com/'>Partenaire</a></html>"
+        )
+        candidates = purstream_directory_candidates(html)
+        self.assertEqual(candidates, ["https://purstream.gg/"])
+        self.assertNotIn("https://purstream.wiki/", candidates)
+
+    def test_purstream_directory_extracts_embedded_config(self):
+        from forum_updates import purstream_directory_candidates
+        html = (
+            '<html><title>Purstream wiki</title>'
+            '<script>window.siteConfig = {"officialUrl": '
+            '"https://purstream.gg/"}</script></html>'
+        )
+        self.assertEqual(
+            purstream_directory_candidates(html), ["https://purstream.gg/"]
+        )
+
+    def test_purstream_card_separates_direct_site_and_directory(self):
+        from forum_updates import validated_purstream_groups
+        from forum_cards import build_card
+        homepage = "https://purstream.gg/"
+        wiki = "https://purstream.wiki/"
+        html = ("<html><h2>URL Officielle</h2>"
+                "<a href='https://purstream.gg/'>Accédez à Purstream</a></html>")
+        with patch("forum_updates.fetch_html_page", return_value={
+            "html": html, "final_url": wiki
+        }), patch("forum_updates.check_site", return_value={
+            "result": "online", "final_url": homepage, "http_status": 200
+        }), patch("forum_updates.probe_site_name", return_value={
+            "name": "Purstream", "page_health": "content",
+            "final_url": homepage, "evidence": "title"
+        }):
+            groups = validated_purstream_groups([record(wiki)])
+        self.assertEqual(groups[0]["url"], homepage)
+        self.assertEqual(groups[0]["reference_url"], wiki)
+        self.assertTrue(groups[0]["verified"])
+        body = "\n".join(all_text(build_card(groups, "Description", "PurStream")))
+        self.assertIn("✅", body)
+        self.assertEqual(body.count(homepage), 1)
+        self.assertEqual(body.count(wiki), 1)
+        self.assertLess(body.index(wiki), body.index(homepage))
+
+    def test_purstream_fallback_is_not_falsely_green(self):
+        from forum_updates import validated_purstream_groups
+        from forum_cards import build_card
+        with patch.dict("os.environ", {"PURSTREAM_OBSERVED_MAIN": "https://purstream.gg/"}), patch(
+            "forum_updates.check_site", return_value={
+                "result": "restricted", "http_status": 403,
+                "final_url": "https://purstream.gg/"
+            }
+        ), patch("forum_updates.probe_site_name", return_value=None):
+            groups = validated_purstream_groups([record("https://purstream.wiki/")])
+        self.assertTrue(groups[0]["no_active"])
+        self.assertEqual(groups[0]["suggested_url"], "https://purstream.gg/")
+        self.assertFalse(groups[0]["verified"])
+        body = "\n".join(all_text(build_card(groups, "Description", "PurStream")))
+        self.assertIn("Adresse annoncée (non vérifiée)", body)
+        self.assertIn("https://purstream.gg/", body)
+        self.assertNotIn("✅", body)
+
+    def test_purstream_403_with_verified_html_is_accepted(self):
+        from forum_updates import validated_purstream_groups
+        with patch.dict("os.environ", {"PURSTREAM_OBSERVED_MAIN": "https://purstream.gg/"}), patch(
+            "forum_updates.check_site", return_value={
+                "result": "restricted", "http_status": 403,
+                "final_url": "https://purstream.gg/"
+            }
+        ), patch("forum_updates.probe_site_name", return_value={
+            "name": "Purstream", "page_health": "content",
+            "final_url": "https://purstream.gg/"
+        }) as identity:
+            groups = validated_purstream_groups([record("https://purstream.wiki/")])
+        identity.assert_called_once_with("https://purstream.gg/",
+                                         allow_www_fallback=True)
+        self.assertEqual(groups[0]["url"], "https://purstream.gg/")
+        self.assertTrue(groups[0]["verified"])
+        self.assertEqual(groups[0]["status"], "restricted")
+
+    def test_purstream_discord_sync_uses_direct_address(self):
+        homepage = "https://purstream.gg/"
+        wiki = "https://purstream.wiki/"
+        data = {
+            "records": {THREAD: {"thread_id": THREAD,
+                                  "title": "PurStream --Xalaflix--",
+                                  "site_url": wiki}},
+            "server_links": {wiki: record(wiki)},
+        }
+        api = FakeAPI()
+        with patch.dict("os.environ", {"PURSTREAM_OBSERVED_MAIN": homepage}), patch(
+            "forum_updates.check_site",
+            return_value={"result": "online", "final_url": homepage}
+        ), patch("forum_updates.probe_site_name", return_value={
+            "name": "Purstream", "page_health": "content",
+            "final_url": homepage
+        }):
+            first = sync_forum_updates(api, data)
+            second = sync_forum_updates(api, data)
+        self.assertEqual(first["created"], 1)
+        self.assertEqual(second["unchanged"], 1)
+        self.assertEqual(len(api.messages[THREAD]), 1)
+        card = shown(api.messages[THREAD][0])
+        self.assertEqual(card.count(wiki), 1)
+        self.assertEqual(card.count(homepage), 1)
+        self.assertIn("✅", card)
+
+
 if __name__ == "__main__":
     unittest.main()
