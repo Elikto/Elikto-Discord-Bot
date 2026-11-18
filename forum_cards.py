@@ -306,7 +306,8 @@ def build_card(groups, description, title=None, credentials=None, preview_image_
                     "🟡 **🌐 Site actif**\n"
                     "Aucune adresse active vérifiée pour le moment.\n"
                     "-# Anciennes adresses bloquées exclues."
-                    + ("\n**🔎 Adresse annoncée (non vérifiée)**\n" + candidate
+                    + ("\n**🔎 " + (group.get("candidate_label")
+                          or "Adresse annoncée (non vérifiée)") + "**\n" + candidate
                        if candidate and candidate != reference else "")
                     + last_check_line(group.get("checked_at"))
                 ),

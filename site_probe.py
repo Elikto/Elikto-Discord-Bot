@@ -148,7 +148,7 @@ def single_request(url: str, method: str, timeout: float = 7) -> tuple[int, str 
         connection.close()
 
 
-def check_site(url: str) -> dict:
+def check_site(url: str, *, allow_www_retry: bool = True) -> dict:
     """Reponse reelle du serveur, sans interpretation de son contenu."""
     initial = clean_url(url)
     if not initial:
@@ -204,11 +204,28 @@ def check_site(url: str) -> dict:
         return {"result": "unknown", "http_status": None,
                 "final_url": current, "reason": "Trop de redirections"}
     except (OSError, TimeoutError, ValueError, ssl.SSLError, http.client.HTTPException) as exc:
+        # Un échec réseau depuis GitHub (DNS, TLS, socket, timeout) ne prouve
+        # jamais que le serveur est hors ligne. Le site peut fonctionner dans
+        # le navigateur et le domaine nu peut nécessiter la variante www.
+        hostname = (urlsplit(initial).hostname or "")
+        if (allow_www_retry and not hostname.startswith("www.")
+                and urlsplit(initial).path in ("", "/")
+                and not any(hostname.endswith(suffix) for suffix in (
+                    ".localhost", ".local", ".internal"
+                ))):
+            alternate = clean_url(urlunsplit((
+                urlsplit(initial).scheme, "www." + hostname, "/", "", ""
+            )))
+            if alternate:
+                fallback = check_site(alternate, allow_www_retry=False)
+                if fallback.get("result") in ("online", "restricted"):
+                    fallback["fallback_from"] = initial
+                    return fallback
         return {
-            "result": "failed",
+            "result": "unknown",
             "http_status": None,
             "final_url": current,
-            "reason": type(exc).__name__[:55],
+            "reason": "Réseau indéterminé (" + type(exc).__name__[:40] + ")",
         }
 
 

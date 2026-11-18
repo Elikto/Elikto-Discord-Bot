@@ -117,6 +117,9 @@ jobs:
           # Observation de l'annuaire par capture du 18/11/2026 :
           # candidats seulement, JAMAIS considérés vérifiés sans sonde HTML.
           # Les catégories de l'annuaire en ligne restent prioritaires.
+          # Adresse non bloquée indiquée par l'annuaire officiel le 18/11/2026.
+          # À vérifier séparément : une annonce n'est pas une preuve d'accès.
+          COFLIX_OBSERVED_MAIN: 'https://coflix.red/'
           FLEMMIX_OBSERVED_MAIN: 'https://flemmix.uno/'
           FLEMMIX_FAI_BLOCKED_HOSTS: 'wiflix.red,flemmix.men,flemmix.wales,flemmix.vip,flemmix.casa,flemmix.prof,wiflix.re,flemmix.cafe'
           # Adresse indiquée par une capture du wiki le 18/11/2026.

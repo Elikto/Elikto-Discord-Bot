@@ -1247,5 +1247,60 @@ class ForumUpdatesTests(unittest.TestCase):
 
 
 
+    def test_coflix_current_red_domain_is_shown_when_portal_get_is_blocked(self):
+        from forum_updates import validated_directory_groups
+        from forum_cards import build_card
+        with patch.dict("os.environ", {
+            "COFLIX_OBSERVED_MAIN": "https://coflix.red/",
+            "PLAYWRIGHT_BROWSER_FALLBACK": "0",
+        }), patch("forum_updates.check_site", side_effect=[
+            {"result": "unknown", "http_status": None},
+            {"result": "unknown", "http_status": None},
+        ]), patch("forum_updates.fetch_html_page", return_value=None), patch(
+            "forum_updates.probe_site_name", return_value=None
+        ):
+            group = validated_directory_groups(
+                [record("https://coflix.boo/", status="unknown")], "coflix"
+            )[0]
+        self.assertTrue(group["no_active"])
+        self.assertFalse(group["verified"])
+        self.assertEqual(group["suggested_url"], "https://coflix.red/")
+        self.assertEqual(group["reference_url"], "https://coflix.domains/")
+        rendered = "\n".join(all_text(build_card(
+            [group], "Description originale", "CoFlix"
+        )))
+        self.assertIn("Adresse actuelle annoncée (non vérifiée)", rendered)
+        self.assertIn("https://coflix.red/", rendered)
+        self.assertIn("https://coflix.domains/", rendered)
+        self.assertNotIn("coflix.ninja", rendered)
+        self.assertNotIn("✅", rendered)
+
+    def test_coflix_red_is_verified_only_if_actual_page_is_identified(self):
+        from forum_updates import validated_directory_groups
+        html = (
+            "<h2>Accéder à Coflix</h2>"
+            "<a href='https://coflix.red/'>Coflix.Red Adresse disponible 05/11/2026</a>"
+            "<a href='https://coflix.ninja/'>Coflix.ninja Bloqué par les FAI</a>"
+        )
+        with patch.dict("os.environ", {
+            "COFLIX_OBSERVED_MAIN": "https://coflix.red/",
+            "PLAYWRIGHT_BROWSER_FALLBACK": "0",
+        }), patch("forum_updates.check_site", return_value={
+            "result": "online", "final_url": "https://coflix.red/",
+        }), patch("forum_updates.fetch_html_page", return_value={
+            "html": html, "final_url": "https://coflix.domains/",
+        }), patch("forum_updates.probe_site_name", return_value={
+            "name": "Coflix", "page_health": "content",
+            "final_url": "https://coflix.red/",
+        }):
+            group = validated_directory_groups(
+                [record("https://coflix.boo/", status="unknown")], "coflix"
+            )[0]
+        self.assertEqual(group["url"], "https://coflix.red/")
+        self.assertTrue(group["verified"])
+        self.assertFalse(group["no_active"])
+
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -580,13 +580,29 @@ def validated_directory_groups(linked, kind):
                 previous.append(older)
 
     proposals = []
-    if check_site(hub).get("result") in ("online", "restricted"):
-        try:
-            page = fetch_html_page(hub, timeout=6)
-        except (OSError, TimeoutError, ValueError, UnicodeError):
-            page = None
-        if page:
-            proposals = directory_candidates(page["html"], hub, kind)
+    # Le HEAD du portail peut être bloqué alors qu'un GET HTML fonctionne.
+    # Essayer directement une lecture prudente de l'annuaire, même si la
+    # première sonde renvoie erreur DNS/HTTP (sans forcer les protections).
+    check_site(hub)
+    try:
+        page = fetch_html_page(hub, timeout=6)
+    except (OSError, TimeoutError, ValueError, UnicodeError):
+        page = None
+    if page:
+        proposals = directory_candidates(page["html"], hub, kind)
+
+    if kind == "coflix":
+        # Adresse publiée sur le portail et observée le 18/11/2026.
+        # Ce n'est PAS une preuve HTML : le lien sera marqué non vérifié
+        # tant que sa propre page ne peut pas être inspectée.
+        extra = clean_url(os.getenv("COFLIX_OBSERVED_MAIN", ""))
+        blocked = {
+            h.strip().lower() for h in
+            os.getenv("COFLIX_FAI_BLOCKED_HOSTS", "").split(",") if h.strip()
+        }
+        if (extra and re.fullmatch(r"coflix\.[a-z0-9-]{2,24}", domain(extra))
+                and extra not in proposals and domain(extra) not in blocked):
+            proposals.append(extra)
 
     # Source de secours fournie par l'utilisateur et datée dans le workflow.
     # Un domaine observé n'est JAMAIS présumé actif : il est vérifié exactement
@@ -612,13 +628,21 @@ def validated_directory_groups(linked, kind):
     expected_prefix = DIRECTORIES[kind][1]
     for proposed in proposals:
         result = check_site(proposed)
-        if result.get("result") != "online":
-            continue
+        if result.get("result") not in ("online", "restricted"):
+            if not (kind == "coflix" and result.get("result") == "unknown"):
+                continue
         destination = clean_url(result.get("final_url") or proposed)
         # Lien publicitaire/intermédiaire ou raccourcisseur : aucune coche verte.
         if not destination or not domain(destination).startswith(expected_prefix):
             continue
-        identity = probe_site_name(destination)
+        status = result.get("result")
+        identity = (probe_site_name(destination, allow_www_fallback=True)
+                    if status in ("restricted", "unknown")
+                    else probe_site_name(destination))
+        if (not identity and os.getenv("PLAYWRIGHT_BROWSER_FALLBACK") == "1"
+                and kind == "coflix"):
+            from browser_probe import probe_browser_site
+            identity = probe_browser_site(destination)
         if not identity:
             continue
         if identity.get("page_health") in (
@@ -648,6 +672,8 @@ def validated_directory_groups(linked, kind):
         "reference_url": hub,
         "no_active": not bool(found),
         "suggested_url": (proposals[0] if not found and proposals else None),
+        "candidate_label": ("Adresse actuelle annoncée (non vérifiée)"
+                            if kind == "coflix" else None),
         # Historique conservé dans le suivi, pas dans la carte : ne pas
         # republier d'anciens domaines marqués Bloqué par les FAI.
         "older": [],

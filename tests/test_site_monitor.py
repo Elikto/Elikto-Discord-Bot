@@ -389,5 +389,84 @@ class MonitorTests(unittest.TestCase):
         self.assertFalse(due(self.now.isoformat(), self.now + timedelta(hours=12)))
 
 
+    def test_timeout_does_not_prove_draupnirr_is_offline(self):
+        url = "https://draupnirr.xyz/"
+        with patch("site_probe.single_request", side_effect=TimeoutError):
+            result = check_site(url)
+        self.assertEqual(result["result"], "unknown")
+        self.assertIsNone(result["http_status"])
+        self.assertIn("TimeoutError", result["reason"])
+
+        s = state()
+        rec = {
+            "thread_id": "100", "title": "Draupnirr",
+            "discord_url": "https://discord.com/channels/1/100",
+            "site_url": url, "status": "suspect",
+            "consecutive_failures": 1,
+        }
+        self.assertEqual(record_check(s, rec, result, self.now), [])
+        self.assertEqual(rec["status"], "unknown")
+        self.assertNotIn("site_unreachable", [e["type"] for e in s["events"]])
+
+    def test_old_offline_network_error_is_corrected_without_false_alarm(self):
+        for hostname, exception in (
+            ("idealo.fr", OSError("connection reset")),
+            ("draupnirr.xyz", TimeoutError("timed out")),
+            ("coflix.boo", OSError("DNS unavailable")),
+        ):
+            with self.subTest(host=hostname):
+                url = "https://" + hostname + "/"
+                s = state()
+                rec = {
+                    "thread_id": "100", "title": hostname,
+                    "discord_url": "https://discord.com/channels/1/100",
+                    "site_url": url, "status": "offline",
+                    "http_status": None, "consecutive_failures": 2,
+                }
+                with patch("site_probe.single_request", side_effect=exception):
+                    result = check_site(url)
+                self.assertEqual(result["result"], "unknown")
+                alerts = record_check(s, rec, result, self.now)
+                self.assertEqual(rec["status"], "unknown")
+                self.assertEqual(rec["consecutive_failures"], 0)
+                self.assertEqual([x["type"] for x in alerts],
+                                 ["site_check_inconclusive"])
+                self.assertNotIn("site_unreachable", [x["type"] for x in alerts])
+
+    def test_idealo_root_www_fallback_can_recover_from_dns_error(self):
+        def simulated_request(url, method):
+            if url == "https://idealo.fr/":
+                raise OSError("bare domain DNS fails")
+            if url == "https://www.idealo.fr/":
+                return (403, None)
+            raise AssertionError(url)
+        with patch("site_probe.single_request", side_effect=simulated_request):
+            check = check_site("https://idealo.fr/")
+        self.assertEqual(check["result"], "restricted")
+        self.assertEqual(check["http_status"], 403)
+        self.assertEqual(check["final_url"], "https://www.idealo.fr/")
+        self.assertEqual(check["fallback_from"], "https://idealo.fr/")
+
+    def test_legacy_failed_response_without_404_cannot_trigger_offline(self):
+        rec = {
+            "thread_id": "100", "title": "Idealo",
+            "discord_url": "https://discord.com/channels/1/100",
+            "site_url": "https://idealo.fr/",
+            "status": "suspect", "consecutive_failures": 1,
+        }
+        for code in (None, 403, 500, 503):
+            with self.subTest(code=code):
+                rec["status"] = "suspect"
+                rec["consecutive_failures"] = 1
+                s = state()
+                result = record_check(s, rec, {
+                    "result": "failed", "http_status": code,
+                    "final_url": rec["site_url"],
+                }, self.now)
+                self.assertEqual(rec["status"], "unknown")
+                self.assertEqual(result, [])
+
+
+
 if __name__ == "__main__":
     unittest.main()
