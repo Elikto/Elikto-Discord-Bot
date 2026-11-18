@@ -110,6 +110,78 @@ def announced_rename(raw):
     }
 
 
+# Les adresses annoncées dans les bannières ne sont pas des redirections
+# HTTP. Elles peuvent être insérées dans du HTML ou une chaîne JS.
+NOTICE_PATTERN = re.compile(
+    r"(?i)(?:passe(?:r|z)?\s+sur|utiliser|continue(?:r|z)?\s+sur|"
+    r"nouvelle?\s+adresse(?:\s+officielle)?\s*[:=\-]\s*|"
+    r"migr(?:er|ez|ation)\s+(?:vers|sur))"
+    r"\s+(?:https?://)?(?:www\.)?"
+    r"(?P<domain>[a-z0-9][a-z0-9-]{1,61}(?:\.[a-z0-9-]{2,24})+)",
+    flags=re.I,
+)
+
+
+def parse_site_migration(html_text, source_url):
+    """Extraire une annonce 'Passe sur Webflix.surf, même compte'.
+
+    Ne pas prendre un lien quelconque, une publicité ou une image pour une
+    preuve. On vérifie la formulation et la cohérence avec le domaine source.
+    """
+    source = clean_url(source_url)
+    if not source:
+        return None
+    source_host = (urlsplit(source).hostname or "").removeprefix("www.")
+    raw = html.unescape(str(html_text or "")[:MAX_HTML])
+    # Échappements fréquents des bundles JS et du HTML embarqué.
+    raw = (raw.replace(r"\u002e", ".").replace(r"\x2e", ".")
+              .replace(r"\/", "/").replace("\\n", " "))
+    raw = re.sub(r"<[^>]+>", " ", raw)
+    for match in NOTICE_PATTERN.finditer(raw):
+        domain = match.group("domain").rstrip(".,;:")
+        target = clean_url("https://" + domain + "/")
+        if not target:
+            continue
+        target_host = (urlsplit(target).hostname or "").removeprefix("www.")
+        if target_host == source_host:
+            continue
+        surrounding = raw[max(0, match.start() - 180):min(len(raw), match.end() + 180)].casefold()
+        brand = source_host.split(".")[0]
+        new_brand = target_host.split(".")[0]
+        # Un nom identique avec nouvelle extension est crédible, ou bien
+        # la notice mentionne un compte commun / une adresse officielle.
+        corroboration = (
+            brand == new_brand
+            or "même compte" in surrounding
+            or "meme compte" in surrounding
+            or "adresse officielle" in surrounding
+            or "compte et listes synchronis" in surrounding
+        )
+        if not corroboration:
+            continue
+        return {
+            "announced_url": target,
+            "previous_url": source,
+            "evidence": "html:migration_notice",
+            "confidence": "announced",
+        }
+    return None
+
+
+def probe_site_migration(url):
+    """Détecter une adresse annoncée dans une page HTML, même si HTTP 451.
+
+    Une page construite entièrement par JavaScript peut rester illisible.
+    """
+    try:
+        page = fetch_html_page(url)
+    except (OSError, ValueError, TimeoutError, UnicodeError):
+        return None
+    if not page:
+        return None
+    return parse_site_migration(page["html"], url)
+
+
 def parse_site_name(html_text):
     try:
         parser = BrandHTMLParser()
@@ -172,7 +244,7 @@ def fetch_html_page(url, timeout=7):
                     return None
                 current = nxt
                 continue
-            if status not in (200, 206):
+            if status not in (200, 206, 451):
                 return None
             content_type = (response.getheader("Content-Type") or "").lower()
             if "text/html" not in content_type and "application/xhtml+xml" not in content_type:
