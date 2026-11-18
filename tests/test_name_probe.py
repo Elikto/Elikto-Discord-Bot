@@ -292,5 +292,55 @@ class BrandDetectionTests(unittest.TestCase):
         self.assertEqual(data["final_url"], "https://new.example.org/")
 
 
+    def test_restricted_cinezzz_retries_with_browser_html_headers(self):
+        url = "https://cinezzz.club/"
+        calls = []
+        def fetch(target, *, browser_compatible=False):
+            calls.append((target, browser_compatible))
+            if not browser_compatible:
+                return None  # La première requête reçoit HTTP 403.
+            return {
+                "html": ("<html><title>Films et Séries en Streaming VF et VOSTFR "
+                         "| CinezZz</title><body><nav>Films Séries</nav></body></html>"),
+                "final_url": url,
+            }
+        with patch("name_probe.fetch_html_page", side_effect=fetch):
+            result = probe_site_name(url, allow_www_fallback=True)
+        self.assertEqual(result["page_health"], "content")
+        self.assertEqual(result["name"], "cinezzz")
+        self.assertEqual(result["evidence"], "html:title_brand")
+        self.assertEqual(calls, [(url, False), (url, True)])
+
+    def test_restricted_site_tries_www_but_rejects_other_domains(self):
+        url = "https://cinezzz.club/"
+        html = "<html><title>Regarder films et séries | CinezZz</title></html>"
+        def fetch(target, *, browser_compatible=False):
+            if target == "https://www.cinezzz.club/":
+                return {"html": html, "final_url": target}
+            return None
+        with patch("name_probe.fetch_html_page", side_effect=fetch) as probe:
+            result = probe_site_name(url, allow_www_fallback=True)
+        self.assertEqual(result["final_url"], "https://www.cinezzz.club/")
+        self.assertEqual(probe.call_count, 3)
+
+        with patch("name_probe.fetch_html_page", return_value={
+            "html": html, "final_url": "https://ad-redirect.example.net/"
+        }):
+            self.assertIsNone(probe_site_name(url, allow_www_fallback=True))
+
+    def test_restricted_site_does_not_verify_parked_or_unrelated_page(self):
+        url = "https://cinezzz.club/"
+        pages = (
+            "<html><title>CinezZz</title><p>This domain is for sale</p></html>",
+            "<html><title>Unrelated Web Directory</title><p>Films</p></html>",
+        )
+        for html in pages:
+            with self.subTest(html=html), patch("name_probe.fetch_html_page",
+                    return_value={"html": html, "final_url": url}):
+                result = probe_site_name(url, allow_www_fallback=True)
+                self.assertFalse(result and result.get("page_health") == "content")
+
+
+
 if __name__ == "__main__":
     unittest.main()
