@@ -155,8 +155,11 @@ class OfficialAddressLinkParser(HTMLParser):
         self.context = ""
         self.current = None
         self.links = []
+        self.meta_refresh = []
 
     def handle_starttag(self, tag, attrs):
+        if tag == "meta" and dict(attrs).get("http-equiv", "").casefold() == "refresh":
+            self.meta_refresh.append(dict(attrs).get("content") or "")
         if tag == "a":
             href = dict(attrs).get("href")
             self.current = {
@@ -207,6 +210,27 @@ def announced_url_from_official_link(html_text, source):
             "evidence": "html:official_address_link",
             "confidence": "announced",
         }
+    # Certaines pages migrées ne montrent aucun lien, mais utilisent
+    # <meta http-equiv="refresh" content="0; URL=https://nouveau.site/">.
+    # Ne suivre que les redirections rapides et vers une autre adresse publique.
+    for refresh in parser.meta_refresh:
+        match = re.match(
+            r"""(?i)^\s*(?P<delay>\d{1,2})\s*;\s*url\s*=\s*['"]?(?P<url>[^'"\s;]+)""",
+            refresh,
+        )
+        if not match or int(match.group("delay")) > 10:
+            continue
+        target = clean_url(urljoin(source, match.group("url")))
+        if not target:
+            continue
+        target_host = (urlsplit(target).hostname or "").removeprefix("www.")
+        if target_host != source_host:
+            return {
+                "announced_url": target,
+                "previous_url": source,
+                "evidence": "html:meta_refresh",
+                "confidence": "announced",
+            }
     return None
 
 
