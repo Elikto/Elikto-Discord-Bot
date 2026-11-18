@@ -897,7 +897,7 @@
         "https://zinzov.com/",
         "https://didvip.com/"
       ],
-      "last_synced": "2026-11-18T20:50:47+00:00",
+      "last_synced": "2026-11-18T20:55:17+00:00",
       "target_states": {
         "https://nandov.com/": {
           "url": "https://nandov.com/",
@@ -1628,7 +1628,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1660,7 +1660,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 503,
       "reason": "Réponse HTTP 503 temporaire ou protection automatique",
@@ -1687,7 +1687,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1751,7 +1751,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1783,7 +1783,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1810,7 +1810,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1837,7 +1837,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1869,7 +1869,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1901,7 +1901,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1933,7 +1933,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": null,
       "reason": "TimeoutError",
@@ -1957,7 +1957,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -1989,7 +1989,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 451,
       "reason": null,
@@ -2024,7 +2024,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2080,7 +2080,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2112,7 +2112,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 206,
       "reason": null,
@@ -2139,7 +2139,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2171,7 +2171,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2203,7 +2203,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2243,7 +2243,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 403,
       "reason": null,
@@ -2269,7 +2269,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": null,
       "reason": "gaierror",
@@ -2293,7 +2293,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2325,7 +2325,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2357,7 +2357,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 206,
       "reason": null,
@@ -2389,7 +2389,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2421,7 +2421,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2453,7 +2453,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2485,7 +2485,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2517,7 +2517,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2549,7 +2549,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 403,
       "reason": null,
@@ -2575,7 +2575,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2607,7 +2607,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": null,
       "reason": "OSError",
@@ -2631,7 +2631,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": null,
       "reason": "OSError",
@@ -2655,7 +2655,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2687,7 +2687,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T20:50:48+00:00",
+      "last_seen": "2026-11-18T20:55:18+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2704,9 +2704,9 @@
     }
   },
   "server_scan": {
-    "at": "2026-11-18T20:50:48+00:00",
+    "at": "2026-11-18T20:55:18+00:00",
     "counts": {
-      "messages_read": 73,
+      "messages_read": 75,
       "locations_scanned": 37,
       "links_found": 34,
       "locations_discovered": 37,
@@ -2721,8 +2721,8 @@
     "new_announced_address_checks": 0,
     "forum_updates": {
       "created": 0,
-      "updated": 13,
-      "unchanged": 15,
+      "updated": 20,
+      "unchanged": 8,
       "skipped": 0,
       "descriptions_found": 27,
       "description_missing": 1,
@@ -2743,19 +2743,19 @@
       "message_id": "1572407208673681567",
       "preview_image_source": "https://flemmix.mom/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T20:51:03+00:00"
+      "preview_image_checked_at": "2026-11-18T20:55:37+00:00"
     },
     "1430989234264870912": {
       "message_id": "1572407211903287411",
       "preview_image_source": "https://coflix.red/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T20:51:13+00:00"
+      "preview_image_checked_at": "2026-11-18T20:55:46+00:00"
     },
     "1430989583746732223": {
       "message_id": "1572407214906544171",
       "preview_image_source": "https://purstream.wiki/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T20:51:15+00:00"
+      "preview_image_checked_at": "2026-11-18T20:55:49+00:00"
     },
     "1430991985572839547": {
       "message_id": "1572407217414602883",
@@ -2767,13 +2767,13 @@
       "message_id": "1572407220006817834",
       "preview_image_source": "https://yggreborn.org/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T20:51:20+00:00"
+      "preview_image_checked_at": "2026-11-18T20:55:55+00:00"
     },
     "1431052564262162524": {
       "message_id": "1572407223437754462",
       "preview_image_source": "https://adnauseam.io/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T20:51:23+00:00"
+      "preview_image_checked_at": "2026-11-18T20:55:58+00:00"
     },
     "1431053281693532251": {
       "message_id": "1572407233508147251",
@@ -2785,13 +2785,13 @@
       "message_id": "1572407237140553873",
       "preview_image_source": "https://skidrowreloaded.com/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T20:51:26+00:00"
+      "preview_image_checked_at": "2026-11-18T20:56:04+00:00"
     },
     "1431054520477024297": {
       "message_id": "1572407242010140752",
       "preview_image_source": "https://fitgirl-repacks.site/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T20:51:28+00:00"
+      "preview_image_checked_at": "2026-11-18T20:56:07+00:00"
     },
     "1431056283565424650": {
       "message_id": "1572407245633749044",
@@ -2809,7 +2809,7 @@
       "message_id": "1572407252051296434",
       "preview_image_source": "https://fr.z-library.ec/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T20:51:35+00:00"
+      "preview_image_checked_at": "2026-11-18T20:56:15+00:00"
     },
     "1431060081784655974": {
       "message_id": "1572407255733641305",
@@ -2821,13 +2821,13 @@
       "message_id": "1572407258841620563",
       "preview_image_source": "https://www7.bookys-ebooks.com/magazines/new",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T20:51:39+00:00"
+      "preview_image_checked_at": "2026-11-18T20:56:21+00:00"
     },
     "1431079041015742574": {
       "message_id": "1572407261673037958",
       "preview_image_source": "https://cinezzz.club/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T20:51:42+00:00"
+      "preview_image_checked_at": "2026-11-18T20:56:23+00:00"
     },
     "1431085822903455744": {
       "message_id": "1572407264495542285",
@@ -2872,13 +2872,13 @@
       "message_id": "1572407296556929137",
       "preview_image_source": "https://v3x.club/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T20:51:57+00:00"
+      "preview_image_checked_at": "2026-11-18T20:56:39+00:00"
     },
     "1565895933374496890": {
       "message_id": "1572407299673432256",
       "preview_image_source": "https://torrent9.to/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T20:51:58+00:00"
+      "preview_image_checked_at": "2026-11-18T20:56:42+00:00"
     },
     "1565898044518568187": {
       "message_id": "1572407302332350485",
