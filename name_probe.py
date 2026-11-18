@@ -264,6 +264,26 @@ def fetch_html_page(url, timeout=7):
     return None
 
 
+def is_empty_directory_index(html_text):
+    """Reconnaître un répertoire HTTP auto-indexé, pas un catalogue de streaming.
+
+    Le titre/entête doit être explicitement « Index of /... » (Apache/nginx)
+    ou « Directory listing for /... » (serveur Python). Une application JS
+    sans texte visible n'est PAS considérée vide : ne pas inventer une panne.
+    """
+    raw = html.unescape(str(html_text or "")[:MAX_HTML])
+    headings = re.findall(
+        r"<(?:title|h1)\b[^>]*>(.*?)</(?:title|h1)\s*>",
+        raw, flags=re.I | re.S,
+    )
+    for heading in headings:
+        plain = re.sub(r"<[^>]+>", " ", heading)
+        plain = re.sub(r"\s+", " ", plain).strip()
+        if re.match(r"(?i)^(?:index of|directory listing for|index de)\s+/", plain):
+            return True
+    return False
+
+
 def probe_site_name(url):
     """Resultat structure ou None ; un seul GET borne par site et par jour."""
     try:
@@ -272,6 +292,9 @@ def probe_site_name(url):
         return None
     if not page:
         return None
+    if is_empty_directory_index(page["html"]):
+        return {"page_health": "empty_index", "evidence": "html:directory_index",
+                "final_url": page["final_url"]}
     result = parse_site_name(page["html"])
     if not result:
         return None
