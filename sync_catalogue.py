@@ -20,6 +20,7 @@ CHANNEL_CATEGORY = 4
 CHANNEL_FORUM = 15
 MARKER = "elikto:catalog:"
 CATALOG_TOPIC_MARKER = "[elikto-catalogue:v1]"
+SITE_MIRROR_TOPIC_MARKER = "[elikto:site-channel:v1:"
 GUILD_ID = os.getenv("DISCORD_GUILD_ID", "1430984645012357263")
 CHANNEL_ID = os.getenv("CATALOG_CHANNEL_ID", "")
 EXCLUDE = {x.strip() for x in os.getenv("EXCLUDED_CHANNEL_IDS", "").split(",") if x.strip()}
@@ -196,6 +197,13 @@ def get_items(api: DiscordAPI):
     grouped = defaultdict(lambda: defaultdict(list))
     for channel in channels:
         if str(channel["id"]) in EXCLUDE | {CHANNEL_ID}:
+            continue
+        # Les copies textuelles sont déjà représentées par les publications
+        # originales des forums. Les réindexer doublerait 30 sites et ferait
+        # dépasser au catalogue central la limite Discord Components V2.
+        # Elles restent visibles normalement dans la barre latérale.
+        if (channel.get("type") == CHANNEL_TEXT
+                and SITE_MIRROR_TOPIC_MARKER in (channel.get("topic") or "")):
             continue
         if not public_channel(channel, permissions, categories, GUILD_ID):
             continue
