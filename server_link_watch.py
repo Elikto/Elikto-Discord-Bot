@@ -323,6 +323,7 @@ def update_identity(state, record, observation, now, *, first_run):
 
 def watch_server_links(api, state, now=None, *, discover=find_server_links):
     now = now or datetime.now(timezone.utc)
+    force_scan = os.environ.get("FORCE_DAILY_INTEGRITY_SCAN") == "1"
     started = len(state.get("events", []))
     discovered, scan_counts, errors = discover(api)
     records = state.setdefault("server_links", {})
@@ -366,11 +367,11 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
     for rec in records.values():
         if not rec.get("active"):
             continue
-        if due_daily(rec.get("last_checked"), now):
+        if force_scan or due_daily(rec.get("last_checked"), now):
             observation = check_site(rec["site_url"])
             record_check(state, rec, observation, now)
             checked += 1
-        if rec.get("status") == "online" and due_daily(rec.get("name_attempted_at"), now):
+        if rec.get("status") == "online" and (force_scan or due_daily(rec.get("name_attempted_at"), now)):
             rec["name_attempted_at"] = stamp(now)
             identity = probe_site_name(rec["site_url"])
             if identity and identity.get("page_health") == "empty_index":
@@ -392,7 +393,7 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
         # Une fenêtre "Passe sur ..." n'est ni une redirection HTTP ni
         # forcément le titre de la page. Examiner la notice même sur HTTP 451.
         if (rec.get("status") in ("online", "unknown", "restricted")
-                and due_daily(rec.get("migration_attempted_at"), now)):
+                and (force_scan or due_daily(rec.get("migration_attempted_at"), now))):
             rec["migration_attempted_at"] = stamp(now)
             notice = probe_site_migration(rec["site_url"])
             migration_checks += 1
@@ -407,7 +408,7 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
             )
 
         target = rec.get("announced_url")
-        if target and due_daily(rec.get("announced_last_checked"), now):
+        if target and (force_scan or due_daily(rec.get("announced_last_checked"), now)):
             if target not in new_address_checks:
                 new_address_checks[target] = check_site(target)
             checked_target = new_address_checks[target]
