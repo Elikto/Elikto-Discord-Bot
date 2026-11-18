@@ -12,7 +12,7 @@ import re
 from site_probe import check_site, extract_candidate_urls, other_domain, clean_url
 from name_probe import probe_site_name, announced_rename
 from site_discovery import candidate_groups
-from site_monitor import event
+from site_monitor import event, HTTP_PROBE_VERSION
 
 THREAD_ID = "1430988094374547559"
 GUILD_ID = "1430984645012357263"
@@ -102,6 +102,7 @@ def update_probe(item, observation, now, state, first_run=False):
     else:
         item["status"], item["failures"] = "unknown", 0
     item["http_status"] = observation.get("http_status")
+    item["http_probe_version"] = HTTP_PROBE_VERSION
     item["last_checked"] = now.isoformat(timespec="seconds")
     item["reason"] = observation.get("reason")
     item["final_url"] = observation.get("final_url")
@@ -339,7 +340,13 @@ def decorate_destinations(groups, source_items, target_states, now, state):
                         "reason": None, "redirect_url": None, "final_url": None,
                     }
                     target_states[target] = observation
-                if force_scan or not is_checked_today(observation.get("last_checked"), now):
+                old_failed_503 = (
+                    observation.get("status") in ("offline", "suspect")
+                    and int(observation.get("http_status") or 0) >= 500
+                    and int(observation.get("http_probe_version") or 0) < HTTP_PROBE_VERSION
+                )
+                if (force_scan or old_failed_503 or
+                        not is_checked_today(observation.get("last_checked"), now)):
                     update_probe(
                         observation, check_site(target), now, state, first_run=is_new
                     )
@@ -700,7 +707,12 @@ def sync_thread(api, state, now=None):
     for source in sources:
         item = entries[source["url"]]
         migrate_legacy_title(item, now, state, first_run=is_first)
-        if force_scan or not is_checked_today(item.get("last_checked"), now):
+        old_failed_503 = (
+            item.get("status") in ("offline", "suspect")
+            and int(item.get("http_status") or 0) >= 500
+            and int(item.get("http_probe_version") or 0) < HTTP_PROBE_VERSION
+        )
+        if force_scan or old_failed_503 or not is_checked_today(item.get("last_checked"), now):
             update_probe(item, check_site(item["url"]), now, state, first_run=is_first)
             checked += 1
         # Analyser les noms dès l'installation sans refaire les tests HTTP
