@@ -268,6 +268,51 @@ class ForumUpdatesTests(unittest.TestCase):
         self.assertIn("❌ 🌐 https://rogzov.com/93zjfyqk6llf/", text)
         self.assertIn("Page vide : index de répertoire détecté", text)
 
+    def test_credentials_in_a_separate_author_reply_appear_under_description(self):
+        data = state()
+        data["records"][THREAD]["title"] = "C411"
+        api = FakeAPI()
+        base = "Tracker semi-privé, inscription et ratio positif obligatoire."
+        reply = "Id : exemple-utilisateur\nmdp : test-secret-123"
+        api.messages[THREAD] = [
+            {"id": THREAD, "author": {"id": "human"}, "content": base},
+            {"id": str(int(THREAD) + 1), "author": {"id": "human"},
+             "content": reply},
+        ]
+        first = sync_forum_updates(api, data)
+        self.assertEqual(first["created"], 1)
+        cards = [message for message in api.messages[THREAD]
+                 if message.get("components")]
+        self.assertEqual(len(cards), 1)
+        body = shown(cards[0])
+        self.assertIn(base, body)
+        self.assertIn("🔐 Identifiants", body)
+        self.assertIn("👤 Utilisateur :** exemple-utilisateur", body)
+        self.assertIn("🔑 Mot de passe :** ||test-secret-123||", body)
+        self.assertEqual(body.count("test-secret-123"), 1)
+        self.assertNotIn("test-secret-123", repr(data))
+        self.assertEqual(api.messages[THREAD][1]["content"], reply)
+        second = sync_forum_updates(api, data)
+        self.assertEqual(second["unchanged"], 1)
+        self.assertEqual(len([m for m in api.messages[THREAD]
+                              if m.get("components")]), 1)
+
+    def test_credentials_from_another_author_are_not_published(self):
+        data = state()
+        api = FakeAPI()
+        api.messages[THREAD] = [
+            {"id": THREAD, "author": {"id": "owner"}, "content": "Description"},
+            {"id": str(int(THREAD) + 1), "author": {"id": "stranger"},
+             "content": "Id : autre-utilisateur\nmdp : secret-autre"},
+            {"id": str(int(THREAD) + 2), "author": {"id": "bot", "bot": True},
+             "content": "Id : faux-utilisateur\nmdp : secret-bot"},
+        ]
+        sync_forum_updates(api, data)
+        body = "\n".join(shown(m) for m in api.messages[THREAD] if m.get("components"))
+        self.assertNotIn("Identifiants", body)
+        self.assertNotIn("secret-autre", body)
+        self.assertNotIn("secret-bot", body)
+
     def test_missing_original_description_is_not_invented(self):
         data = state()
         api = FakeAPI()
