@@ -46,6 +46,31 @@ class BrandDetectionTests(unittest.TestCase):
         self.assertIsNone(announced_rename("NANDOV — Films et séries en HD"))
         self.assertIsNone(announced_rename("MOMDAX devient MOMDAX.com"))
 
+    def test_fstream_official_address_as_visible_text_without_href(self):
+        from name_probe import parse_site_migration
+        page = (
+            "<html><head><title>French Stream - Accès au site</title></head>"
+            "<body><a href='https://fstv.rest/'>Service IPTV</a>"
+            "<div class='current'><h2>URL Éphémère Du moment</h2>"
+            "<div class='url'><strong>FS5.LOL</strong></div></div>"
+            "<p>Accédez directement à votre compte FS</p>"
+            "<a href='https://fsound.lol/'>Écouter la musique</a></body></html>"
+        )
+        found = parse_site_migration(page, "https://fstream.info/")
+        self.assertEqual(found["announced_url"], "https://fs5.lol/")
+        self.assertEqual(found["evidence"], "html:official_address_text")
+
+    def test_fstream_only_accepts_domain_immediately_after_official_cue(self):
+        from name_probe import parse_site_migration
+        page = (
+            "<div>URL Éphémère Du moment</div>"
+            "<p>Chargement en cours, veuillez patienter</p>"
+            "<a href='https://unrelated.example.org/'>Service musique</a>"
+        )
+        self.assertIsNone(parse_site_migration(page, "https://fstream.info/"))
+        no_cue = "<h2>Visiter des sites</h2><strong>fs5.lol</strong>"
+        self.assertIsNone(parse_site_migration(no_cue, "https://fstream.info/"))
+
     def test_fstream_landing_portal_link_updates_without_hardcoding_domain(self):
         from name_probe import parse_site_migration
         html = """
