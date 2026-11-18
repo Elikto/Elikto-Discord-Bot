@@ -169,6 +169,10 @@ def update_name(item, identity, now, state, first_run=False):
     if not identity or not identity.get("name"):
         if item.get("page_health") == "empty_index" and item.get("status") == "online":
             item["status"] = "empty_index"
+        elif item.get("page_health") == "content":
+            # Un site vérifié hier mais illisible aujourd'hui n'est plus
+            # considéré comme vérifié par l'analyse HTML.
+            item["page_health"] = "unknown"
         return
     item["page_health"] = "content"
     if item.get("reason") == "Répertoire de fichiers au lieu du site attendu":
