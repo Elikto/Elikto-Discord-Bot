@@ -309,8 +309,18 @@ def watch_catalogue(api, catalogue: dict, state: dict, now=None) -> tuple[dict, 
                 elif not record.get("site_url"):
                     record["status"] = "missing_url"
 
+                # Reprendre les migrations détectées par le scan global
+                # des messages (ex. Webflix.art -> Webflix.surf).
+                migration = next(
+                    (rec for rec in state.get("server_links", {}).values()
+                     if rec.get("site_url") == record.get("site_url")
+                     and rec.get("announced_url")),
+                    None,
+                )
                 item["monitor"] = {
                     "site_url": record.get("site_url"),
+                    "announced_url": migration.get("announced_url") if migration else None,
+                    "announced_status": migration.get("announced_status") if migration else None,
                     "status": record["status"],
                     "last_checked": record.get("last_checked"),
                     "http_status": record.get("http_status"),
@@ -349,6 +359,11 @@ def watch_catalogue(api, catalogue: dict, state: dict, now=None) -> tuple[dict, 
             "http_status": rec.get("http_status"),
             "redirect_url": rec.get("redirect_url"),
             "pending_name": rec.get("pending_name"),
+            "announced_url": rec.get("announced_url"),
+            "announced_status": rec.get("announced_status"),
+            "announced_http_status": rec.get("announced_http_status"),
+            "migration_evidence": rec.get("migration_evidence"),
+            "other_previous_urls": rec.get("other_previous_urls", []),
             "source_count": rec.get("source_count", 0),
             "sources": rec.get("sources", [])[:6],
             "first_seen": rec.get("first_seen"),
@@ -447,6 +462,7 @@ def notify_discord(api, guild_id: str, alerts: list[dict]) -> int:
         "server_site_removed": "➖ Site retiré du serveur",
         "server_name_suspected": "🟡 Nouveau nom détecté dans le serveur",
         "server_name_changed": "✅ Changement de nom confirmé dans le serveur",
+        "server_migration_announced": "🔄 Nouvelle adresse annoncée par le site",
     }
     count = 0
     # Une alerte par changement important, sans mention ni spam de masse.
