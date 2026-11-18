@@ -218,6 +218,7 @@ def public_mirrors(state: dict, thread_id: str) -> list[dict]:
 
 def watch_catalogue(api, catalogue: dict, state: dict, now=None) -> tuple[dict, list[dict]]:
     now = now or utc_now()
+    force_scan = os.environ.get("FORCE_DAILY_INTEGRITY_SCAN") == "1"
     alerts = []
     existing = state["records"]
     initial_index = not existing
@@ -276,7 +277,7 @@ def watch_catalogue(api, catalogue: dict, state: dict, now=None) -> tuple[dict, 
                     tracked_url = state.get("tracked_threads", {}).get(thread_id, {}).get("address")
                 needs_discovery = (
                     tracked_url != record.get("site_url") if tracked_url else (
-                        not record.get("site_url") or due(record.get("last_discovery"), now)
+                        force_scan or not record.get("site_url") or due(record.get("last_discovery"), now)
                     )
                 )
                 if needs_discovery:
@@ -308,7 +309,7 @@ def watch_catalogue(api, catalogue: dict, state: dict, now=None) -> tuple[dict, 
                                     alert=True,
                                 ))
 
-                if record.get("site_url") and due(record.get("last_checked"), now):
+                if record.get("site_url") and (force_scan or due(record.get("last_checked"), now)):
                     observation = check_site(record["site_url"])
                     alerts.extend(record_check(state, record, observation, now))
                 elif not record.get("site_url"):
