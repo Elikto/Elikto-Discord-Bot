@@ -225,7 +225,7 @@ def credentials_from_author_posts(api, thread_id, bot_id):
     return latest
 
 
-def build_card(groups, description, title=None, credentials=None):
+def build_card(groups, description, title=None, credentials=None, preview_image_url=None):
     """Fiche au nom du site, adresse actuelle et description d'origine."""
     if not groups:
         return None
@@ -275,6 +275,15 @@ def build_card(groups, description, title=None, credentials=None):
             "type": 10,
             "content": "**🔐 Accès VIP**\n**🔑 Phrase secrète :** ||"
                        + credentials["vip_phrase"].replace("||", "| |") + "||",
+        })
+    if preview_image_url:
+        # Le composant Media Gallery est inclus DANS le Container Components V2.
+        parts.append({
+            "type": 12,
+            "items": [{
+                "media": {"url": preview_image_url},
+                "description": "Aperçu visuel de " + heading,
+            }],
         })
     if len(parts) > 38:
         raise ValueError("Description trop longue pour une carte Discord")
