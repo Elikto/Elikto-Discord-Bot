@@ -272,13 +272,18 @@ def build_card(groups, description, title=None, credentials=None, preview_image_
                 "content": "**🔎 Site de référence**\n" + reference,
             })
         if no_active:
-            # Conserver la référence sans présenter un domaine FAI-bloqué
-            # ou un raccourcisseur comme l'adresse actuelle.
+            # La source annonce éventuellement une adresse récente, mais
+            # notre sonde ne l'a pas encore vérifiée : ce n'est PAS un site actif.
+            candidate = clean_url(group.get("suggested_url"))
             parts.append({
                 "type": 10,
-                "content": "🟡 **🌐 Site actif**\n"
-                           "Aucune adresse active vérifiée pour le moment.\n"
-                           "-# Anciennes adresses bloquées ou non confirmées exclues.",
+                "content": (
+                    "🟡 **🌐 Site actif**\n"
+                    "Aucune adresse active vérifiée pour le moment.\n"
+                    "-# Anciennes adresses bloquées exclues."
+                    + ("\n**🔎 Adresse annoncée (non vérifiée)**\n" + candidate
+                       if candidate and candidate != reference else "")
+                ),
             })
             continue
         status = group.get("status")
