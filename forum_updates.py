@@ -294,9 +294,12 @@ class StreamingDirectoryParser(HTMLParser):
         elif re.search(r"faux domaines?|sites? frauduleux|fake domains?", folded):
             self.blocked_category = True
             self.active_category = False
-        elif re.search(r"domaines? actifs?|liens? principaux?|"
-                       r"adresses? (?:disponibles?|actives?|officielles?)|"
-                       r"nouveaux? domaines?|nos sites", folded):
+        elif re.search(
+            r"^(?:domaines actifs?|liens? principaux?|"
+            r"adresses disponibles?|adresses officielles?|"
+            r"nouveaux? domaines?|nos sites)\b",
+            folded,
+        ):
             self.blocked_category = False
             self.active_category = True
 
@@ -318,7 +321,9 @@ class StreamingDirectoryParser(HTMLParser):
             return
         was_blocked = self.blocked_category
         was_active = self.active_category
-        if self.heading_tag is None:
+        # Un intitulé à l'intérieur d'une ancre (ex. « Adresse disponible »)
+        # ne peut JAMAIS annuler la catégorie « Bloqué par les FAI ».
+        if self.heading_tag is None and self.current is None:
             self._section(clean)
         category_changed = (
             was_blocked != self.blocked_category
@@ -390,7 +395,6 @@ def directory_candidates(html_text, hub, kind):
                 local,
             )) or (
                 bool(re.search(r"\blien principal\b", before))
-                and not is_blocked_directory_entry(before)
             ) or bool(entry.get("active_category"))
         if suitable and proposed not in candidates:
             candidates.append(proposed)
