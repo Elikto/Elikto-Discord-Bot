@@ -322,6 +322,19 @@ def watch_catalogue(api, catalogue: dict, state: dict, now=None) -> tuple[dict, 
                      and rec.get("announced_url")),
                     None,
                 )
+                # L'inspection HTML du scan global prévaut sur un simple
+                # résultat HTTP : un « Index of / » n'est pas un site actif.
+                index_site = next(
+                    (site for site in state.get("server_links", {}).values()
+                     if site.get("active", True)
+                     and site.get("site_url") == record.get("site_url")
+                     and site.get("status") == "empty_index"),
+                    None,
+                )
+                if index_site:
+                    record["status"] = "empty_index"
+                    record["reason"] = "Répertoire de fichiers au lieu du site attendu"
+
                 item["monitor"] = {
                     "site_url": record.get("site_url"),
                     "announced_url": migration.get("announced_url") if migration else None,
