@@ -335,8 +335,7 @@ def update_identity(state, record, observation, now, *, first_run):
 # meme si une ancienne inspection a deja eu lieu le meme jour.
 MIGRATION_PROBE_VERSION = 3
 HTML_HEALTH_PROBE_VERSION = 6  # Attempt Chromium for otherwise unreadable HTML
-ANNOUNCED_BROWSER_PROBE_VERSION = 2
-ANNOUNCED_HTML_PROBE_VERSION = 1  # Recheck legacy destinations missing HTML proof
+ANNOUNCED_HTML_PROBE_VERSION = 2  # Recheck destinations with optional Chromium
 
 
 def watch_server_links(api, state, now=None, *, discover=find_server_links):
@@ -493,7 +492,7 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
         # version de reconnaissance plus récente est déployée.
         announced_upgrade = (
             int(rec.get("announced_html_probe_version") or 0)
-            < ANNOUNCED_BROWSER_PROBE_VERSION
+            < ANNOUNCED_HTML_PROBE_VERSION
         )
         if target and (force_scan or announced_upgrade
                        or due_daily(rec.get("announced_last_checked"), now)):
@@ -504,7 +503,7 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
             rec["announced_status"] = status
             rec["announced_http_status"] = checked_target.get("http_status")
             rec["announced_last_checked"] = stamp(now)
-            rec["announced_html_probe_version"] = ANNOUNCED_BROWSER_PROBE_VERSION
+            rec["announced_html_probe_version"] = ANNOUNCED_HTML_PROBE_VERSION
             # HTTP 200 seul ne prouve pas la bonne application. Rechercher
             # son vrai titre/métadonnées, et refuser les pages publicitaires.
             rec["announced_page_health"] = "unknown"
