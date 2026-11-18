@@ -157,7 +157,10 @@ def check_site(url: str) -> dict:
     try:
         for hops in range(5):
             code, location = single_request(current, "HEAD")
-            if code in (405, 501):
+            # Les CDN, WAF et protections anti-bot renvoient parfois 403/503
+            # au HEAD alors que la vraie navigation GET fonctionne.
+            # Refaire la requête GET avant toute conclusion négative.
+            if code >= 400:
                 code, location = single_request(current, "GET")
             if code in (301, 302, 303, 307, 308) and location:
                 destination = clean_url(urljoin(current, location))
@@ -170,12 +173,20 @@ def check_site(url: str) -> dict:
                 result = "restricted"
             elif 200 <= code < 400:
                 result = "online"
-            elif code in (404, 410) or code >= 500:
+            elif code in (404, 410):
+                # Une vraie page absente doit échouer aux DEUX méthodes.
                 result = "failed"
+            elif code >= 500:
+                # Les 5xx, dont 503, peuvent désigner une maintenance, un
+                # serveur distant protégé ou un CDN refusant GitHub Actions.
+                # Aucune panne « confirmée » depuis cette seule sonde.
+                result = "unknown"
             else:
                 result = "unknown"
+            reason = (f"Réponse HTTP {code} temporaire ou protection automatique"
+                      if code >= 500 else None)
             return {"result": result, "http_status": code,
-                    "final_url": current, "reason": None}
+                    "final_url": current, "reason": reason}
         return {"result": "unknown", "http_status": None,
                 "final_url": current, "reason": "Trop de redirections"}
     except (OSError, TimeoutError, ValueError, ssl.SSLError, http.client.HTTPException) as exc:
