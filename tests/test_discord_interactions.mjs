@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { generateKeyPairSync, sign } from "node:crypto";
 import {
-  handleInteraction, replyToInteraction, verifyDiscordSignature
+  GET, POST, handleInteraction, replyToInteraction, verifyDiscordSignature
 } from "../api/discord-interactions.mjs";
 
 const { publicKey, privateKey } = generateKeyPairSync("ed25519");
@@ -103,4 +103,14 @@ test("rejects tampered signature and missing authentication", async () => {
   const res = await handleInteraction(bad, "00".repeat(32));
   assert.equal(res.status, 401);
   assert.equal(verifyDiscordSignature("{}", null, "1234567890", publicHex), false);
+});
+
+
+test("deployed Vercel route exposes standard HTTP handlers", async () => {
+  const response = GET();
+  assert.equal(response.status, 405);
+  const noSignature = await POST(new Request(
+    "https://localhost/api/discord-interactions", {method: "POST", body: "{}"}
+  ));
+  assert.equal(noSignature.status, 503);
 });
