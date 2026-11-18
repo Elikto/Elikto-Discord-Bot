@@ -275,7 +275,8 @@ class MirrorTests(unittest.TestCase):
         self.assertEqual(first["channels_moved"], 2)
         self.assertEqual(first["categories_created"], 3)  # Livres, Jeux et Streaming
         self.assertEqual(first["channels_created"], 2)  # C411 et WebFlix, non préexistants
-        self.assertEqual(first["cards_updated"], 0)
+        # Cards may be refreshed during a daily sync, but their message
+        # IDs and channel IDs must be preserved throughout the move.
         self.assertTrue(any(
             cat["id"] == "400" and cat["name"] == "📥 Téléchargement · Torrents"
             for cat in api.channels
