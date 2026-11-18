@@ -55,6 +55,10 @@ def proven_html_content(record, now=None):
     """
     if record.get("status") not in ("online", "restricted"):
         return False
+    # Pour un HTTP 403, seule une page réellement lue (pas un ancien
+    # titre mis en cache) permet de confirmer l'accessibilité.
+    if record.get("status") == "restricted" and record.get("page_health") != "content":
+        return False
     if record.get("page_health") in (
         "unknown", "empty_index", "parked", "blocked", "interstitial"
     ):
