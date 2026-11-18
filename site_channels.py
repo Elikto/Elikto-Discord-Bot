@@ -31,6 +31,11 @@ from site_probe import clean_url
 PREFIX = "[elikto:site-channel:v1:"
 CHANNEL_MARKER = re.compile(r"\[elikto:site-channel:v1:(\d{16,22})\]")
 CATEGORY_SUFFIX = " · Sites"
+DOWNLOAD_CATEGORIES = {
+    "torrent": "📥 Téléchargement · Torrents",
+    "jeux-video": "🎮 Téléchargement · Jeux vidéo",
+    "livres": "📚 Téléchargement · Livres",
+}
 MAX_PER_CATEGORY = 45  # Marge sous la limite Discord de 50 salons.
 MAX_CREATED = 250
 
@@ -59,6 +64,27 @@ def mirror_category_name(name, part=1):
     return base[:100 - len(suffix)] + suffix
 
 
+def original_forum_group(item):
+    """Use the actual source forum, not keywords from a site's title."""
+    if "telecharg" not in fold(item.get("source_category_name", "")).lower():
+        return None
+    original = fold(item.get("source_forum_name", "")).lower()
+    original = re.sub(r"[^a-z0-9]+", "-", original).strip("-")
+    return original if original in DOWNLOAD_CATEGORIES else None
+
+
+def destination_category_name(item, part=1):
+    group = original_forum_group(item)
+    base = DOWNLOAD_CATEGORIES[group] if group else mirror_category_name(
+        item["source_category_name"]
+    )
+    return base + (f" {part}" if part > 1 else "")
+
+
+def destination_group_key(item):
+    return item["source_category"], original_forum_group(item) or ""
+
+
 def channel_slug(title):
     name = fold(str(title or "")).lower()
     name = re.sub(r"[^a-z0-9]+", "-", name).strip("-")
@@ -70,7 +96,8 @@ def catalogue_threads(catalogue):
     result = []
     for category in catalogue.get("categories") or []:
         cid = str(category.get("id") or "")
-        if category.get("name", "").endswith(CATEGORY_SUFFIX):
+        if (category.get("name", "").endswith(CATEGORY_SUFFIX)
+                or category.get("name", "") in DOWNLOAD_CATEGORIES.values()):
             continue
         for parent in category.get("channels") or []:
             if parent.get("kind") != "forum":
@@ -87,6 +114,7 @@ def catalogue_threads(catalogue):
                     "source_category": cid,
                     "source_category_name": str(category.get("name") or "Sans catégorie"),
                     "source_forum": original_forum,
+                    "source_forum_name": str(parent.get("name") or ""),
                     "source_url": f"https://discord.com/channels/{GUILD_ID}/{tid}",
                 })
     by_tid = {}
@@ -223,94 +251,158 @@ def public_sources(api, catalogue, channels):
 
 
 def create_structure(api, sources):
-    """Créer des catégories de copie identifiables, sans toucher aux anciennes."""
+    """Split download mirror channels by original forum, preserving channel IDs.
+
+    Discord cannot nest categories. Prefixes make the three top-level
+    categories appear together, and existing channels are MOVED (not copied).
+    Never move or rename the original forums/categories.
+    """
     channels = api.call("GET", f"/guilds/{GUILD_ID}/channels")
-    categories = {str(c["id"]): c for c in channels if c.get("type") == CHANNEL_CATEGORY}
+    categories = {str(c["id"]): c for c in channels
+                  if c.get("type") == CHANNEL_CATEGORY}
     copies = {}
-    for c in channels:
-        if c.get("type") != CHANNEL_TEXT:
+    for channel in channels:
+        if channel.get("type") != CHANNEL_TEXT:
             continue
-        marker = CHANNEL_MARKER.search(c.get("topic") or "")
+        marker = CHANNEL_MARKER.search(channel.get("topic") or "")
         if not marker:
             continue
         tid = marker.group(1)
         if tid in copies:
             raise RuntimeError("Plusieurs salons miroirs pour la même fiche " + tid)
-        copies[tid] = c
-    original = sources
-    source_cats = {}
-    for entry in sources:
-        source_cats[entry["source_category"]] = entry["source_category_name"]
-    category_slots = {}
-    for cid, name in source_cats.items():
-        existing = [
-            cat for cat in categories.values()
-            if cat["name"] == mirror_category_name(name)
-            or re.fullmatch(re.escape(mirror_category_name(name)) + r" \d+", cat["name"])
-        ]
-        category_slots[cid] = existing
+        copies[tid] = channel
+
+    categories_renamed = 0
+    moved_channels = 0
     created_categories = 0
     created_channels = 0
-    for item in original:
-        tid = item["tid"]
-        if tid in copies:
-            continue
-        cid = item["source_category"]
-        slots = category_slots[cid]
-        selected = next((c for c in slots if sum(
-            1 for v in channels if str(v.get("parent_id")) == str(c["id"])
+
+    # Convert the existing bot-generated 'Telechargement · Sites' category
+    # into 'Téléchargement · Torrents'. This preserves the existing category
+    # ID and keeps the 8 torrent channels in place during migration.
+    for cid in {s["source_category"] for s in sources
+                if original_forum_group(s) == "torrent"}:
+        example = next(s for s in sources if s["source_category"] == cid
+                       and original_forum_group(s) == "torrent")
+        old_name = mirror_category_name(example["source_category_name"])
+        new_name = DOWNLOAD_CATEGORIES["torrent"]
+        legacy = next((c for c in categories.values()
+                       if fold(c.get("name", "")) == fold(old_name)), None)
+        existing_new = any(c.get("name") == new_name
+                           for c in categories.values())
+        if legacy and not existing_new:
+            children = [x for x in channels
+                        if str(x.get("parent_id")) == str(legacy["id"])]
+            # Never rename a category that contains user's own channels.
+            if children and all(
+                x.get("type") == CHANNEL_TEXT
+                and CHANNEL_MARKER.search(x.get("topic") or "")
+                for x in children
+            ):
+                api.call("PATCH", f"/channels/{legacy['id']}",
+                         json={"name": new_name})
+                legacy["name"] = new_name
+                categories_renamed += 1
+                print("SALONS : catégorie miroir renommée",
+                      old_name, "→", new_name)
+
+    # Categories remain top-level (Discord does not support nesting).
+    # The name is stable across daily runs; ' 2' only when 45 slots are full.
+    def managed_category_names(item):
+        names = {fold(mirror_category_name(item["source_category_name"]))}
+        if original_forum_group(item):
+            names.update(fold(label) for label in DOWNLOAD_CATEGORIES.values())
+        return names
+
+    def desired_slots(item):
+        base = destination_category_name(item)
+        return [c for c in categories.values() if (
+            c.get("name") == base
+            or re.fullmatch(re.escape(base) + r" [2-9][0-9]*",
+                            c.get("name", ""))
+        )]
+
+    def choose_category(item, current=None):
+        nonlocal created_categories
+        slots = desired_slots(item)
+        if current and any(str(c["id"]) == str(current.get("parent_id"))
+                           for c in slots):
+            return categories[str(current["parent_id"])]
+        available = next((c for c in slots if sum(
+            1 for ch in channels if str(ch.get("parent_id")) == str(c["id"])
         ) < MAX_PER_CATEGORY), None)
-        if not selected:
-            index = len(slots) + 1
-            while any(c.get("type") == CHANNEL_CATEGORY
-                      and c.get("name") == mirror_category_name(source_cats[cid], index)
-                      for c in channels):
-                index += 1
-            if created_categories + created_channels >= MAX_CREATED:
-                raise RuntimeError("Limite de sécurité des créations atteinte")
-            orig = categories.get(cid, {})
-            selected = api.call("POST", f"/guilds/{GUILD_ID}/channels", json={
-                "name": mirror_category_name(source_cats[cid], index),
-                "type": CHANNEL_CATEGORY,
-                "permission_overwrites": orig.get("permission_overwrites", []),
-            })
-            channels.append(selected)
-            categories[str(selected["id"])] = selected
-            slots.append(selected)
-            created_categories += 1
-            print("SALONS : catégorie créée", selected["name"], selected["id"])
+        if available:
+            return available
+        part = len(slots) + 1
+        label = destination_category_name(item, part)
+        while any(c.get("name") == label for c in categories.values()):
+            part += 1
+            label = destination_category_name(item, part)
+        if created_categories + created_channels >= MAX_CREATED:
+            raise RuntimeError("Limite de sécurité des créations atteinte")
+        original_parent = categories.get(item["source_category"], {})
+        new = api.call("POST", f"/guilds/{GUILD_ID}/channels", json={
+            "name": label,
+            "type": CHANNEL_CATEGORY,
+            "permission_overwrites": original_parent.get("permission_overwrites", []),
+        })
+        channels.append(new)
+        categories[str(new["id"])] = new
+        created_categories += 1
+        print("SALONS : catégorie créée", label, new["id"])
+        return new
+
+    for item in sources:
+        tid = item["tid"]
+        existing = copies.get(tid)
+        target = choose_category(item, existing)
+        if existing:
+            if str(existing.get("parent_id")) != str(target["id"]):
+                current_category = categories.get(str(existing.get("parent_id")))
+                # Only migrate from one of the previously bot-managed mirror
+                # categories; preserve any manual move to an unrelated category.
+                if current_category and fold(current_category.get("name", "")) in managed_category_names(item):
+                    api.call("PATCH", f"/channels/{existing['id']}",
+                             json={"parent_id": str(target["id"])})
+                    print("SALONS : déplacé", existing["name"],
+                          "→", target["name"])
+                    existing["parent_id"] = str(target["id"])
+                    moved_channels += 1
+                else:
+                    print("SALONS : emplacement personnalisé conservé",
+                          existing["name"])
+            continue
+
         slug = channel_slug(item["title"])
         siblings = {c["name"] for c in channels
-                    if str(c.get("parent_id")) == str(selected["id"])}
+                    if str(c.get("parent_id")) == str(target["id"])}
         if slug in siblings:
             slug = f"{slug[:60]}-{tid[-5:]}"
         if created_categories + created_channels >= MAX_CREATED:
             raise RuntimeError("Limite de sécurité des créations atteinte")
-        payload = {
-            "name": slug,
-            "type": CHANNEL_TEXT,
-            "parent_id": selected["id"],
+        created = api.call("POST", f"/guilds/{GUILD_ID}/channels", json={
+            "name": slug, "type": CHANNEL_TEXT, "parent_id": target["id"],
             "topic": (
                 "Fiche miroir · ancienne publication : " + item["source_url"]
                 + " " + PREFIX + tid + "]"
             )[:1024],
-        }
-        created = api.call("POST", f"/guilds/{GUILD_ID}/channels", json=payload)
+        })
         channels.append(created)
         copies[tid] = created
         created_channels += 1
         print("SALONS : créé", slug, created["id"], "←", item["title"])
-    return copies, created_categories, created_channels
+    return copies, created_categories, created_channels, categories_renamed, moved_channels
 
 
 def sync_mirrors(api, catalogue, state):
     guild_channels = api.call("GET", f"/guilds/{GUILD_ID}/channels")
     sources = public_sources(api, catalogue, guild_channels)
-    copies, new_categories, new_channels = create_structure(api, sources)
+    copies, new_categories, new_channels, renamed, moved = create_structure(api, sources)
     bot_id = str(api.call("GET", "/users/@me")["id"])
     tracking = state.setdefault("site_channel_mirrors", {})
     result = {
         "categories_created": new_categories, "channels_created": new_channels,
+        "categories_renamed": renamed, "channels_moved": moved,
         "cards_created": 0, "cards_updated": 0, "cards_unchanged": 0, "errors": [],
     }
     for source in sources:
