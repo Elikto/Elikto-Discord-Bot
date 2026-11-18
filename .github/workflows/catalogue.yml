@@ -71,6 +71,8 @@ jobs:
       - name: Synchroniser les forums Discord et exporter les fiches publiques
         env:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          TEAMFLIX_LOGIN_USERNAME: ${{ secrets.TEAMFLIX_LOGIN_USERNAME }}
+          TEAMFLIX_LOGIN_PASSWORD: ${{ secrets.TEAMFLIX_LOGIN_PASSWORD }}
           DISCORD_GUILD_ID: '1430984645012357263'
           EXCLUDED_CHANNEL_IDS: ${{ vars.EXCLUDED_CHANNEL_IDS }}
         run: python sync_catalogue.py
