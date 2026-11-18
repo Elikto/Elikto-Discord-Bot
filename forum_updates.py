@@ -179,6 +179,7 @@ def validated_movix_groups(linked):
     hub_status = hub_check.get("result", "unknown")
     target = None
     target_status = None
+    target_verified = False
     if hub_status in ("online", "restricted"):
         try:
             page = fetch_html_page(MOVIX_HUB)
@@ -198,9 +199,19 @@ def validated_movix_groups(linked):
                     continue
                 result = check_site(proposed)
                 if result.get("result") == "online":
-                    target = proposed
+                    final = clean_url(result.get("final_url") or proposed)
+                    # Une redirection publicitaire ne prouve pas un site actif.
+                    if not final or not domain(final).startswith("movix."):
+                        continue
+                    identity = probe_site_name(final)
+                    if identity and identity.get("page_health") == "empty_index":
+                        continue
+                    target = final
                     target_status = "online"
-                    break
+                    target_verified = bool(identity and
+                                           "movix" in str(identity.get("name") or "").casefold())
+                    if target_verified:
+                        break
     # Si la destination est non vérifiée, montrer la page de référence,
     # jamais l'ancienne URL 404 comme si elle était encore valide.
     current = target or MOVIX_HUB
@@ -210,7 +221,7 @@ def validated_movix_groups(linked):
         "reference_url": MOVIX_HUB if target else None,
         "older": previous,
         "announced": bool(target),
-        "verified": False,  # La validation HTTP seule ne suffit pas.
+        "verified": target_verified,
         "status": target_status if target else hub_status,
         "directory_url": MOVIX_HUB if target else None,
     }]
