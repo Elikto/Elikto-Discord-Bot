@@ -108,6 +108,10 @@ class ForumUpdatesTests(unittest.TestCase):
         no_html = patch("forum_updates.fetch_html_page", return_value=None)
         no_html.start()
         self.addCleanup(no_html.stop)
+        # Uniquement pour ces tests de rendu : pas de requête vers Internet.
+        image_ok = patch("forum_updates.preview_image_works", return_value=True)
+        image_ok.start()
+        self.addCleanup(image_ok.stop)
 
 
     def test_webflix_displays_current_address_and_previous_domains(self):
@@ -136,17 +140,17 @@ class ForumUpdatesTests(unittest.TestCase):
         api = FakeAPI()
         initial = sync_forum_updates(api, data)
         self.assertEqual(initial["created"], 1)
-        self.assertEqual(len(api.messages[THREAD]), 2)
+        self.assertEqual(len(api.messages[THREAD]), 1)
         original_id = api.messages[THREAD][0]["id"]
         self.assertIn(BRAND, shown(api.messages[THREAD][0]))
         self.assertNotIn(MARKER, shown(api.messages[THREAD][0]))
         unchanged = sync_forum_updates(api, data)
         self.assertEqual(unchanged["unchanged"], 1)
-        self.assertEqual(len(api.messages[THREAD]), 2)
+        self.assertEqual(len(api.messages[THREAD]), 1)
         data["server_links"]["https://webflix.art/"]["announced_url"] = "https://webflix.next/"
         changed = sync_forum_updates(api, data)
         self.assertEqual(changed["updated"], 1)
-        self.assertEqual(len(api.messages[THREAD]), 2)
+        self.assertEqual(len(api.messages[THREAD]), 1)
         self.assertEqual(api.messages[THREAD][0]["id"], original_id)
         self.assertIn("https://webflix.next/", shown(api.messages[THREAD][0]))
 
@@ -158,7 +162,7 @@ class ForumUpdatesTests(unittest.TestCase):
         }]
         sync_forum_updates(api, data)
         self.assertEqual(api.messages[THREAD][0]["content"], "Ancien lien")
-        self.assertEqual(len(api.messages[THREAD]), 3)
+        self.assertEqual(len(api.messages[THREAD]), 2)
         self.assertEqual(api.messages[THREAD][1]["author"]["id"], "bot")
 
     def test_rediscover_message_if_state_was_not_saved(self):
@@ -169,7 +173,7 @@ class ForumUpdatesTests(unittest.TestCase):
         data.pop("forum_updates")
         result = sync_forum_updates(api, data)
         self.assertEqual(result["unchanged"], 1)
-        self.assertEqual(len(api.messages[THREAD]), 2)
+        self.assertEqual(len(api.messages[THREAD]), 1)
         self.assertEqual(data["forum_updates"][THREAD]["message_id"], message_id)
 
     def test_new_url_event_updates_existing_forum(self):
@@ -217,7 +221,7 @@ class ForumUpdatesTests(unittest.TestCase):
         result = sync_forum_updates(api, data)
         self.assertEqual(result["created"], 1)
         self.assertEqual(result["descriptions_found"], 1)
-        published = api.messages[THREAD][-2]
+        published = api.messages[THREAD][-1]
         self.assertEqual(published["flags"], 32768)
         self.assertIn(original, shown(published))
         self.assertIn("**🌐 Site actif**\nhttps://webflix.surf/", shown(published))
@@ -226,12 +230,12 @@ class ForumUpdatesTests(unittest.TestCase):
         same_id = published["id"]
         result = sync_forum_updates(api, data)
         self.assertEqual(result["unchanged"], 1)
-        self.assertEqual(len(api.messages[THREAD]), 3)
+        self.assertEqual(len(api.messages[THREAD]), 2)
         api.messages[THREAD][0]["content"] = original + "\n**Mise à jour du texte**"
         result = sync_forum_updates(api, data)
         self.assertEqual(result["updated"], 1)
-        self.assertEqual(api.messages[THREAD][-2]["id"], same_id)
-        self.assertIn("**Mise à jour du texte**", shown(api.messages[THREAD][-2]))
+        self.assertEqual(api.messages[THREAD][-1]["id"], same_id)
+        self.assertIn("**Mise à jour du texte**", shown(api.messages[THREAD][-1]))
         self.assertEqual(api.messages[THREAD][0]["content"],
                          original + "\n**Mise à jour du texte**")
 
@@ -253,18 +257,21 @@ class ForumUpdatesTests(unittest.TestCase):
         ]
         result = sync_forum_updates(api, data)
         self.assertEqual(result["created"], 1)
-        self.assertEqual(result["previews_created"], 1)
-        self.assertEqual(len(api.messages[THREAD]), 3)
+        self.assertEqual(result["previews_created"], 0)
+        self.assertEqual(len(api.messages[THREAD]), 2)
         card = shown(api.messages[THREAD][1])
         self.assertIn("✦ Reseam Manager ✦", card)
         self.assertIn("**🌐 Site actif**\nhttps://reseam.app/download/", card)
         self.assertIn("📝 Description", card)
         self.assertIn("Youtube, Instagram, tiktok, twitter, twitch etc", card)
         self.assertEqual(card.count("https://reseam.app/download/"), 1)
-        self.assertEqual(api.messages[THREAD][2]["content"], "https://reseam.app/download/")
+        self.assertFalse(any(
+            m.get("content") == "https://reseam.app/download/"
+            for m in api.messages[THREAD] if m["author"]["id"] == "bot"
+        ))
         second = sync_forum_updates(api, data)
         self.assertEqual(second["unchanged"], 1)
-        self.assertEqual(len(api.messages[THREAD]), 3)
+        self.assertEqual(len(api.messages[THREAD]), 2)
         self.assertEqual(api.messages[THREAD][0]["content"], original)
 
     def test_streaming_forum_marks_directory_listing_with_red_cross(self):
@@ -610,6 +617,13 @@ class ForumUpdatesTests(unittest.TestCase):
             {"id": THREAD, "author": {"id": "human"}, "content": "Films récents"},
         ]
         sync_forum_updates(api, data)
+        self.assertEqual(len(api.messages[THREAD]), 2)
+        # Un ancien bot a publie un deuxieme message URL, mais son ID
+        # n'existe plus dans l'etat : la prochaine execution doit le trouver.
+        api.messages[THREAD].append({
+            "id": "8765", "author": {"id": "bot"},
+            "content": "https://webflix.surf/", "components": [],
+        })
         self.assertEqual(len(api.messages[THREAD]), 3)
         record_state = data["forum_updates"][THREAD]
         record_state["preview_image_checked_at"] = "2024-01-01T00:00:00+00:00"
@@ -624,6 +638,90 @@ class ForumUpdatesTests(unittest.TestCase):
                             for comp in card["components"][0]["components"]))
         self.assertFalse(any((m.get("content") or "").startswith("https://")
                              for m in api.messages[THREAD]))
+
+    def test_duplicate_bot_url_removed_from_all_forums_without_image(self):
+        data = state()
+        data["server_links"] = {
+            "https://alpha.example.org/": record("https://alpha.example.org/"),
+            "https://beta.example.org/": {
+                **record("https://beta.example.org/"),
+                "sources": [{"url": f"https://discord.com/channels/{GUILD}/{OTHER}/{OTHER}"}],
+            }
+        }
+        data["records"][OTHER]["site_url"] = "https://beta.example.org/"
+        api = FakeAPI()
+        for tid, url in ((THREAD, "https://alpha.example.org/"),
+                         (OTHER, "https://beta.example.org/")):
+            api.messages[tid] = [
+                {"id": tid, "author": {"id": "human"}, "content": "Original " + url},
+                {"id": str(int(tid) + 4), "author": {"id": "bot"},
+                 "content": url, "components": []},
+                {"id": str(int(tid) + 5), "author": {"id": "bot"},
+                 "content": url, "components": []},
+            ]
+        summary = sync_forum_updates(api, data)
+        self.assertEqual(summary["created"], 2)
+        self.assertEqual(summary["duplicate_links_removed"], 4)
+        for tid in (THREAD, OTHER):
+            self.assertEqual(len(api.messages[tid]), 2)
+            self.assertEqual(len([m for m in api.messages[tid] if m.get("components")]), 1)
+            self.assertEqual(api.messages[tid][0]["author"]["id"], "human")
+            self.assertNotIn("preview_message_id", data["forum_updates"][tid])
+
+    def test_does_not_delete_members_url_or_bots_other_messages(self):
+        data = state()
+        api = FakeAPI()
+        api.messages[THREAD] = [
+            {"id": THREAD, "author": {"id": "human"}, "content": "Original"},
+            {"id": "10", "author": {"id": "human"},
+             "content": "https://webflix.surf/", "components": []},
+            {"id": "11", "author": {"id": "bot"},
+             "content": "Le site a change : https://webflix.surf/", "components": []},
+            {"id": "12", "author": {"id": "bot"},
+             "content": "https://webflix.surf/", "components": []},
+        ]
+        summary = sync_forum_updates(api, data)
+        self.assertEqual(summary["duplicate_links_removed"], 1)
+        self.assertTrue(any(m["id"] == "10" for m in api.messages[THREAD]))
+        self.assertTrue(any(m["id"] == "11" for m in api.messages[THREAD]))
+        self.assertFalse(any(m["id"] == "12" for m in api.messages[THREAD]))
+
+    def test_invalid_image_does_not_create_broken_gallery_or_second_message(self):
+        data = state()
+        api = FakeAPI()
+        api.messages[THREAD] = [{
+            "id": THREAD, "author": {"id": "human"}, "content": "Description",
+            "embeds": [{"url": "https://webflix.surf/",
+                        "image": {"url": "https://webflix.surf/broken.png"}}],
+        }]
+        with patch("forum_updates.preview_image_works", return_value=False):
+            summary = sync_forum_updates(api, data)
+        self.assertEqual(summary["created"], 1)
+        self.assertEqual(len(api.messages[THREAD]), 2)
+        card = next(m for m in api.messages[THREAD] if m.get("components"))
+        self.assertFalse(any(
+            part["type"] == 12 for part in card["components"][0]["components"]
+        ))
+        self.assertFalse(any(
+            str(m.get("content") or "").startswith("https://")
+            for m in api.messages[THREAD] if m["author"]["id"] == "bot"
+        ))
+
+    def test_description_removes_only_duplicate_standalone_url_lines(self):
+        from forum_cards import build_card
+        raw = (
+            "Description d'origine\nhttps://fstream.info/\n"
+            "La page partenaire https://example-partenaire.fr/ est utile.\n"
+            "https://fs05.lol/\nAutres informations"
+        )
+        groups = [{"url": "https://fs05.lol/", "reference_url": "https://fstream.info/",
+                   "status": "online", "older": [], "announced": True}]
+        card = build_card(groups, raw, "French Stream")
+        txt = "\n".join(all_text(card))
+        self.assertEqual(txt.count("https://fs05.lol/"), 1)
+        self.assertEqual(txt.count("https://fstream.info/"), 1)
+        self.assertIn("La page partenaire https://example-partenaire.fr/", txt)
+        self.assertIn("Autres informations", txt)
 
     def test_missing_original_description_is_not_invented(self):
         data = state()
