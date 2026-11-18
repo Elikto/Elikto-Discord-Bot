@@ -67,81 +67,114 @@ def strip_duplicate_source_url(description, groups):
 
 
 ACCOUNT_LINE = re.compile(
-    r"^\s*(?:[-•*]\s*)?(?:\*\*)?(?:👤|🔑|🔐|🆔)?\s*(?:\*\*)?"
-    r"(?P<label>nom d['’]utilisateur|utilisateur|identifiant|identifiants|"
-    r"username|login|user|pseudo|id|mot de passe|mdp|password|pass)"
+    r"^\s*(?:[-•*]\s*)?(?:\*\*)?(?:👤|🔑|🔐|🆔|📧)?\s*(?:\*\*)?"
+    r"(?P<label>nom d['’]utilisateur|adresse\s+(?:e-?mail|mail)|"
+    r"utilisateur|identifiant|identifiants|username|login|user|pseudo|"
+    r"e-?mail|mail|id|mot de passe|mdp|password|pass)"
     r"(?:\*\*)?\s*[:：=\-]\s*(?:\*\*)?\s*(?P<value>\S.*?)\s*$",
     flags=re.I,
 )
-USER_LABELS = {"nom d'utilisateur", "nom d’utilisateur", "utilisateur", "identifiant",
-               "identifiants", "username", "login", "user", "pseudo", "id"}
+USER_LABELS = {
+    "nom d'utilisateur", "nom d’utilisateur", "utilisateur", "identifiant",
+    "identifiants", "username", "login", "user", "pseudo", "id",
+    "email", "e-mail", "mail", "adresse mail", "adresse email", "adresse e-mail",
+}
 
 
-def split_credentials(description):
-    """Déplacer uniquement un couple explicite déjà public dans le message source.
-
-    N'extrait jamais des identifiants d'autres messages ou d'un site externe.
-    """
-    lines = str(description or "").splitlines()
-    matched = {}
+def credential_fields(text):
+    """Détecter les champs explicitement étiquetés, sans deviner un compte."""
+    fields = {}
     consumed = set()
-    for i, line in enumerate(lines):
+    for i, line in enumerate(str(text or "").splitlines()):
         match = ACCOUNT_LINE.fullmatch(line)
         if not match:
             continue
-        category = "user" if match.group("label").casefold() in USER_LABELS else "password"
+        category = ("user" if match.group("label").casefold().strip() in USER_LABELS
+                    else "password")
         value = match.group("value").strip()
+        # Pas d'extraction de phrases libres, de messages trop longs ou vides.
         if not value or len(value) > 200:
             continue
-        matched[category] = value
+        fields[category] = value
         consumed.add(i)
-    if not {"user", "password"}.issubset(matched):
+    return fields, consumed
+
+
+def split_credentials(description):
+    """Retirer un couple complet de la description pour éviter un doublon."""
+    fields, consumed = credential_fields(description)
+    if not {"user", "password"}.issubset(fields):
         return description, None
-    remaining = [line for i, line in enumerate(lines) if i not in consumed]
-    return "\n".join(remaining).strip(), matched
+    remaining = [line for i, line in enumerate(str(description or "").splitlines())
+                 if i not in consumed]
+    return "\n".join(remaining).strip(), fields
 
 
 def credentials_from_author_posts(api, thread_id, bot_id):
-    """Lire les identifiants explicitement publiés par l'auteur du fil.
+    """Chercher dans TOUS les messages d'auteur de chaque forum public suivi.
 
-    Rien n'est enregistré : les valeurs ne servent qu'à créer le message
-    Discord dans le même fil. Ignorer les réponses des autres utilisateurs,
-    les bots et les webhooks. Seul un couple complet dans le même message
-    est accepté pour éviter d'associer deux comptes différents.
+    Ne jamais utiliser les messages d'autres membres, bots ou webhooks.
+    Des champs successifs dans deux publications peuvent former un couple.
+    Ne jamais sauvegarder ces valeurs dans l'état JSON ni dans le dépôt.
     """
     try:
         starter = api.call("GET", f"/channels/{thread_id}/messages/{thread_id}")
+        author_id = str((starter.get("author") or {}).get("id") or "")
     except RuntimeError as exc:
-        if "HTTP 404" in str(exc):
+        if "HTTP 404" not in str(exc):
+            raise
+        # Ancien fil dont le message fondateur a été supprimé : Discord
+        # conserve généralement l'owner_id du fil.
+        try:
+            thread = api.call("GET", f"/channels/{thread_id}")
+            author_id = str(thread.get("owner_id") or "")
+        except RuntimeError:
             return None
-        raise
-    author_id = str((starter.get("author") or {}).get("id") or "")
     if not author_id or author_id == str(bot_id):
         return None
 
     before = None
-    for _ in range(10):
+    messages = []
+    for _ in range(20):
         params = {"limit": 100}
         if before:
             params["before"] = before
-        messages = api.call("GET", f"/channels/{thread_id}/messages", params=params)
-        if not messages:
+        page = api.call("GET", f"/channels/{thread_id}/messages", params=params)
+        if not page:
             break
-        for message in sorted(messages, key=lambda m: int(m["id"]), reverse=True):
+        for message in page:
             sender = message.get("author") or {}
-            if (str(sender.get("id")) != author_id or sender.get("bot")
-                    or message.get("webhook_id")):
-                continue
-            _, found = split_credentials(message.get("content") or "")
-            if found:
-                return found
-        if len(messages) < 100:
+            if (str(sender.get("id")) == author_id and not sender.get("bot")
+                    and not message.get("webhook_id")):
+                messages.append(message)
+        if len(page) < 100:
             break
-        last = str(min(messages, key=lambda m: int(m["id"]))["id"])
+        last = str(min(page, key=lambda m: int(m["id"]))["id"])
         if last == before:
             break
         before = last
-    return None
+
+    latest = None
+    pending = {}
+    for message in sorted(messages, key=lambda m: int(m["id"])):
+        fields, _ = credential_fields(message.get("content") or "")
+        if not fields:
+            # Ne pas mélanger des identifiants avec une discussion ultérieure.
+            pending = {}
+            continue
+        if len(fields) == 2:
+            latest = fields
+            pending = {}
+            continue
+        category = next(iter(fields))
+        if category in pending:
+            # Deux valeurs de même type peuvent désigner deux comptes.
+            pending = {}
+        pending.update(fields)
+        if {"user", "password"}.issubset(pending):
+            latest = dict(pending)
+            pending = {}
+    return latest
 
 
 def build_card(groups, description, title=None, credentials=None):
