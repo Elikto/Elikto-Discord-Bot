@@ -412,9 +412,25 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
             if target not in new_address_checks:
                 new_address_checks[target] = check_site(target)
             checked_target = new_address_checks[target]
-            rec["announced_status"] = checked_target.get("result", "unknown")
+            status = checked_target.get("result", "unknown")
+            rec["announced_status"] = status
             rec["announced_http_status"] = checked_target.get("http_status")
             rec["announced_last_checked"] = stamp(now)
+            # Le contrôle HTTP seul ne prouve pas qu'un nouveau domaine
+            # propose le site annoncé : vérifier aussi le HTML de la cible.
+            rec["announced_page_health"] = "unknown"
+            if status == "online":
+                target_html = probe_site_name(target)
+                if target_html and target_html.get("page_health") == "empty_index":
+                    rec["announced_page_health"] = "empty_index"
+                    rec["announced_status"] = "empty_index"
+                elif target_html and target_html.get("name"):
+                    rec["announced_page_health"] = "content"
+                # Page JavaScript, anti-bot ou HTML inaccessible : indéterminé.
+            rec["announced_verified"] = (
+                rec["announced_status"] == "online"
+                and rec["announced_page_health"] == "content"
+            )
 
     state["server_scan"] = {
         "at": stamp(now), "counts": scan_counts,
