@@ -398,6 +398,9 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
                 # Inspection HTML impossible : ne pas annuler une anomalie
                 # connue sur la seule foi d'un HTTP 200.
                 rec["status"] = "empty_index"
+            else:
+                # HTTP 200 mais pas de preuve que la page fonctionne aujourd'hui.
+                rec["page_health"] = "unknown"
             update_identity(state, rec, identity, now, first_run=first_run)
             identity_checks += 1
 
