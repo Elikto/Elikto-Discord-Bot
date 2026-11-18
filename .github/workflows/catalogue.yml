@@ -113,6 +113,9 @@ jobs:
           # Les catégories de l'annuaire en ligne restent prioritaires.
           FLEMMIX_OBSERVED_MAIN: 'https://flemmix.uno/'
           FLEMMIX_FAI_BLOCKED_HOSTS: 'wiflix.red,flemmix.men,flemmix.wales,flemmix.vip,flemmix.casa,flemmix.prof,wiflix.re,flemmix.cafe'
+          # Adresse indiquée par une capture du wiki le 18/11/2026.
+          # Proposition seulement : le contenu du domaine est vérifié séparément.
+          PURSTREAM_OBSERVED_MAIN: 'https://purstream.gg/'
           FORCE_DAILY_INTEGRITY_SCAN: ${{ github.event_name == 'schedule' && '1' || '0' }}
         run: python server_link_watch.py
       - name: Surveiller les sites publics et alimenter l'historique
