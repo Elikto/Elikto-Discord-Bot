@@ -265,30 +265,42 @@ def build_card(groups, description, title=None, credentials=None, preview_image_
         reference = clean_url(group.get("reference_url"))
         if not url:
             continue
-        if reference and reference != url:
+        no_active = bool(group.get("no_active"))
+        if reference and (reference != url or no_active):
             parts.append({
                 "type": 10,
                 "content": "**🔎 Site de référence**\n" + reference,
             })
-        # Le site actif est une adresse, pas une promesse de disponibilité.
-        # En cas de 404, panne DNS ou index vide, la fiche doit le préciser.
+        if no_active:
+            # Conserver la référence sans présenter un domaine FAI-bloqué
+            # ou un raccourcisseur comme l'adresse actuelle.
+            parts.append({
+                "type": 10,
+                "content": "🟡 **🌐 Site actif**\n"
+                           "Aucune adresse active vérifiée pour le moment.\n"
+                           "-# Anciennes adresses bloquées ou non confirmées exclues.",
+            })
+            continue
         status = group.get("status")
-        empty_index = status == "empty_index"
-        if status in ("offline", "suspect", "empty_index"):
+        if status in ("offline", "empty_index", "parked", "interstitial"):
             prefix = "❌ "
         elif group.get("verified"):
             prefix = "✅ "
         else:
             prefix = "🟡 "
         line = prefix + "**🌐 Site actif**\n" + url
-        if empty_index:
+        if status == "empty_index":
             line += "\n-# ❌ Page vide : index de répertoire détecté"
-        elif status in ("offline", "suspect"):
+        elif status == "parked":
+            line += "\n-# ❌ Domaine expiré ou stationné chez un registrar"
+        elif status == "interstitial":
+            line += "\n-# ❌ Page publicitaire ou raccourcisseur, pas le site attendu"
+        elif status == "offline":
             line += "\n-# ❌ Adresse indisponible, DNS ou accès en échec"
         elif group.get("verified"):
             line += "\n-# Page HTML vérifiée"
         else:
-            line += "\n-# Intégrité du contenu non confirmée"
+            line += "\n-# Contenu du site non confirmé"
         if group.get("directory_url") and group["directory_url"] != reference:
             line += "\n-# ↳ Page de référence : " + group["directory_url"]
         if group.get("older"):
