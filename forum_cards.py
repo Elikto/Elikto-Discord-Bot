@@ -128,7 +128,8 @@ def credentials_from_author_posts(api, thread_id, bot_id):
         try:
             thread = api.call("GET", f"/channels/{thread_id}")
             author_id = str(thread.get("owner_id") or "")
-        except RuntimeError:
+        except (RuntimeError, AssertionError):
+            # Certains adaptateurs anciens ne fournissent pas la lecture du fil.
             return None
     if not author_id or author_id == str(bot_id):
         return None
