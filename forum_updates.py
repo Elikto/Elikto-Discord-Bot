@@ -51,8 +51,7 @@ def site_groups(records, forum_title):
             continue
         if key not in groups:
             groups[key] = {
-                "url": url, "name": safe_label(rec.get("site_name") or forum_title)
-                if successor else safe_label(rec.get("site_name") or domain(original)),
+                "url": url, "name": domain(url),
                 "older": [], "announced": bool(successor),
                 "status": rec.get("announced_status") if successor else rec.get("status"),
             }
@@ -61,7 +60,7 @@ def site_groups(records, forum_title):
             entry["url"] = successor
             entry["announced"] = True
             entry["status"] = rec.get("announced_status")
-            entry["name"] = safe_label(rec.get("site_name") or forum_title)
+            entry["name"] = domain(successor)
             for old in [original, *(rec.get("other_previous_urls") or [])]:
                 older = domain(old)
                 if older and older != key and older not in entry["older"]:
@@ -71,9 +70,10 @@ def site_groups(records, forum_title):
 
 def render_forum_update(title, records):
     groups = site_groups(records, title)
-    lines = ["### 🔄 Adresses mises à jour · " + safe_label(title), ""]
+    heading = domain(groups[0]["url"]) if groups else safe_label(title)
+    lines = ["### 🔄 Adresses mises à jour · " + heading, ""]
     for group in groups:
-        name = group["name"] or domain(group["url"]).upper()
+        name = domain(group["url"])
         lines.append(f"**✦ [{name}]({group['url']})**")
         if group["older"]:
             lines.append("-# ↳ Ancien : " + ", ".join(group["older"]))
