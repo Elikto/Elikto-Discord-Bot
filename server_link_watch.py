@@ -326,6 +326,7 @@ def update_identity(state, record, observation, now, *, first_run):
 # Chaque site public est alors reinspecte une fois lors de la mise a jour,
 # meme si une ancienne inspection a deja eu lieu le meme jour.
 MIGRATION_PROBE_VERSION = 3
+HTML_HEALTH_PROBE_VERSION = 2  # Force one upgrade scan after HTML verification status migration
 
 
 def watch_server_links(api, state, now=None, *, discover=find_server_links):
@@ -395,8 +396,13 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
                      "evidence": "http:cross_domain_redirect"},
                     now, first_run=first_run,
                 )
-        if rec.get("status") == "online" and (force_scan or due_daily(rec.get("name_attempted_at"), now)):
+        if rec.get("status") == "online" and (
+            force_scan
+            or int(rec.get("html_health_probe_version") or 0) < HTML_HEALTH_PROBE_VERSION
+            or due_daily(rec.get("name_attempted_at"), now)
+        ):
             rec["name_attempted_at"] = stamp(now)
+            rec["html_health_probe_version"] = HTML_HEALTH_PROBE_VERSION
             identity = probe_site_name(rec["site_url"])
             if identity and identity.get("page_health") == "empty_index":
                 # HTTP 200 ne signifie pas qu'une vraie page de site s'affiche.
