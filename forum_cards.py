@@ -291,6 +291,8 @@ def build_card(groups, description, title=None, credentials=None, preview_image_
             prefix = "❌ "
         elif group.get("verified"):
             prefix = "✅ "
+        elif status == "restricted":
+            prefix = "🟠 "
         else:
             prefix = "🟡 "
         line = prefix + "**🌐 Site actif**\n" + url
@@ -303,7 +305,10 @@ def build_card(groups, description, title=None, credentials=None, preview_image_
         elif status == "offline":
             line += "\n-# ❌ Adresse indisponible, DNS ou accès en échec"
         elif group.get("verified"):
-            line += "\n-# Page HTML vérifiée"
+            line += ("\n-# Page HTML vérifiée · accès HTTP direct limité (403)"
+                     if status == "restricted" else "\n-# Page HTML vérifiée")
+        elif status == "restricted":
+            line += "\n-# Accès HTTP 403 : navigation possible, contenu non confirmé par le bot"
         else:
             line += "\n-# Contenu du site non confirmé"
         if group.get("directory_url") and group["directory_url"] != reference:
