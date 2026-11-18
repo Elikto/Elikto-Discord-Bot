@@ -396,6 +396,7 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
     for rec in records.values():
         if not rec.get("active"):
             continue
+        http_unreadable_this_pass = False
         previous_uncertain_failure = (
             rec.get("status") in ("offline", "suspect")
             and int(rec.get("http_status") or 0) not in (404, 410)
@@ -404,6 +405,10 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
         if force_scan or previous_uncertain_failure or due_daily(rec.get("last_checked"), now):
             observation = check_site(rec["site_url"])
             record_check(state, rec, observation, now)
+            http_unreadable_this_pass = (
+                rec.get("status") == "unknown"
+                and observation.get("http_status") is None
+            )
             rec["http_probe_version"] = HTTP_PROBE_VERSION
             checked += 1
             # Les vraies redirections HTTP inter-domaines sont des preuves
@@ -417,7 +422,8 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
                      "evidence": "http:cross_domain_redirect"},
                     now, first_run=first_run,
                 )
-        if rec.get("status") in ("online", "restricted", "unknown") and (
+        if (rec.get("status") in ("online", "restricted")
+                or http_unreadable_this_pass) and (
             force_scan
             or int(rec.get("html_health_probe_version") or 0) < HTML_HEALTH_PROBE_VERSION
             or due_daily(rec.get("name_attempted_at"), now)
