@@ -72,6 +72,31 @@ embeds et boutons. Il reconnaît les domaines écrits sans `https://`.
   et une réponse HTTP ne garantit pas la légalité ou le fonctionnement
   complet d'un site.
 
+### Fiches de sites stylisées et mises à jour dans tous les forums publics
+
+Le module `forum_updates.py`, avec `forum_cards.py`, entretient une
+**publication dédiée du bot dans chaque fil de forum public** ayant au moins
+une adresse connue. Le fil « Streaming HD miroir » conserve sa propre
+présentation `mirror_watch.py`.
+
+- Les cartes Discord modernes présentent le **domaine complet avec extension**,
+  son URL cliquable et les anciennes adresses réunies sous le nouveau nom.
+  Une nouvelle adresse annoncée est distinguée d'une migration confirmée.
+- La rubrique **Description d'origine** reproduit exactement le **texte du
+  message initial du fil**, sans résumé ni reformulation. Si ce message a
+  été supprimé ou n'a pas de texte, le bot n'invente pas de description.
+- Le texte original est relu lors de la synchronisation et **n'est pas copié
+  dans les fichiers publics de surveillance ni stocké dans le dépôt**.
+- Lorsqu'un nom, une adresse ou la description d'origine change, le bot
+  **édite sa propre carte existante**. Il ne touche pas à la publication du
+  membre, ne crée pas de doublon et ne montre plus de marqueur technique ni
+  de formule « Message actualisé automatiquement ».
+- La première synchronisation initialise également les anciens fils ayant
+  une URL historiquement connue, même si les anciens messages ne sont plus
+  présents dans le dernier scan de liens.
+- L'accès en écriture reste limité aux fils publics répertoriés dans le
+  catalogue ; toute erreur d'accès est indiquée dans le journal de travail.
+
 ### Suivi quotidien des cinq miroirs et de leur domaine principal
 
 Le fil **Streaming HD miroir** (ID Discord `1430988094374547559`)
