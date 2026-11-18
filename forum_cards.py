@@ -51,6 +51,8 @@ def strip_duplicate_source_url(description, groups):
     known = set()
     for group in groups:
         known.add(domain(group.get("url")))
+        if group.get("reference_url"):
+            known.add(domain(group.get("reference_url")))
         known.update(group.get("older") or [])
     lines = str(description or "").rstrip().splitlines()
     while lines:
@@ -259,22 +261,39 @@ def build_card(groups, description, title=None, credentials=None, preview_image_
         })
     for group in groups:
         url = clean_url(group.get("url"))
+        reference = clean_url(group.get("reference_url"))
         if not url:
             continue
-        empty_index = group.get("status") == "empty_index"
-        line = ("❌ 🌐 " if empty_index else "🌐 ") + url
+        if reference and reference != url:
+            parts.append({
+                "type": 10,
+                "content": "**🔎 Site de référence**\n" + reference,
+            })
+        # Le site actif est une adresse, pas une promesse de disponibilité.
+        # En cas de 404, panne DNS ou index vide, la fiche doit le préciser.
+        status = group.get("status")
+        empty_index = status == "empty_index"
+        if status in ("offline", "suspect", "empty_index"):
+            prefix = "❌ "
+        elif group.get("verified"):
+            prefix = "✅ "
+        else:
+            prefix = "🟡 "
+        line = prefix + "**🌐 Site actif**\n" + url
         if empty_index:
-            line += "\n-# Page vide : index de répertoire détecté"
-        if group.get("directory_url"):
+            line += "\n-# ❌ Page vide : index de répertoire détecté"
+        elif status in ("offline", "suspect"):
+            line += "\n-# ❌ Adresse indisponible, DNS ou accès en échec"
+        elif group.get("verified"):
+            line += "\n-# Page HTML vérifiée"
+        else:
+            line += "\n-# Intégrité du contenu non confirmée"
+        if group.get("directory_url") and group["directory_url"] != reference:
             line += "\n-# ↳ Page de référence : " + group["directory_url"]
         if group.get("older"):
             line += "\n-# ↳ Ancien : " + ", ".join(group["older"])
-        if group.get("announced"):
-            line += ("\n-# 🟢 Nouvelle adresse annoncée · page HTML vérifiée"
-                     if group.get("verified")
-                     else "\n-# 🟡 Nouvelle adresse annoncée · intégrité à confirmer")
-        elif group.get("status") in ("offline", "suspect"):
-            line += "\n-# 🟠 Accessibilité à vérifier"
+        if group.get("announced") and not group.get("verified"):
+            line += "\n-# 🔄 Nouvelle adresse annoncée · à confirmer"
         parts.extend({"type": 10, "content": chunk} for chunk in split_text(line))
     if preview_image_url:
         # Le composant Media Gallery est inclus DANS le Container Components V2.
