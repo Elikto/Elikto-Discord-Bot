@@ -387,7 +387,9 @@ def fetch_html_page(url, timeout=7):
                 "User-Agent": USER_AGENT,
                 "Accept": "text/html,application/xhtml+xml;q=0.9",
                 "Accept-Encoding": "identity",
-                "Range": f"bytes=0-{MAX_HTML - 1}",
+                # Ne pas demander de Range : de nombreux CDN refusent
+                # une requête partielle alors qu'un GET normal fonctionne.
+                # La lecture reste bornée à MAX_HTML octets ci-dessous.
             })
             response = connection.getresponse()
             status = response.status
@@ -453,4 +455,5 @@ def probe_site_name(url):
     if not result:
         return None
     result["final_url"] = page["final_url"]
+    result["page_health"] = "content"
     return result
