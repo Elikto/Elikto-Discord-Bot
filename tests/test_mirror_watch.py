@@ -752,13 +752,42 @@ class MirrorWatchTests(unittest.TestCase):
     def test_two_distinct_daily_failures_confirm_offline(self):
         api = FakeAPI([human_message()])
         s = state()
-        with patch("mirror_watch.check_site", side_effect=lambda u: response("failed", 503, u)):
+        with patch("mirror_watch.check_site", side_effect=lambda u: response("failed", 404, u)):
             mirror_watch.sync_thread(api, s, self.now)
             self.assertEqual(s["tracked_threads"][mirror_watch.THREAD_ID]["url_states"][URLS[0]]["status"], "suspect")
             mirror_watch.sync_thread(api, s, self.now + timedelta(days=1))
         states = s["tracked_threads"][mirror_watch.THREAD_ID]["url_states"]
         self.assertEqual(states[URLS[0]]["status"], "offline")
         self.assertEqual(len([e for e in s["events"] if e["type"] == "mirror_offline"]), 5)
+
+    def test_http_503_mirrors_never_confirm_offline(self):
+        api = FakeAPI([human_message()])
+        s = state()
+        with patch("mirror_watch.check_site",
+                   side_effect=lambda url: response("failed", 503, url)):
+            mirror_watch.sync_thread(api, s, self.now)
+            mirror_watch.sync_thread(api, s, self.now + timedelta(days=1))
+        items = s["tracked_threads"][mirror_watch.THREAD_ID]["url_states"]
+        self.assertTrue(all(item["status"] == "unknown" for item in items.values()))
+        self.assertFalse(any(e["type"] == "mirror_offline" for e in s["events"]))
+
+    def test_legacy_503_cache_rechecked_even_on_same_day(self):
+        api = FakeAPI([human_message()])
+        s = state()
+        with patch("mirror_watch.check_site",
+                   side_effect=lambda url: response(url=url)):
+            mirror_watch.sync_thread(api, s, self.now)
+        for item in s["tracked_threads"][mirror_watch.THREAD_ID]["url_states"].values():
+            item["status"] = "offline"
+            item["http_status"] = 503
+            item.pop("http_probe_version", None)
+            item["last_checked"] = self.now.isoformat()
+        with patch("mirror_watch.check_site",
+                   side_effect=lambda url: response("failed", 503, url)) as check:
+            mirror_watch.sync_thread(api, s, self.now + timedelta(minutes=20))
+        self.assertEqual(check.call_count, len(URLS))
+        items = s["tracked_threads"][mirror_watch.THREAD_ID]["url_states"]
+        self.assertTrue(all(item["status"] == "unknown" for item in items.values()))
 
     def test_recovery_is_recorded(self):
         api = FakeAPI([human_message()])
