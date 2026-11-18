@@ -214,7 +214,7 @@ class ForumUpdatesTests(unittest.TestCase):
         same_id = published["id"]
         result = sync_forum_updates(api, data)
         self.assertEqual(result["unchanged"], 1)
-        self.assertEqual(len(api.messages[THREAD]), 2)
+        self.assertEqual(len(api.messages[THREAD]), 3)
         api.messages[THREAD][0]["content"] = original + "\n**Mise à jour du texte**"
         result = sync_forum_updates(api, data)
         self.assertEqual(result["updated"], 1)
@@ -222,6 +222,38 @@ class ForumUpdatesTests(unittest.TestCase):
         self.assertIn("**Mise à jour du texte**", shown(api.messages[THREAD][-2]))
         self.assertEqual(api.messages[THREAD][0]["content"],
                          original + "\n**Mise à jour du texte**")
+
+
+    def test_reseam_card_and_auto_preview(self):
+        data = state()
+        data["records"][THREAD]["title"] = "Reseam Manager"
+        data["server_links"] = {
+            "https://reseam.app/download/": record("https://reseam.app/download/")
+        }
+        api = FakeAPI()
+        original = (
+            "Application pour patcher plusieurs applications pour enlever toutes les pubs.\n\n"
+            "Youtube, Instagram, tiktok, twitter, twitch etc\n\n"
+            "https://reseam.app/download/"
+        )
+        api.messages[THREAD] = [
+            {"id": THREAD, "author": {"id": "human"}, "content": original}
+        ]
+        result = sync_forum_updates(api, data)
+        self.assertEqual(result["created"], 1)
+        self.assertEqual(result["previews_created"], 1)
+        self.assertEqual(len(api.messages[THREAD]), 3)
+        card = shown(api.messages[THREAD][1])
+        self.assertIn("✦ Reseam Manager ✦", card)
+        self.assertIn("🌐 https://reseam.app/download/", card)
+        self.assertIn("📝 Description", card)
+        self.assertIn("Youtube, Instagram, tiktok, twitter, twitch etc", card)
+        self.assertEqual(card.count("https://reseam.app/download/"), 1)
+        self.assertEqual(api.messages[THREAD][2]["content"], "https://reseam.app/download/")
+        second = sync_forum_updates(api, data)
+        self.assertEqual(second["unchanged"], 1)
+        self.assertEqual(len(api.messages[THREAD]), 3)
+        self.assertEqual(api.messages[THREAD][0]["content"], original)
 
     def test_missing_original_description_is_not_invented(self):
         data = state()
