@@ -1207,7 +1207,7 @@
         "https://zinzov.com/",
         "https://didvip.com/"
       ],
-      "last_synced": "2026-11-18T23:19:56+00:00",
+      "last_synced": "2026-11-18T23:44:06+00:00",
       "target_states": {
         "https://nandov.com/": {
           "url": "https://nandov.com/",
@@ -1969,7 +1969,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2005,7 +2005,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 503,
       "reason": "Réponse HTTP 503 temporaire ou protection automatique",
@@ -2032,7 +2032,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2100,7 +2100,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2136,7 +2136,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2175,7 +2175,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2214,7 +2214,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2260,7 +2260,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2296,7 +2296,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2332,7 +2332,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2368,7 +2368,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2404,7 +2404,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2453,7 +2453,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2513,7 +2513,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2549,7 +2549,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 200,
       "reason": "Domaine expiré ou parqué chez un registraire",
@@ -2579,7 +2579,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2625,7 +2625,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2661,7 +2661,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2707,7 +2707,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 403,
       "reason": null,
@@ -2737,7 +2737,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": null,
       "reason": "Réseau indéterminé (gaierror)",
@@ -2767,7 +2767,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2803,7 +2803,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2839,7 +2839,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2875,7 +2875,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2911,7 +2911,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2947,7 +2947,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -2983,7 +2983,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -3019,7 +3019,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -3055,7 +3055,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 403,
       "reason": null,
@@ -3085,7 +3085,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -3121,7 +3121,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 403,
       "reason": null,
@@ -3151,7 +3151,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": null,
       "reason": "Réseau indéterminé (OSError)",
@@ -3187,7 +3187,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 200,
       "reason": "Domaine expiré ou parqué chez un registraire",
@@ -3222,7 +3222,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -3258,7 +3258,7 @@
           "kind": "fil"
         }
       ],
-      "last_seen": "2026-11-18T23:20:13+00:00",
+      "last_seen": "2026-11-18T23:44:07+00:00",
       "active": true,
       "http_status": 200,
       "reason": null,
@@ -3279,9 +3279,9 @@
     }
   },
   "server_scan": {
-    "at": "2026-11-18T23:20:13+00:00",
+    "at": "2026-11-18T23:44:07+00:00",
     "counts": {
-      "messages_read": 76,
+      "messages_read": 77,
       "locations_scanned": 38,
       "links_found": 35,
       "locations_discovered": 38,
@@ -3290,15 +3290,15 @@
     },
     "errors": [],
     "all_public_sources_scanned": true,
-    "new_http_checks": 35,
-    "new_name_checks": 34,
-    "new_migration_checks": 33,
-    "new_announced_address_checks": 6,
-    "browser_checks": 10,
+    "new_http_checks": 0,
+    "new_name_checks": 0,
+    "new_migration_checks": 0,
+    "new_announced_address_checks": 0,
+    "browser_checks": 0,
     "forum_updates": {
-      "created": 1,
-      "updated": 28,
-      "unchanged": 0,
+      "created": 0,
+      "updated": 17,
+      "unchanged": 12,
       "skipped": 0,
       "descriptions_found": 28,
       "description_missing": 1,
@@ -3335,7 +3335,7 @@
       "message_id": "1572407211903287411",
       "preview_image_source": "https://coflix.red/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T23:22:33+00:00",
+      "preview_image_checked_at": "2026-11-18T23:44:29+00:00",
       "reference_url": "https://coflix.domains/",
       "active_url": "https://coflix.red/",
       "active_verified": true,
@@ -3346,7 +3346,7 @@
       "message_id": "1572407214906544171",
       "preview_image_source": "https://purstream.gg/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T23:22:38+00:00",
+      "preview_image_checked_at": "2026-11-18T23:44:37+00:00",
       "reference_url": "https://purstream.wiki/",
       "active_url": "https://purstream.gg/",
       "active_verified": true,
@@ -3368,7 +3368,7 @@
       "message_id": "1572407220006817834",
       "preview_image_source": "https://yggreborn.org/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T23:22:45+00:00",
+      "preview_image_checked_at": "2026-11-18T23:44:45+00:00",
       "reference_url": null,
       "active_url": "https://yggreborn.org/",
       "active_verified": true,
@@ -3379,7 +3379,7 @@
       "message_id": "1572407223437754462",
       "preview_image_source": "https://adnauseam.io/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T23:22:49+00:00",
+      "preview_image_checked_at": "2026-11-18T23:44:48+00:00",
       "reference_url": null,
       "active_url": "https://adnauseam.io/",
       "active_verified": true,
@@ -3401,7 +3401,7 @@
       "message_id": "1572407237140553873",
       "preview_image_source": "https://skidrowreloaded.com/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T23:22:53+00:00",
+      "preview_image_checked_at": "2026-11-18T23:44:52+00:00",
       "reference_url": null,
       "active_url": "https://skidrowreloaded.com/",
       "active_verified": true,
@@ -3412,7 +3412,7 @@
       "message_id": "1572407242010140752",
       "preview_image_source": "https://fitgirl-repacks.site/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T23:22:56+00:00",
+      "preview_image_checked_at": "2026-11-18T23:44:55+00:00",
       "reference_url": null,
       "active_url": "https://fitgirl-repacks.site/",
       "active_verified": true,
@@ -3445,7 +3445,7 @@
       "message_id": "1572407252051296434",
       "preview_image_source": "https://fr.z-library.ec/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T23:23:04+00:00",
+      "preview_image_checked_at": "2026-11-18T23:45:02+00:00",
       "reference_url": null,
       "active_url": "https://fr.z-library.ec/",
       "active_verified": false,
@@ -3467,7 +3467,7 @@
       "message_id": "1572407258841620563",
       "preview_image_source": "https://www7.bookys-ebooks.com/magazines/new",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T23:23:07+00:00",
+      "preview_image_checked_at": "2026-11-18T23:45:07+00:00",
       "reference_url": null,
       "active_url": "https://www7.bookys-ebooks.com/magazines/new",
       "active_verified": false,
@@ -3478,7 +3478,7 @@
       "message_id": "1572407261673037958",
       "preview_image_source": "https://cinezzz.club/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T23:23:09+00:00",
+      "preview_image_checked_at": "2026-11-18T23:45:09+00:00",
       "reference_url": null,
       "active_url": "https://cinezzz.club/",
       "active_verified": false,
@@ -3505,7 +3505,7 @@
       "suggested_url": null,
       "preview_image_source": "https://idealo.fr/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T23:23:13+00:00"
+      "preview_image_checked_at": "2026-11-18T23:45:13+00:00"
     },
     "1432836342093578306": {
       "message_id": "1572407273089798257",
@@ -3523,7 +3523,7 @@
       "reference_url": null,
       "active_url": "https://hellojoko.app.link/tyX38HoTyP",
       "active_verified": false,
-      "active_status": "unknown",
+      "active_status": "online",
       "suggested_url": null,
       "preview_image_source": "https://hellojoko.app.link/tyX38HoTyP",
       "preview_image_url": "https://cdn.branch.io/branch-assets/1660636138042-og_image.png",
@@ -3560,7 +3560,7 @@
       "suggested_url": null,
       "preview_image_source": "https://draupnirr.xyz/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T23:23:22+00:00"
+      "preview_image_checked_at": "2026-11-18T23:45:23+00:00"
     },
     "1565889701225832448": {
       "message_id": "1572407292475875409",
@@ -3577,7 +3577,7 @@
       "message_id": "1572407296556929137",
       "preview_image_source": "https://v3x.club/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T23:23:26+00:00",
+      "preview_image_checked_at": "2026-11-18T23:45:34+00:00",
       "reference_url": null,
       "active_url": "https://v3x.club/",
       "active_verified": true,
@@ -3588,7 +3588,7 @@
       "message_id": "1572407299673432256",
       "preview_image_source": "https://www.oxtorrent.ws/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T23:23:30+00:00",
+      "preview_image_checked_at": "2026-11-18T23:45:37+00:00",
       "reference_url": "https://ww3-oxtorrent.officiel.cc/",
       "active_url": "https://www.oxtorrent.ws/",
       "active_verified": false,
@@ -3620,13 +3620,165 @@
     "1572752361967853713": {
       "preview_image_source": "https://tr4ker.net/",
       "preview_image_url": null,
-      "preview_image_checked_at": "2026-11-18T23:23:36+00:00",
+      "preview_image_checked_at": "2026-11-18T23:45:43+00:00",
       "message_id": "1572754184237748348",
       "reference_url": null,
       "active_url": "https://tr4ker.net/",
       "active_verified": true,
       "active_status": "online",
       "suggested_url": null
+    }
+  },
+  "site_channel_mirrors": {
+    "1430991985572839547": {
+      "channel_id": "1572759758350327981",
+      "message_id": "1572759801186754581",
+      "source_thread_id": "1430991985572839547"
+    },
+    "1431079041015742574": {
+      "channel_id": "1572759759478853733",
+      "message_id": "1572759803996930129",
+      "source_thread_id": "1431079041015742574"
+    },
+    "1430989234264870912": {
+      "channel_id": "1572759760560726139",
+      "message_id": "1572759806761115679",
+      "source_thread_id": "1430989234264870912"
+    },
+    "1430989114265571459": {
+      "channel_id": "1572759761424879699",
+      "message_id": "1572759809638535321",
+      "source_thread_id": "1430989114265571459"
+    },
+    "1431085822903455744": {
+      "channel_id": "1572759762519720197",
+      "message_id": "1572759812582801472",
+      "source_thread_id": "1431085822903455744"
+    },
+    "1430989583746732223": {
+      "channel_id": "1572759763383615608",
+      "message_id": "1572759815967740006",
+      "source_thread_id": "1430989583746732223"
+    },
+    "1430988094374547559": {
+      "channel_id": "1572759764314628176",
+      "message_id": "1572759818567950348",
+      "source_thread_id": "1430988094374547559"
+    },
+    "1562067560856289411": {
+      "channel_id": "1572759765057282272",
+      "message_id": "1572759821814468709",
+      "source_thread_id": "1562067560856289411"
+    },
+    "1431052564262162524": {
+      "channel_id": "1572759767359951080",
+      "message_id": "1572759825601929359",
+      "source_thread_id": "1431052564262162524"
+    },
+    "1431056283565424650": {
+      "channel_id": "1572759768722964532",
+      "message_id": "1572759828731002950",
+      "source_thread_id": "1431056283565424650"
+    },
+    "1568377736723173376": {
+      "channel_id": "1572759769884659777",
+      "message_id": "1572759832644288673",
+      "source_thread_id": "1568377736723173376"
+    },
+    "1431053281693532251": {
+      "channel_id": "1572759771931615232",
+      "message_id": "1572759835710201968",
+      "source_thread_id": "1431053281693532251"
+    },
+    "1431060081784655974": {
+      "channel_id": "1572759777686196274",
+      "message_id": "1572759838708998286",
+      "source_thread_id": "1431060081784655974"
+    },
+    "1432848239517765632": {
+      "channel_id": "1572759778499895296",
+      "message_id": "1572759842643386459",
+      "source_thread_id": "1432848239517765632"
+    },
+    "1565889701225832448": {
+      "channel_id": "1572759779468644384",
+      "message_id": "1572759845474410620",
+      "source_thread_id": "1565889701225832448"
+    },
+    "1431060780584796270": {
+      "channel_id": "1572759780349710376",
+      "message_id": "1572759848154832949",
+      "source_thread_id": "1431060780584796270"
+    },
+    "1543963384339239032": {
+      "channel_id": "1572759781247029278",
+      "message_id": "1572759850734059693",
+      "source_thread_id": "1543963384339239032"
+    },
+    "1565888855159341147": {
+      "channel_id": "1572759782727749694",
+      "message_id": "1572759853716344935",
+      "source_thread_id": "1565888855159341147"
+    },
+    "1431054520477024297": {
+      "channel_id": "1572759783738703873",
+      "message_id": "1572759858694983743",
+      "source_thread_id": "1431054520477024297"
+    },
+    "1431054323852378264": {
+      "channel_id": "1572759784850202716",
+      "message_id": "1572759861920403574",
+      "source_thread_id": "1431054323852378264"
+    },
+    "1565898044518568187": {
+      "channel_id": "1572759786150305964",
+      "message_id": "1572759867490435144",
+      "source_thread_id": "1565898044518568187"
+    },
+    "1565895933374496890": {
+      "channel_id": "1572759787005808660",
+      "message_id": "1572759870426452059",
+      "source_thread_id": "1565895933374496890"
+    },
+    "1572752361967853713": {
+      "channel_id": "1572759788167766058",
+      "message_id": "1572759872792035359",
+      "source_thread_id": "1572752361967853713"
+    },
+    "1565895227619803287": {
+      "channel_id": "1572759789371523123",
+      "message_id": "1572759875103232175",
+      "source_thread_id": "1565895227619803287"
+    },
+    "1430996722745606224": {
+      "channel_id": "1572759790428495912",
+      "message_id": "1572759878328516649",
+      "source_thread_id": "1430996722745606224"
+    },
+    "1431059243968233632": {
+      "channel_id": "1572759791548366928",
+      "message_id": "1572759881180651712",
+      "source_thread_id": "1431059243968233632"
+    },
+    "1431057935034744865": {
+      "channel_id": "1572759793377087549",
+      "message_id": "1572759884628361252",
+      "source_thread_id": "1431057935034744865"
+    },
+    "1432836242453827704": {
+      "channel_id": "1572759795830620273",
+      "message_id": "1572759888067821633",
+      "source_thread_id": "1432836242453827704"
+    },
+    "1432841164574167070": {
+      "channel_id": "1572759796812087376",
+      "message_id": "1572759891263754323",
+      "source_thread_id": "1432841164574167070"
+    },
+    "1432836342093578306": {
+      "channel_id": "1572759797802209381",
+      "message_id": "1572759895328161813",
+      "source_thread_id": "1432836342093578306"
     }
   }
 }
