@@ -292,22 +292,38 @@ def validated_directory_groups(linked, kind):
     found = None
     found_state = None
     verified = False
+    uncertain = None
+    expected_prefix = DIRECTORIES[kind][1]
     for proposed in proposals:
         result = check_site(proposed)
         if result.get("result") != "online":
             continue
-        identity = probe_site_name(proposed)
+        # Un domaine de streaming peut répondre HTTP 200 en redirigeant
+        # vers un raccourcisseur, une page publicitaire ou un clone.
+        # Ce n'est pas un catalogue valide et cela ne doit pas afficher ✅.
+        destination = clean_url(result.get("final_url") or proposed)
+        if not destination or not domain(destination).startswith(expected_prefix):
+            continue
+        identity = probe_site_name(destination)
         if identity and identity.get("page_health") == "empty_index":
             continue
-        found = proposed
-        found_state = "online"
-        verified = bool(identity and identity.get("name"))
-        if verified:
+        label = str((identity or {}).get("name") or "").casefold()
+        brand_matches = ("coflix" in label if kind == "coflix"
+                         else "flemmix" in label or "wiflix" in label)
+        if brand_matches:
+            found = destination
+            found_state = "online"
+            verified = True
             break
+        if uncertain is None:
+            uncertain = destination
 
     if found:
         current = found
         status = found_state
+    elif uncertain:
+        current = uncertain
+        status = "suspect"
     elif proposals:
         # L'annonce du portail est explicite, mais n'a pas passé les contrôles.
         current = proposals[0]
