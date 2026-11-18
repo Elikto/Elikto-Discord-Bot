@@ -622,6 +622,32 @@ class MirrorWatchTests(unittest.TestCase):
         self.assertIn("https://good.example.org/",
                       cards[0]["components"][0]["content"])
 
+    def test_full_integrity_check_retests_all_sources_at_18_even_after_prior_scan(self):
+        api = FakeAPI([human_message()])
+        current_state = state()
+        with patch("mirror_watch.check_site",
+                   side_effect=lambda url: response(url=url)), patch(
+            "mirror_watch.probe_site_name", return_value={
+                "name": "Example", "confidence": "medium", "evidence": "title"
+            }
+        ):
+            mirror_watch.sync_thread(api, current_state, self.now)
+
+        with patch.dict("os.environ", {"FORCE_DAILY_INTEGRITY_SCAN": "1"}), patch(
+            "mirror_watch.check_site",
+            side_effect=lambda url: response(url=url)
+        ) as http, patch(
+            "mirror_watch.probe_site_name", return_value=None
+        ) as html_probe:
+            mirror_watch.sync_thread(
+                api, current_state, self.now + timedelta(minutes=10)
+            )
+        self.assertEqual(http.call_count, len(URLS))
+        self.assertEqual(html_probe.call_count, len(URLS))
+        entries = current_state["tracked_threads"][mirror_watch.THREAD_ID]["url_states"]
+        self.assertTrue(all(entry.get("page_health") == "unknown"
+                            for entry in entries.values()))
+
     def test_native_dropdown_contains_all_mirrors_and_no_spoiler(self):
         sites = [
             {"name": "PRIMARY", "url": "https://primary.example.org/",
