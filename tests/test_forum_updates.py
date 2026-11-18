@@ -1019,5 +1019,34 @@ class ForumUpdatesTests(unittest.TestCase):
         self.assertNotIn(mirror_id, api.messages)
 
 
+    def test_restricted_http_403_requires_recent_html_evidence(self):
+        from forum_updates import proven_html_content
+        from forum_cards import build_card
+        now = datetime.now(timezone.utc)
+        fresh = now.isoformat()
+        stale = (now - timedelta(days=5)).isoformat()
+        base = {
+            **record("https://cinezzz.club/", status="restricted"),
+            "http_status": 403,
+            "name_evidence": "html:title_brand",
+            "name_checked_at": fresh,
+        }
+        self.assertFalse(proven_html_content(base))
+        self.assertFalse(proven_html_content({
+            **base, "page_health": "blocked"
+        }))
+        self.assertFalse(proven_html_content({
+            **base, "page_health": "content", "name_checked_at": stale
+        }))
+        confirmed = {**base, "page_health": "content"}
+        self.assertTrue(proven_html_content(confirmed))
+        group = site_groups([confirmed], "Cinezzz")[0]
+        self.assertTrue(group["verified"])
+        body = "\n".join(all_text(build_card([group], "Films et séries", "Cinezzz")))
+        self.assertIn("✅", body)
+        self.assertEqual(body.count("https://cinezzz.club/"), 1)
+
+
+
 if __name__ == "__main__":
     unittest.main()

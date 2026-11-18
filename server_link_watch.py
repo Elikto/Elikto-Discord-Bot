@@ -326,7 +326,7 @@ def update_identity(state, record, observation, now, *, first_run):
 # Chaque site public est alors reinspecte une fois lors de la mise a jour,
 # meme si une ancienne inspection a deja eu lieu le meme jour.
 MIGRATION_PROBE_VERSION = 3
-HTML_HEALTH_PROBE_VERSION = 3  # Force one upgrade scan after HTML verification status migration
+HTML_HEALTH_PROBE_VERSION = 4  # Reinspect restricted sites after HTML fallback upgrade
 
 
 def watch_server_links(api, state, now=None, *, discover=find_server_links):
@@ -396,14 +396,18 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
                      "evidence": "http:cross_domain_redirect"},
                     now, first_run=first_run,
                 )
-        if rec.get("status") == "online" and (
+        if rec.get("status") in ("online", "restricted") and (
             force_scan
             or int(rec.get("html_health_probe_version") or 0) < HTML_HEALTH_PROBE_VERSION
             or due_daily(rec.get("name_attempted_at"), now)
         ):
             rec["name_attempted_at"] = stamp(now)
             rec["html_health_probe_version"] = HTML_HEALTH_PROBE_VERSION
-            identity = probe_site_name(rec["site_url"])
+            # Un HTTP 403 ne prouve pas une panne : tenter aussi un GET
+            # HTML indépendant, puis www/non-www, sans résoudre de CAPTCHA.
+            restricted_http = rec.get("status") == "restricted"
+            identity = (probe_site_name(rec["site_url"], allow_www_fallback=True)
+                        if restricted_http else probe_site_name(rec["site_url"]))
             bad_html = (identity or {}).get("page_health")
             negative = {
                 "empty_index": "Répertoire de fichiers au lieu du site attendu",
@@ -416,12 +420,15 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
                 rec["page_health"] = bad_html
                 rec["reason"] = negative[bad_html]
             elif bad_html == "blocked":
-                rec["status"] = "unknown"
+                rec["status"] = "restricted" if restricted_http else "unknown"
                 rec["page_health"] = "blocked"
                 rec["reason"] = "Protection anti-bot : intégrité indéterminée"
             elif identity and identity.get("name"):
+                # Même si la sonde HTTP initiale reçoit 403, une vraie
+                # page du même site avec identité cohérente est une preuve.
                 rec["page_health"] = "content"
-                rec["reason"] = None
+                rec["reason"] = ("HTTP 403 pour la sonde ; HTML vérifié"
+                                 if restricted_http else None)
             elif rec.get("page_health") in negative:
                 # Ne pas annuler un ancien domaine expiré ou index vide
                 # sur la seule foi d'un nouveau code HTTP 200.
