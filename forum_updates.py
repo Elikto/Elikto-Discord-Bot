@@ -947,7 +947,17 @@ def sync_forum_updates(api, state, changed_events=()):
             # Ne pas conserver même une empreinte des mots de passe
             # dans l'historique public GitHub.
             safe_tracking = {k: v for k, v in previous.items() if k != "digest"}
-            tracked[tid] = {**safe_tracking, "message_id": message_id}
+            selected = groups[0]
+            tracked[tid] = {
+                **safe_tracking, "message_id": message_id,
+                # Seules des URLs déjà publiées dans la fiche sont suivies.
+                # Aucun texte original ou identifiant n'est conservé ici.
+                "reference_url": selected.get("reference_url"),
+                "active_url": (None if selected.get("no_active")
+                               else selected.get("url")),
+                "active_verified": bool(selected.get("verified")),
+                "active_status": selected.get("status"),
+            }
             result[outcome] += 1
             # Une seule publication par forum : le lien se trouve deja
             # dans la carte, meme lorsqu'aucune image valide n'existe.
