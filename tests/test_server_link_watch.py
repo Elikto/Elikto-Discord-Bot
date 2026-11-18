@@ -680,5 +680,70 @@ class ServerWatchTests(unittest.TestCase):
 
 
 
+    def test_cinezzz_403_uses_free_chromium_when_html_unreadable(self):
+        url = "https://cinezzz.club/"
+        source = {"url": "https://discord.com/channels/1/100/110",
+                  "channel": "Cinezzz", "kind": "fil"}
+        def discover(_):
+            return {url: {"sources": [source], "source_count": 1}}, {}, []
+        with patch.dict("os.environ", {"PLAYWRIGHT_BROWSER_FALLBACK": "1"}), patch(
+            "server_link_watch.check_site", return_value={
+                "result": "restricted", "http_status": 403, "final_url": url
+            }
+        ), patch("server_link_watch.probe_site_name", return_value=None), patch(
+            "server_link_watch.probe_browser_site", return_value={
+                "name": "Cinezzz", "page_health": "content", "final_url": url,
+                "evidence": "html:title_brand",
+                "verification_method": "chromium",
+            }
+        ) as browser:
+            state_ = state()
+            report, _ = watch.watch_server_links(
+                FakeDiscord(), state_, NOW, discover=discover
+            )
+        rec = state_["server_links"][url]
+        self.assertEqual(rec["status"], "restricted")
+        self.assertEqual(rec["page_health"], "content")
+        self.assertEqual(rec["verification_method"], "chromium")
+        self.assertEqual(report["sources"].get("unique_urls", 0), 0)
+        browser.assert_called_once_with(url)
+
+    def test_no_browser_when_http_html_already_verified(self):
+        url = "https://cinezzz.club/"
+        source = {"url": "https://discord.com/channels/1/100/110",
+                  "channel": "Cinezzz", "kind": "fil"}
+        def discover(_):
+            return {url: {"sources": [source], "source_count": 1}}, {}, []
+        with patch.dict("os.environ", {"PLAYWRIGHT_BROWSER_FALLBACK": "1"}), patch(
+            "server_link_watch.check_site", side_effect=lambda target: response(target)
+        ), patch("server_link_watch.probe_site_name", return_value={
+            "name": "Cinezzz", "evidence": "title",
+            "page_health": "content", "final_url": url
+        }), patch("server_link_watch.probe_browser_site") as browser:
+            state_ = state()
+            watch.watch_server_links(FakeDiscord(), state_, NOW, discover=discover)
+        browser.assert_not_called()
+
+    def test_no_false_green_when_chromium_is_blocked_too(self):
+        url = "https://cinezzz.club/"
+        source = {"url": "https://discord.com/channels/1/100/110",
+                  "channel": "Cinezzz", "kind": "fil"}
+        def discover(_):
+            return {url: {"sources": [source], "source_count": 1}}, {}, []
+        with patch.dict("os.environ", {"PLAYWRIGHT_BROWSER_FALLBACK": "1"}), patch(
+            "server_link_watch.check_site", return_value={
+                "result": "restricted", "http_status": 403, "final_url": url
+            }
+        ), patch("server_link_watch.probe_site_name", return_value=None), patch(
+            "server_link_watch.probe_browser_site", return_value=None
+        ):
+            state_ = state()
+            watch.watch_server_links(FakeDiscord(), state_, NOW, discover=discover)
+        rec = state_["server_links"][url]
+        self.assertEqual(rec["page_health"], "unknown")
+        self.assertEqual(rec["status"], "restricted")
+
+
+
 if __name__ == "__main__":
     unittest.main()
