@@ -297,6 +297,40 @@ class ForumUpdatesTests(unittest.TestCase):
         self.assertEqual(len([m for m in api.messages[THREAD]
                               if m.get("components")]), 1)
 
+    def test_all_monitored_public_forums_and_separate_credential_messages(self):
+        data = state()
+        data["records"][THREAD]["title"] = "Forum alpha"
+        data["records"][OTHER]["title"] = "Forum beta"
+        data["records"][OTHER]["site_url"] = "https://beta.example.org/"
+        api = FakeAPI()
+        alpha_secret = "demo-alpha-only"
+        beta_secret = "demo-beta-only"
+        api.messages[THREAD] = [
+            {"id": THREAD, "author": {"id": "human"}, "content": "Alpha description"},
+            {"id": str(int(THREAD)+1), "author": {"id": "human"},
+             "content": "Id : alpha_demo"},
+            {"id": str(int(THREAD)+2), "author": {"id": "human"},
+             "content": "mdp : " + alpha_secret},
+        ]
+        api.messages[OTHER] = [
+            {"id": OTHER, "author": {"id": "human"}, "content": "Beta description"},
+            {"id": str(int(OTHER)+1), "author": {"id": "human"},
+             "content": "Email : beta@example.org\nMot de passe : " + beta_secret},
+        ]
+        result = sync_forum_updates(api, data)
+        self.assertEqual(result["created"], 2)
+        alpha_card = next(m for m in api.messages[THREAD] if m.get("components"))
+        beta_card = next(m for m in api.messages[OTHER] if m.get("components"))
+        self.assertIn("alpha_demo", shown(alpha_card))
+        self.assertIn("||" + alpha_secret + "||", shown(alpha_card))
+        self.assertIn("beta@example.org", shown(beta_card))
+        self.assertIn("||" + beta_secret + "||", shown(beta_card))
+        self.assertNotIn(alpha_secret, shown(beta_card))
+        self.assertNotIn(beta_secret, shown(alpha_card))
+        self.assertNotIn(alpha_secret, repr(data))
+        self.assertNotIn(beta_secret, repr(data))
+        self.assertEqual(sync_forum_updates(api, data)["unchanged"], 2)
+
     def test_credentials_from_another_author_are_not_published(self):
         data = state()
         api = FakeAPI()
