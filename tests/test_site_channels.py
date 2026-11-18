@@ -273,8 +273,8 @@ class MirrorTests(unittest.TestCase):
         first = sync_mirrors(api, d, st)
         self.assertEqual(first["categories_renamed"], 1)
         self.assertEqual(first["channels_moved"], 2)
-        self.assertEqual(first["categories_created"], 2)
-        self.assertEqual(first["channels_created"], 1)
+        self.assertEqual(first["categories_created"], 3)  # Livres, Jeux et Streaming
+        self.assertEqual(first["channels_created"], 2)  # C411 et WebFlix, non préexistants
         self.assertEqual(first["cards_updated"], 0)
         self.assertTrue(any(
             cat["id"] == "400" and cat["name"] == "📥 Téléchargement · Torrents"
