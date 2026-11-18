@@ -6,6 +6,7 @@ par fil et reutilise son identifiant, meme si une synchronisation echoue.
 from __future__ import annotations
 
 import hashlib
+import html
 import os
 import re
 import unicodedata
@@ -14,7 +15,7 @@ from html.parser import HTMLParser
 from urllib.parse import urljoin, urlsplit
 from site_probe import (clean_url, check_site, resolve_public_ip,
                         PublicHTTPSConnection, PublicHTTPConnection, USER_AGENT)
-from name_probe import fetch_html_page, probe_site_name
+from name_probe import fetch_html_page, probe_site_name, parse_site_migration
 from forum_cards import (source_description, credentials_from_author_posts,
                          build_card, all_text, normalize, is_own_card,
                          card_digest, V2_FLAG)
@@ -231,6 +232,123 @@ def validated_movix_groups(linked):
         "directory_url": MOVIX_HUB if target else None,
     }]
 
+
+
+PURSTREAM_HUB = "https://purstream.wiki/"
+PURSTREAM_DIRECT_HOST = re.compile(r"^purstream\.[a-z0-9-]{2,24}$", re.I)
+
+
+def is_purstream_forum(title, linked=()):
+    """Le wiki est une référence d'adresse, pas le catalogue de Purstream."""
+    if re.search(r"(?i)(?<![a-z])purstream(?![a-z])", str(title or "")):
+        return True
+    return any(domain(item.get("site_url")) == domain(PURSTREAM_HUB)
+               for item in linked)
+
+
+def purstream_direct_url(value):
+    url = clean_url(value)
+    host = domain(url) if url else ""
+    if not PURSTREAM_DIRECT_HOST.fullmatch(host) or host == "purstream.wiki":
+        return None
+    return url
+
+
+def purstream_directory_candidates(html_text):
+    """Lire une adresse annoncée dans le HTML du wiki, sans exécuter son JS.
+
+    L'adresse officielle peut être dans un lien, du texte, ou une variable
+    JSON/JS proche de 'official/current/active'. Une simple occurrence
+    dans une publicité ou dans la page n'est pas une annonce suffisante.
+    """
+    found = []
+    notice = parse_site_migration(html_text, PURSTREAM_HUB)
+    if notice:
+        url = purstream_direct_url(notice.get("announced_url"))
+        if url:
+            found.append(url)
+    raw = html.unescape(str(html_text or "")[:96000])
+    raw = (raw.replace(r"\/", "/").replace(r"\u002f", "/")
+              .replace(r"\u002F", "/"))
+    pattern = re.compile(
+        r"(?i)(?:https?://)?(?:www\.)?purstream\.[a-z0-9-]{2,24}\b"
+    )
+    for match in pattern.finditer(raw):
+        context = raw[max(0, match.start() - 100):match.start()]
+        if not re.search(
+            r"(?i)(?:officiell?|official|current|active|main|"
+            r"actuelle|destination|site_?url|url_?site|stream_?url)"
+            r"[\w\s:\"'=,{}()\[\].-]{0,100}$", context,
+        ):
+            continue
+        token = match.group(0)
+        candidate = purstream_direct_url(
+            token if token.startswith(("https://", "http://"))
+            else "https://" + token
+        )
+        if candidate and candidate not in found:
+            found.append(candidate)
+    return found[:8]
+
+
+def validated_purstream_groups(linked, previous=None):
+    """Toujours afficher l'adresse de streaming, jamais le wiki comme site actif.
+
+    L'adresse annoncée par le wiki est prioritaire; la capture utilisateur
+    fournit une proposition de secours (variable d'environnement) revérifiée.
+    Une réponse HTTP seule n'autorise pas un badge vert : l'identité HTML
+    du domaine principal doit elle aussi être reconnue.
+    """
+    proposals = []
+    try:
+        page = fetch_html_page(PURSTREAM_HUB, timeout=6)
+    except (OSError, TimeoutError, ValueError, UnicodeError):
+        page = None
+    if page:
+        proposals.extend(purstream_directory_candidates(page["html"]))
+    for item in linked:
+        candidate = purstream_direct_url(item.get("announced_url"))
+        if candidate and candidate not in proposals:
+            proposals.append(candidate)
+    previous = previous or {}
+    for option in (previous.get("active_url"),
+                   os.getenv("PURSTREAM_OBSERVED_MAIN")):
+        candidate = purstream_direct_url(option)
+        if candidate and candidate not in proposals:
+            proposals.append(candidate)
+
+    for proposed in proposals[:10]:
+        observation = check_site(proposed)
+        status = observation.get("result", "unknown")
+        if status not in ("online", "restricted"):
+            continue
+        final = purstream_direct_url(observation.get("final_url") or proposed)
+        if not final:
+            continue
+        identity = (probe_site_name(final, allow_www_fallback=True)
+                    if status == "restricted" else probe_site_name(final))
+        if not identity or identity.get("page_health") != "content":
+            continue
+        verified_host = purstream_direct_url(identity.get("final_url") or final)
+        if not verified_host or "purstream" not in folded_directory_text(
+            identity.get("name")
+        ):
+            continue
+        return [{
+            "url": verified_host, "name": domain(verified_host),
+            "reference_url": PURSTREAM_HUB, "older": [], "announced": True,
+            "verified": True, "status": status,
+        }]
+
+    # Une source fiable peut annoncer une adresse que GitHub Actions ne
+    # peut pas lire. Montrer le lien annoncé SANS le qualifier de site actif.
+    return [{
+        "url": PURSTREAM_HUB, "name": domain(PURSTREAM_HUB),
+        "reference_url": PURSTREAM_HUB, "older": [],
+        "suggested_url": proposals[0] if proposals else None,
+        "no_active": True, "announced": bool(proposals),
+        "verified": False, "status": "unknown",
+    }]
 
 
 COFLIX_HUB = "https://coflix.domains/"
@@ -922,9 +1040,12 @@ def sync_forum_updates(api, state, changed_events=()):
                 result["descriptions_found"] += 1
             else:
                 result["description_missing"] += 1
+            previous = tracked.get(tid, {})
             kind = directory_kind(info.get("title"))
             groups = (
-                validated_movix_groups(linked) if is_movix_forum(info.get("title"))
+                validated_purstream_groups(linked, previous)
+                if is_purstream_forum(info.get("title"), linked)
+                else validated_movix_groups(linked) if is_movix_forum(info.get("title"))
                 else validated_directory_groups(linked, kind) if kind
                 else site_groups(linked, info.get("title") or "Site")
             )
@@ -932,7 +1053,6 @@ def sync_forum_updates(api, state, changed_events=()):
             secure_teamflix = authorized_teamflix_credentials(tid, info.get("title"))
             if secure_teamflix:
                 credentials = {**(credentials or {}), **secure_teamflix}
-            previous = tracked.get(tid, {})
             preview_url = clean_url(groups[0]["url"])
             image = (cached_site_preview(
                 api, tid, preview_url, previous,
