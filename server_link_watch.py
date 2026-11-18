@@ -326,7 +326,7 @@ def update_identity(state, record, observation, now, *, first_run):
 # Chaque site public est alors reinspecte une fois lors de la mise a jour,
 # meme si une ancienne inspection a deja eu lieu le meme jour.
 MIGRATION_PROBE_VERSION = 3
-HTML_HEALTH_PROBE_VERSION = 2  # Force one upgrade scan after HTML verification status migration
+HTML_HEALTH_PROBE_VERSION = 3  # Force one upgrade scan after HTML verification status migration
 
 
 def watch_server_links(api, state, now=None, *, discover=find_server_links):
@@ -404,21 +404,29 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
             rec["name_attempted_at"] = stamp(now)
             rec["html_health_probe_version"] = HTML_HEALTH_PROBE_VERSION
             identity = probe_site_name(rec["site_url"])
-            if identity and identity.get("page_health") == "empty_index":
-                # HTTP 200 ne signifie pas qu'une vraie page de site s'affiche.
-                rec["status"] = "empty_index"
-                rec["page_health"] = "empty_index"
-                rec["reason"] = "Répertoire de fichiers au lieu du site attendu"
+            bad_html = (identity or {}).get("page_health")
+            negative = {
+                "empty_index": "Répertoire de fichiers au lieu du site attendu",
+                "parked": "Domaine expiré ou parqué chez un registraire",
+                "interstitial": "Raccourcisseur de liens ou page publicitaire",
+            }
+            if bad_html in negative:
+                # Une page qui répond 200 mais n'affiche PAS le vrai site.
+                rec["status"] = bad_html
+                rec["page_health"] = bad_html
+                rec["reason"] = negative[bad_html]
+            elif bad_html == "blocked":
+                rec["status"] = "unknown"
+                rec["page_health"] = "blocked"
+                rec["reason"] = "Protection anti-bot : intégrité indéterminée"
             elif identity and identity.get("name"):
                 rec["page_health"] = "content"
-                if rec.get("reason") == "Répertoire de fichiers au lieu du site attendu":
-                    rec["reason"] = None
-            elif rec.get("page_health") == "empty_index":
-                # Inspection HTML impossible : ne pas annuler une anomalie
-                # connue sur la seule foi d'un HTTP 200.
-                rec["status"] = "empty_index"
+                rec["reason"] = None
+            elif rec.get("page_health") in negative:
+                # Ne pas annuler un ancien domaine expiré ou index vide
+                # sur la seule foi d'un nouveau code HTTP 200.
+                rec["status"] = rec["page_health"]
             else:
-                # HTTP 200 mais pas de preuve que la page fonctionne aujourd'hui.
                 rec["page_health"] = "unknown"
             update_identity(state, rec, identity, now, first_run=first_run)
             identity_checks += 1
@@ -457,9 +465,13 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
             rec["announced_page_health"] = "unknown"
             if status == "online":
                 target_html = probe_site_name(target)
-                if target_html and target_html.get("page_health") == "empty_index":
-                    rec["announced_page_health"] = "empty_index"
-                    rec["announced_status"] = "empty_index"
+                target_health = (target_html or {}).get("page_health")
+                if target_health in ("empty_index", "parked", "interstitial"):
+                    rec["announced_page_health"] = target_health
+                    rec["announced_status"] = target_health
+                elif target_health == "blocked":
+                    rec["announced_page_health"] = "blocked"
+                    rec["announced_status"] = "unknown"
                 elif target_html and target_html.get("name"):
                     rec["announced_page_health"] = "content"
                 # Page JavaScript, anti-bot ou HTML inaccessible : indéterminé.
