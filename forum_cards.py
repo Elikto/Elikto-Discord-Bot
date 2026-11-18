@@ -1,17 +1,19 @@
-"""Cartes Discord V2 pour les fiches publiques de sites.
+"""Cartes Discord V2 des fiches publiques.
 
-La description est reprise exclusivement dans le premier message du fil,
-sans réécriture et sans sauvegarde dans le dépôt.
+Le titre du fil et la description du message d'ouverture sont conservés.
+L'aperçu du lien est publié dans un second message Discord classique.
 """
 import hashlib
 import json
+import re
 from urllib.parse import urlsplit
 
 from site_probe import clean_url
 
 V2_FLAG = 32768
 COLOR = 0x8271D8
-BRAND = "✦ FICHE SITE"
+BRAND = "✦ "
+LEGACY_BRAND = "✦ FICHE SITE"
 LEGACY = "[elikto-forum-suivi:v1]"
 
 
@@ -41,18 +43,41 @@ def split_text(text, length=3850):
     return [text[i:i+length] for i in range(0, len(text), length)]
 
 
-def build_card(groups, description):
-    """Une carte colorée, liens et ancienne(s) adresse(s), description intacte."""
+def strip_duplicate_source_url(description, groups):
+    """Ôter seulement une URL finale déjà affichée dans la fiche.
+
+    Conserve sans réécriture le corps de la description et ses liens internes.
+    """
+    known = set()
+    for group in groups:
+        known.add(domain(group.get("url")))
+        known.update(group.get("older") or [])
+    lines = str(description or "").rstrip().splitlines()
+    while lines:
+        last = lines[-1].strip()
+        if not re.fullmatch(r"<?https?://[^\s<>]+>?", last):
+            break
+        host = domain(last.strip("<>").rstrip(".,!?"))
+        if host not in known:
+            break
+        lines.pop()
+        while lines and not lines[-1].strip():
+            lines.pop()
+    return "\n".join(lines).strip()
+
+
+def build_card(groups, description, title=None):
+    """Fiche au nom du site, adresse actuelle et description d'origine."""
     if not groups:
         return None
     host = domain(groups[0]["url"])
-    parts = [{"type": 10, "content": "## " + BRAND + " · " + safe_title(host)}]
+    heading = safe_title(title) or safe_title(host)
+    parts = [{"type": 10, "content": "## ✦ " + heading + " ✦"}]
     for group in groups:
         url = clean_url(group.get("url"))
         if not url:
             continue
-        current = domain(url)
-        line = f"### 🌐 [{safe_title(current)}]({url})"
+        line = "🌐 " + url
         if group.get("older"):
             line += "\n-# ↳ Ancien : " + ", ".join(group["older"])
         if group.get("announced"):
@@ -62,12 +87,12 @@ def build_card(groups, description):
         elif group.get("status") in ("offline", "suspect"):
             line += "\n-# 🟠 Accessibilité à vérifier"
         parts.extend({"type": 10, "content": chunk} for chunk in split_text(line))
-    if description.strip():
-        parts.append({"type": 14, "divider": True, "spacing": 1})
-        for i, chunk in enumerate(split_text(description, 3800)):
+    cleaned = strip_duplicate_source_url(description, groups)
+    if cleaned:
+        for i, chunk in enumerate(split_text(cleaned, 3800)):
             parts.append({
                 "type": 10,
-                "content": ("### 📝 Description d'origine\n" if i == 0 else "") + chunk,
+                "content": ("**📝 Description**\n" if i == 0 else "") + chunk,
             })
     if len(parts) > 38:
         raise ValueError("Description trop longue pour une carte Discord")
@@ -99,7 +124,11 @@ def is_own_card(message, bot_id):
         return False
     if LEGACY in (message.get("content") or ""):
         return True
-    return any(BRAND in item for item in all_text(message.get("components") or []))
+    texts = all_text(message.get("components") or [])
+    if any(LEGACY_BRAND in item for item in texts):
+        return True
+    return any(item.startswith("## ✦ ") and item.endswith(" ✦")
+               for item in texts)
 
 
 def card_digest(components):
