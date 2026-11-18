@@ -234,6 +234,47 @@ def announced_url_from_official_link(html_text, source):
     return None
 
 
+
+OFFICIAL_VISIBLE_DOMAIN = re.compile(
+    r"(?:(?:la )?nouvelle adresse(?: officielle)?|url ephemere du moment|"
+    r"adresse actuelle|adresse officielle active|adresse du moment|"
+    r"nouveau domaine|nouvelle url|site officiel actuel)"
+    r"\s*[:\-—]?\s*(?P<domain>(?:https?://)?(?:www\.)?"
+    r"[a-z0-9][a-z0-9-]{0,61}(?:\.[a-z0-9-]{2,24})+)",
+    re.I,
+)
+
+
+def announced_url_from_visible_text(html_text, source):
+    """Nom de domaine écrit comme texte sous une étiquette officielle.
+
+    Sur certains portails (ex. French Stream), l'URL éphémère est affichée
+    dans une grande zone non cliquable ou mise en place par JavaScript. Le
+    serveur peut donc renvoyer la valeur visible sans élément <a href>.
+    Exiger une annonce immédiatement suivie du domaine, jamais une recherche
+    d'URL arbitraire dans le reste de la page.
+    """
+    raw = str(html_text or "")[:MAX_HTML]
+    raw = re.sub(r"(?is)<(?:script|style|noscript)\b[^>]*>.*?</(?:script|style|noscript)\s*>",
+                 " ", raw)
+    visible = html.unescape(re.sub(r"(?s)<[^>]+>", " ", raw))
+    visible = re.sub(r"\s+", " ", visible)
+    folded = _fold_notice_text(visible)
+    source_host = (urlsplit(source).hostname or "").removeprefix("www.")
+    for match in OFFICIAL_VISIBLE_DOMAIN.finditer(folded):
+        value = match.group("domain")
+        target = clean_url(value if value.startswith(("https://", "http://"))
+                           else "https://" + value)
+        if target and (urlsplit(target).hostname or "").removeprefix("www.") != source_host:
+            return {
+                "announced_url": target,
+                "previous_url": source,
+                "evidence": "html:official_address_text",
+                "confidence": "announced",
+            }
+    return None
+
+
 def parse_site_migration(html_text, source_url):
     """Extraire une annonce 'Passe sur Webflix.surf, même compte'.
 
@@ -277,7 +318,8 @@ def parse_site_migration(html_text, source_url):
             "evidence": "html:migration_notice",
             "confidence": "announced",
         }
-    return announced_url_from_official_link(html_text, source)
+    return (announced_url_from_official_link(html_text, source)
+            or announced_url_from_visible_text(html_text, source))
 
 
 def probe_site_migration(url):
