@@ -425,6 +425,25 @@ def validated_directory_groups(linked, kind):
         if page:
             proposals = directory_candidates(page["html"], hub, kind)
 
+    # Source de secours fournie par l'utilisateur et datée dans le workflow.
+    # Un domaine observé n'est JAMAIS présumé actif : il est vérifié exactement
+    # comme les adresses extraites de l'annuaire et ne reçoit pas de coche verte
+    # si la sonde ne reconnaît pas le site final.
+    if kind == "flemmix":
+        observed_blocked = {
+            value.strip().lower()
+            for value in os.getenv("FLEMMIX_FAI_BLOCKED_HOSTS", "").split(",")
+            if value.strip()
+        }
+        proposals = [
+            url for url in proposals if domain(url) not in observed_blocked
+        ]
+        extra = clean_url(os.getenv("FLEMMIX_OBSERVED_MAIN", ""))
+        if (extra and re.fullmatch(r"flemmix\.[a-z0-9-]{2,24}", domain(extra))
+                and domain(extra) not in observed_blocked
+                and extra not in proposals):
+            proposals.append(extra)
+
     found = None
     verified = False
     expected_prefix = DIRECTORIES[kind][1]
@@ -465,6 +484,7 @@ def validated_directory_groups(linked, kind):
         "name": domain(found or hub),
         "reference_url": hub,
         "no_active": not bool(found),
+        "suggested_url": (proposals[0] if not found and proposals else None),
         # Historique conservé dans le suivi, pas dans la carte : ne pas
         # republier d'anciens domaines marqués Bloqué par les FAI.
         "older": [],
@@ -957,6 +977,7 @@ def sync_forum_updates(api, state, changed_events=()):
                                else selected.get("url")),
                 "active_verified": bool(selected.get("verified")),
                 "active_status": selected.get("status"),
+                "suggested_url": selected.get("suggested_url"),
             }
             result[outcome] += 1
             # Une seule publication par forum : le lien se trouve deja
