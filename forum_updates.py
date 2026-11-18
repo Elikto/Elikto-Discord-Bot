@@ -263,11 +263,13 @@ def is_blocked_directory_entry(text):
 
 
 class StreamingDirectoryParser(HTMLParser):
-    """Chaque lien conserve sa catégorie et son statut, sans mélange global.
+    """Conserve les catégories de l'annuaire et exclut les domaines FAI bloqués.
 
-    Les annuaires peuvent signaler « Bloqué par les FAI » soit dans le lien,
-    soit juste après, soit dans un en-tête commun à plusieurs domaines.
+    Les libellés de cartes sont parfois des DIV plutôt que des H2 et le badge
+    « ACTIF » se trouve après le lien, voire hors de l'ancre.
     """
+    DOMAIN_TOKEN = re.compile(r"(?<![\w-])(?:[a-z0-9][a-z0-9-]*\.)+[a-z]{2,24}\b", re.I)
+
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.entries = []
@@ -275,6 +277,24 @@ class StreamingDirectoryParser(HTMLParser):
         self.heading_tag = None
         self.heading_text = []
         self.blocked_category = False
+        self.active_category = False
+        self.blocked_hosts = set()
+        self.recent_text = ""
+
+    def _section(self, value):
+        folded = folded_directory_text(value)
+        if re.search(r"(?:anciens? domaines?|old domains?).{0,55}"
+                     r"(?:bloqu|blocked|fai)", folded):
+            self.blocked_category = True
+            self.active_category = False
+        elif re.search(r"faux domaines?|sites? frauduleux|fake domains?", folded):
+            self.blocked_category = True
+            self.active_category = False
+        elif re.search(r"domaines? actifs?|liens? principaux?|"
+                       r"adresses? (?:disponibles?|actives?|officielles?)|"
+                       r"nouveaux? domaines?|nos sites", folded):
+            self.blocked_category = False
+            self.active_category = True
 
     def handle_starttag(self, tag, attrs):
         if re.fullmatch(r"h[1-6]", tag):
@@ -282,44 +302,46 @@ class StreamingDirectoryParser(HTMLParser):
             self.heading_text = []
         if tag == "a":
             self.current = {
-                "href": dict(attrs).get("href"), "text": "", "after": "",
+                "href": dict(attrs).get("href"), "text": "",
+                "after": "", "before": self.recent_text[-140:],
                 "blocked_category": self.blocked_category,
+                "active_category": self.active_category,
             }
 
     def handle_data(self, value):
         clean = re.sub(r"\s+", " ", value)
+        if not clean.strip():
+            return
         if self.heading_tag is not None:
             self.heading_text.append(clean)
         if self.current is not None:
             self.current["text"] += " " + clean
         elif self.entries and self.heading_tag is None:
             self.entries[-1]["after"] += " " + clean
+        self.recent_text = (self.recent_text + " " + clean)[-500:]
+        if self.heading_tag is None:
+            self._section(clean)
+        if self.blocked_category:
+            self.blocked_hosts.update(
+                match.group().lower() for match in self.DOMAIN_TOKEN.finditer(clean)
+            )
 
     def handle_endtag(self, tag):
         if tag == "a" and self.current is not None:
             self.entries.append(self.current)
             self.current = None
         if tag == self.heading_tag:
-            heading = folded_directory_text(" ".join(self.heading_text))
-            if is_blocked_directory_entry(heading) and (
-                "fai" in heading or "ancien" in heading or "bloqu" in heading
-            ):
-                self.blocked_category = True
-            elif re.search(
-                r"adresses? (?:disponibles?|actives?|officielles?)|"
-                r"nouveaux? domaines?|sites? (?:actifs?|officiels?)|"
-                r"nom de domaine principal|nos sites",
-                heading,
-            ):
-                self.blocked_category = False
+            heading = " ".join(self.heading_text)
+            self._section(heading)
             self.heading_tag = None
             self.heading_text = []
 
 
 def directory_candidates(html_text, hub, kind):
-    """N'utiliser QUE les adresses annoncées disponibles, hors blocage FAI.
+    """Proposer uniquement les sites annoncés actifs, jamais les domaines FAI.
 
-    Une réponse HTTP 200 ne rend pas un domaine bloqué ou expiré éligible.
+    Un domaine dans la liste « bloqué » est exclu même s'il apparaît plus
+    haut parmi les liens principaux : le statut bloqué a priorité.
     """
     parsed = StreamingDirectoryParser()
     try:
@@ -330,26 +352,37 @@ def directory_candidates(html_text, hub, kind):
     candidates = []
     for entry in parsed.entries:
         proposed = clean_url(urljoin(hub, entry["href"] or "")) if entry["href"] else None
-        if not proposed or not domain(proposed).startswith(expected):
+        if not proposed:
             continue
-        descriptor = folded_directory_text(entry["text"] + " " + entry["after"][:120])
-        if entry.get("blocked_category") or is_blocked_directory_entry(descriptor):
+        host = domain(proposed)
+        if not re.fullmatch(r"(?i)" + re.escape(expected) + r"[a-z0-9-]{2,24}", host):
+            continue
+        if host in parsed.blocked_hosts or entry.get("blocked_category"):
+            continue
+        local = folded_directory_text(
+            entry["text"] + " " + entry["after"][:110]
+        )
+        # Les libellés d'avant le lien servent à reconnaître « Lien principal ».
+        before = folded_directory_text(entry.get("before", ""))[-95:]
+        if is_blocked_directory_entry(local):
             continue
         if kind == "coflix":
             suitable = bool(re.search(
-                r"adresse disponible|domaine actif|site actif",
-                descriptor,
-            ))
+                r"adresse disponible|domaine actif|site actif|(?<!in)actif\b",
+                local,
+            )) or (entry.get("active_category") and bool(entry["text"].strip()))
         else:
             suitable = bool(re.search(
                 r"nom de domaine principal|domaine actif|nouveau site|"
-                r"lien principal flemmix officiel",
-                descriptor,
-            ))
+                r"\blien principal\b|\bactif\b",
+                local,
+            )) or (
+                bool(re.search(r"\blien principal\b", before))
+                and not is_blocked_directory_entry(before)
+            ) or bool(entry.get("active_category"))
         if suitable and proposed not in candidates:
             candidates.append(proposed)
     return candidates[:8]
-
 
 def validated_directory_groups(linked, kind):
     """Référence connue et adresse courante du répertoire (vérifiée séparément).
