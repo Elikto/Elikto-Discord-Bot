@@ -475,6 +475,77 @@ class ForumUpdatesTests(unittest.TestCase):
         self.assertLess(body.index("https://coflix.domains/"),
                         body.index("https://coflix.esq/"))
 
+    def test_flemmix_2026_active_uno_and_isp_blocked_list(self):
+        from forum_updates import directory_candidates, validated_directory_groups
+        from forum_cards import build_card
+        html = """
+          <h1>Flemmix - Nos Adresses</h1>
+          <p>En cas de blocage FAI, utilisez le lien marqué Actif.</p>
+          <div>LIEN PRINCIPAL</div>
+          <a href="https://flemmix.uno/">flemmix.uno</a>
+          <div>Domaine actif - Utilisez toujours ce lien</div><b>ACTIF</b>
+          <h2>DOMAINES ACTIFS</h2>
+          <a href="https://french-anime.com/">french-anime.com</a>
+          <p>Notre site dédié aux animés</p>
+          <div>ANCIENS DOMAINES - BLOQUÉS PAR LES FAI</div>
+          <a href="https://wiflix.red/">wiflix.red</a>
+          <span>Ancien domaine principal - bloqué</span><b>BLOQUÉ</b>
+          <a href="https://flemmix.men/">flemmix.men</a>
+          <p>Ancien domaine - bloqué</p>
+          <a href="https://flemmix.casa/">flemmix.casa</a>
+          <p>Ancien domaine - bloqué</p>
+          <a href="https://flemmix.prof/">flemmix.prof</a>
+          <p>Ancien domaine - bloqué</p>
+          <h2>FAUX DOMAINES - NE PAS UTILISER</h2>
+          <a href="https://flemmix.faux/">flemmix.faux</a>
+        """
+        hub = "https://ww1.wiflix-adresses.fun/"
+        self.assertEqual(directory_candidates(html, hub, "flemmix"),
+                         ["https://flemmix.uno/"])
+        with patch("forum_updates.check_site", side_effect=[
+            {"result": "online", "final_url": hub},
+            {"result": "online", "final_url": "https://flemmix.uno/"},
+        ]) as checks, patch(
+            "forum_updates.fetch_html_page", return_value={"html": html}
+        ), patch("forum_updates.probe_site_name", return_value={
+            "name": "Flemmix", "page_health": "content",
+            "final_url": "https://flemmix.uno/"
+        }) as inspect:
+            group = validated_directory_groups(
+                [record("https://flemmix.mom/", status="parked"),
+                 record("https://flemmix.casa/", status="online")],
+                "flemmix"
+            )[0]
+        self.assertEqual(checks.call_count, 2)
+        inspect.assert_called_once_with("https://flemmix.uno/")
+        self.assertEqual(group["url"], "https://flemmix.uno/")
+        self.assertEqual(group["reference_url"], hub)
+        self.assertTrue(group["verified"])
+        self.assertFalse(group["no_active"])
+        rendered = "\n".join(all_text(build_card([group], "Description", "Flemmix")))
+        self.assertIn(hub, rendered)
+        self.assertIn("https://flemmix.uno/", rendered)
+        for blocked in ("flemmix.casa", "flemmix.prof", "flemmix.men",
+                        "flemmix.mom", "wiflix.red"):
+            self.assertNotIn(blocked, rendered)
+
+    def test_flemmix_blocked_section_overrides_earlier_active_mention(self):
+        from forum_updates import directory_candidates
+        portal = "https://ww1.wiflix-adresses.fun/"
+        html = """
+        <div>LIEN PRINCIPAL</div>
+        <a href="https://flemmix.casa/">flemmix.casa</a>
+        <span>Domaine actif</span>
+        <div>ANCIENS DOMAINES - BLOQUÉS PAR LES FAI</div>
+        <a href="https://flemmix.casa/">flemmix.casa</a>
+        <p>Ancien domaine - bloqué</p>
+        <div>LIEN PRINCIPAL</div>
+        <a href="https://flemmix.uno/">flemmix.uno</a>
+        <span>ACTIF</span>
+        """
+        self.assertEqual(directory_candidates(html, portal, "flemmix"),
+                         ["https://flemmix.uno/"])
+
     def test_flemmix_directory_reads_declared_active_and_ignores_old_domains(self):
         from forum_updates import directory_candidates, validated_directory_groups
         html = (
