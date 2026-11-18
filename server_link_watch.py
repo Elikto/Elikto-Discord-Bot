@@ -22,6 +22,7 @@ from name_probe import probe_site_name, probe_site_migration
 from forum_updates import sync_forum_updates
 from site_monitor import (
     STATE_PATH, load_state, event, record_check, notify_discord, stamp,
+    HTTP_PROBE_VERSION,
 )
 from sync_catalogue import (
     DiscordAPI, GUILD_ID, CHANNEL_CATEGORY, VIEW_CHANNEL, public_channel,
@@ -373,9 +374,15 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
     for rec in records.values():
         if not rec.get("active"):
             continue
-        if force_scan or due_daily(rec.get("last_checked"), now):
+        previous_503 = (
+            rec.get("status") in ("offline", "suspect")
+            and int(rec.get("http_status") or 0) >= 500
+            and int(rec.get("http_probe_version") or 0) < HTTP_PROBE_VERSION
+        )
+        if force_scan or previous_503 or due_daily(rec.get("last_checked"), now):
             observation = check_site(rec["site_url"])
             record_check(state, rec, observation, now)
+            rec["http_probe_version"] = HTTP_PROBE_VERSION
             checked += 1
             # Les vraies redirections HTTP inter-domaines sont des preuves
             # plus fortes que la simple disponibilité de l'ancienne URL.
