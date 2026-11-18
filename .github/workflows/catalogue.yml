@@ -19,6 +19,8 @@ on:
       - 'forum_cards.py'
       - 'tr4ker_forum.py'
       - 'tests/test_tr4ker_forum.py'
+      - 'site_channels.py'
+      - 'tests/test_site_channels.py'
       - 'tests/test_server_link_watch.py'
       - 'tests/test_forum_updates.py'
       - 'thread_watch.py'
@@ -143,6 +145,11 @@ jobs:
           DISCORD_GUILD_ID: '1430984645012357263'
           FORCE_DAILY_INTEGRITY_SCAN: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[full-scan]')) && '1' || '0' }}
         run: python site_monitor.py
+      - name: Créer et synchroniser les salons de sites (sans toucher aux forums)
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_GUILD_ID: '1430984645012357263'
+        run: python site_channels.py
       - name: Verifier le catalogue web genere
         run: |
           python -c "import json; d=json.load(open('site/catalogue.json', encoding='utf-8')); assert d['visibility']=='public_everyone_only'; assert len(d['categories'])>0; print('Fiches publiques:', d['stats']['entries'])"
