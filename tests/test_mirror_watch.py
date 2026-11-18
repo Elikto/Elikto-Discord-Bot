@@ -599,6 +599,29 @@ class MirrorWatchTests(unittest.TestCase):
         self.assertIn("https://miroir.example.org/", "\n".join(hidden))
         self.assertIn("❌", "\n".join(hidden))
 
+    def test_dropdown_does_not_confuse_http_200_with_verified_site(self):
+        sites = [
+            {"name": "BON", "url": "https://good.example.org/",
+             "source_urls": ["https://good.example.org/"],
+             "status": "online", "page_health": "content"},
+            {"name": "PAS VERIFIE", "url": "https://maybe.example.org/",
+             "source_urls": [], "status": "online"},
+            {"name": "INDEX VIDE", "url": "https://empty.example.org/",
+             "source_urls": [], "status": "empty_index",
+             "page_health": "empty_index"},
+        ]
+        cards = mirror_watch.render_site_cards(
+            sites, "Streaming HD miroir", dropdown_enabled=True
+        )
+        menu = cards[0]["components"][1]["components"][0]
+        options = {o["label"]: o["description"] for o in menu["options"]}
+        self.assertIn("🟡", options["PAS VERIFIE"])
+        self.assertNotIn("✅", options["PAS VERIFIE"])
+        self.assertIn("❌", options["INDEX VIDE"])
+        # Site principal uniquement validé HTML ; autres sites restent en menu.
+        self.assertIn("https://good.example.org/",
+                      cards[0]["components"][0]["content"])
+
     def test_native_dropdown_contains_all_mirrors_and_no_spoiler(self):
         sites = [
             {"name": "PRIMARY", "url": "https://primary.example.org/",
