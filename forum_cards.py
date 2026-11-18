@@ -69,12 +69,12 @@ def strip_duplicate_source_url(description, groups):
 ACCOUNT_LINE = re.compile(
     r"^\s*(?:[-•*]\s*)?(?:\*\*)?(?:👤|🔑|🔐|🆔)?\s*(?:\*\*)?"
     r"(?P<label>nom d['’]utilisateur|utilisateur|identifiant|identifiants|"
-    r"username|login|user|pseudo|mot de passe|mdp|password|pass)"
+    r"username|login|user|pseudo|id|mot de passe|mdp|password|pass)"
     r"(?:\*\*)?\s*[:：=\-]\s*(?:\*\*)?\s*(?P<value>\S.*?)\s*$",
     flags=re.I,
 )
 USER_LABELS = {"nom d'utilisateur", "nom d’utilisateur", "utilisateur", "identifiant",
-               "identifiants", "username", "login", "user", "pseudo"}
+               "identifiants", "username", "login", "user", "pseudo", "id"}
 
 
 def split_credentials(description):
@@ -101,7 +101,50 @@ def split_credentials(description):
     return "\n".join(remaining).strip(), matched
 
 
-def build_card(groups, description, title=None):
+def credentials_from_author_posts(api, thread_id, bot_id):
+    """Lire les identifiants explicitement publiés par l'auteur du fil.
+
+    Rien n'est enregistré : les valeurs ne servent qu'à créer le message
+    Discord dans le même fil. Ignorer les réponses des autres utilisateurs,
+    les bots et les webhooks. Seul un couple complet dans le même message
+    est accepté pour éviter d'associer deux comptes différents.
+    """
+    try:
+        starter = api.call("GET", f"/channels/{thread_id}/messages/{thread_id}")
+    except RuntimeError as exc:
+        if "HTTP 404" in str(exc):
+            return None
+        raise
+    author_id = str((starter.get("author") or {}).get("id") or "")
+    if not author_id or author_id == str(bot_id):
+        return None
+
+    before = None
+    for _ in range(10):
+        params = {"limit": 100}
+        if before:
+            params["before"] = before
+        messages = api.call("GET", f"/channels/{thread_id}/messages", params=params)
+        if not messages:
+            break
+        for message in sorted(messages, key=lambda m: int(m["id"]), reverse=True):
+            sender = message.get("author") or {}
+            if (str(sender.get("id")) != author_id or sender.get("bot")
+                    or message.get("webhook_id")):
+                continue
+            _, found = split_credentials(message.get("content") or "")
+            if found:
+                return found
+        if len(messages) < 100:
+            break
+        last = str(min(messages, key=lambda m: int(m["id"]))["id"])
+        if last == before:
+            break
+        before = last
+    return None
+
+
+def build_card(groups, description, title=None, credentials=None):
     """Fiche au nom du site, adresse actuelle et description d'origine."""
     if not groups:
         return None
@@ -127,7 +170,8 @@ def build_card(groups, description, title=None):
         elif group.get("status") in ("offline", "suspect"):
             line += "\n-# 🟠 Accessibilité à vérifier"
         parts.extend({"type": 10, "content": chunk} for chunk in split_text(line))
-    regular_description, credentials = split_credentials(description)
+    regular_description, original_credentials = split_credentials(description)
+    credentials = credentials or original_credentials
     cleaned = strip_duplicate_source_url(regular_description, groups)
     if cleaned:
         for i, chunk in enumerate(split_text(cleaned, 3800)):
@@ -140,7 +184,7 @@ def build_card(groups, description, title=None):
             "type": 10,
             "content": "**🔐 Identifiants**\n**👤 Utilisateur :** "
                        + credentials["user"] + "\n**🔑 Mot de passe :** "
-                       + credentials["password"],
+                       + "||" + credentials["password"].replace("||", "| |") + "||",
         })
     if len(parts) > 38:
         raise ValueError("Description trop longue pour une carte Discord")
