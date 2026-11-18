@@ -19,6 +19,8 @@ on:
       - 'tests/test_forum_updates.py'
       - 'thread_watch.py'
       - 'mirror_watch.py'
+      - 'discord_endpoint_setup.py'
+      - 'tests/test_discord_endpoint_setup.py'
       - 'site_discovery.py'
       - 'tests/test_site_discovery.py'
       - 'name_probe.py'
@@ -80,12 +82,19 @@ jobs:
           else
             echo "Première surveillance, aucun historique distant"
           fi
+      - name: Valider la connexion Discord au menu déroulant
+        id: discord_dropdown
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_PUBLIC_KEY_EXPECTED: 'c9a3ec70eab0c06fcfc203e8c733a44098f3241de9c660467a7f0c9ecac53d5f'
+          DISCORD_INTERACTIONS_ENDPOINT: 'https://elikto-discord-interactions.vercel.app/api/discord-interactions'
+        run: python discord_endpoint_setup.py
       - name: Vérifier quotidiennement toutes les URL du fil Streaming HD miroir
         env:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
-          # Activer UNIQUEMENT après déploiement et vérification de l'endpoint
-          # d'interactions Discord (un menu sans réponse affiche une erreur).
-          DISCORD_MIRROR_DROPDOWN_ENABLED: ${{ vars.DISCORD_MIRROR_DROPDOWN_ENABLED }}
+          # 1 uniquement si Discord a confirmé l'endpoint signé :
+          # aucun menu inutilisable n'est publié en cas d'échec.
+          DISCORD_MIRROR_DROPDOWN_ENABLED: ${{ steps.discord_dropdown.outputs.enabled }}
         run: python mirror_watch.py
       - name: Recenser et vérifier quotidiennement tous les liens des salons et forums publics
         env:
