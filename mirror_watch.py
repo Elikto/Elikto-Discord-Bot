@@ -13,6 +13,7 @@ from site_probe import check_site, extract_candidate_urls, other_domain, clean_u
 from name_probe import probe_site_name, announced_rename
 from site_discovery import candidate_groups
 from site_monitor import event, HTTP_PROBE_VERSION
+from forum_cards import last_check_line
 
 THREAD_ID = "1430988094374547559"
 GUILD_ID = "1430984645012357263"
@@ -460,6 +461,41 @@ CARD_ACCENT = 0x6174C6
 HEADER_ACCENT = 0xA17AFF
 
 
+def mirror_status_marker(site):
+    """Green only for the verified target page, never HTTP 200 alone."""
+    health = site.get("page_health")
+    status = site.get("status")
+    if (status in ("offline", "empty_index", "parked", "interstitial")
+            or health in ("empty_index", "parked", "interstitial")):
+        if health == "empty_index" or status == "empty_index":
+            return "🔴", "❌ Index vide / mauvais contenu"
+        if health == "parked" or status == "parked":
+            return "🔴", "❌ Domaine expiré"
+        if health == "interstitial" or status == "interstitial":
+            return "🔴", "❌ Page publicitaire / redirection"
+        return "🔴", "❌ Site inaccessible"
+    if status == "online" and health == "content":
+        return "🟢", "✅ Page du site vérifiée"
+    if status == "online":
+        return "🟡", "🟡 Serveur OK · contenu non vérifié"
+    if status == "restricted":
+        return "🟡", "🟡 Accès limité ou anti-bot"
+    return "🟡", "🟡 Vérification non confirmée"
+
+
+def mirror_check_suffix(site):
+    raw = site.get("last_checked")
+    if not raw:
+        return " · Jamais contrôlé"
+    try:
+        value = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+        if value.tzinfo:
+            return " · " + value.astimezone(PARIS).strftime("%d/%m %H:%M")
+    except (TypeError, ValueError, OverflowError):
+        pass
+    return " · Non disponible"
+
+
 def render_site_cards(items, thread_name, dropdown_enabled=False):
     """Une seule URL principale, le reste en spoiler Discord Components V2.
 
@@ -477,6 +513,12 @@ def render_site_cards(items, thread_name, dropdown_enabled=False):
     # Priorité aux adresses accessibles provenant du fil d'origine.
     primary = next(
         (site for site in available
+         if mirror_status_marker(site)[0] == "🟢" and site.get("source_urls")), None
+    ) or next(
+        (site for site in available
+         if mirror_status_marker(site)[0] == "🟢"), None
+    ) or next(
+        (site for site in available
          if site.get("status") == "online" and site.get("source_urls")), None
     ) or next(
         (site for site in available if site.get("status") == "online"), None
@@ -487,10 +529,10 @@ def render_site_cards(items, thread_name, dropdown_enabled=False):
         url = clean_url(site.get("url"))
         name = str(site.get("name") or urlsplit(url).hostname).strip()
         name = name.replace("@", "@\u200b").replace("]", "").replace("[", "")[:48]
-        indicator = "❌ " if site.get("status") == "empty_index" else ""
-        content = f"### {indicator}✦ [{name}]({url})"
-        if indicator:
-            content += "\n-# Page vide : index de répertoire détecté"
+        marker, label = mirror_status_marker(site)
+        content = f"### {marker} ✦ [{name}]({url})"
+        if marker != "🟢":
+            content += "\n-# " + label
         old_names = []
         for raw in site.get("previous_names", []):
             former = str(raw).replace("@", "@\u200b")[:40]
@@ -512,6 +554,20 @@ def render_site_cards(items, thread_name, dropdown_enabled=False):
             + ("Choisis un site dans le menu déroulant." if dropdown_enabled
                else "Clique sur le panneau masqué ci-dessous pour les afficher.")
         )
+    # A reconciliation is not an actual site scan. Display only timestamps
+    # from real URL checks, never the current workflow start time.
+    real_scans = []
+    for site in available:
+        try:
+            stamp = datetime.fromisoformat(
+                str(site.get("last_checked") or "").replace("Z", "+00:00")
+            )
+            if stamp.tzinfo is not None:
+                real_scans.append(stamp)
+        except (TypeError, ValueError, OverflowError):
+            continue
+    latest_actual = max(real_scans).isoformat() if real_scans else None
+    main_content += last_check_line(latest_actual)
     components = [{
         "type": 17, "accent_color": HEADER_ACCENT,
         "components": [{"type": 10, "content": main_content}],
@@ -529,22 +585,9 @@ def render_site_cards(items, thread_name, dropdown_enabled=False):
                 label = str(site.get("name") or urlsplit(url).hostname)
                 label = label.replace("@", "@\u200b")[:100]
                 entry = {"label": label, "value": url}
-                if site.get("page_health") == "parked":
-                    entry["description"] = "❌ Domaine expiré / parqué"
-                elif site.get("page_health") == "interstitial":
-                    entry["description"] = "❌ Page publicitaire / intermédiaire"
-                elif (site.get("status") == "empty_index"
-                        or site.get("page_health") == "empty_index"):
-                    entry["description"] = "❌ Index vide"
-                elif site.get("status") == "online":
-                    # HTTP 200/206 ne prouve pas que le catalogue s'affiche.
-                    entry["description"] = (
-                        "✅ Page du site vérifiée"
-                        if site.get("page_health") == "content"
-                        else "🟡 Serveur OK · contenu non vérifié"
-                    )
-                else:
-                    entry["description"] = "Disponibilité à vérifier"
+                marker, label = mirror_status_marker(site)
+                entry["emoji"] = {"name": marker}
+                entry["description"] = (label + mirror_check_suffix(site))[:100]
                 options.append(entry)
             components[0]["components"].append({
                 "type": 1,
