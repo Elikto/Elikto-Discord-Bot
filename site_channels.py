@@ -19,7 +19,7 @@ from sync_catalogue import (
     CHANNEL_TEXT, VIEW_CHANNEL, fold, public_channel,
 )
 from forum_cards import (
-    build_card, source_description, safe_title, credential_fields,
+    build_card, source_description, safe_title, last_check_line, credential_fields,
     credentials_from_published_forum_card, V2_FLAG,
 )
 from forum_updates import (
@@ -160,7 +160,10 @@ def polish_mirror_components(components, source, groups):
     descriptions = []
     media = []
     for part in original_parts:
-        if part.get("type") == 12:
+        if (part.get("type") == 12 or (
+            part.get("type") == 9
+            and (part.get("accessory") or {}).get("type") == 11
+        )):
             media.append(part)
             continue
         content = part.get("content", "")
@@ -286,8 +289,16 @@ def groups_for_mirror(state, source):
             "reference_url": reference,
         })
         selected.setdefault("older", [])
-        selected["checked_at"] = selected.get("checked_at") or latest_check(
-            (state.get("records") or {}).get(tid, {}).get("last_checked")
+        # Do not use the last scan of an old domain as the scan of the
+        # new destination URL; take only matching observations.
+        scan_link = (state.get("server_links") or {}).get(active, {})
+        rec = (state.get("records") or {}).get(tid, {})
+        rec_check = (rec.get("last_checked")
+                     if clean_url(rec.get("site_url")) == active else None)
+        selected["checked_at"] = latest_check(
+            selected.get("checked_at") if chosen else None,
+            tracking.get("active_checked_at"),
+            scan_link.get("last_checked"), rec_check,
         )
         return [selected]
     if suggested or reference:
@@ -296,8 +307,9 @@ def groups_for_mirror(state, source):
             "reference_url": reference,
             "suggested_url": suggested,
             "no_active": True, "status": "unknown", "verified": False,
-            "older": [], "checked_at": (
-                groups[0].get("checked_at") if groups else None
+            "older": [], "checked_at": latest_check(
+                groups[0].get("checked_at") if groups else None,
+                tracking.get("active_checked_at"),
             ),
         }]
     return groups[:1]
@@ -322,6 +334,7 @@ def mirror_card(api, state, source, bot_id):
         components = build_card(
             groups, original, source["title"],
             credentials=credentials, preview_image_url=tracking.get("preview_image_url"),
+            preview_kind=tracking.get("preview_image_kind") or "preview",
         )
     else:
         components = [{
@@ -331,6 +344,11 @@ def mirror_card(api, state, source, bot_id):
                 {"type": 10, "content": (
                     (original + "\n" if original else "")
                     + "🟡 Adresse en cours de vérification."
+                    + last_check_line(
+                        latest_check((state.get("records") or {}).get(
+                            source["tid"], {}
+                        ).get("last_checked"))
+                    )
                 )},
             ],
         }]
@@ -553,11 +571,19 @@ def sync_mirrors(api, catalogue, state):
                 )
             except RuntimeError:
                 # Un aperçu inaccessible ne doit pas bloquer la carte texte.
-                if not any(p.get("type") == 12
-                           for p in card[0].get("components", [])):
+                if not any(
+                    p.get("type") == 12 or (
+                        p.get("type") == 9
+                        and (p.get("accessory") or {}).get("type") == 11
+                    ) for p in card[0].get("components", [])
+                ):
                     raise
                 card[0]["components"] = [
-                    p for p in card[0]["components"] if p.get("type") != 12
+                    p for p in card[0]["components"]
+                    if not (p.get("type") == 12 or (
+                        p.get("type") == 9
+                        and (p.get("accessory") or {}).get("type") == 11
+                    ))
                 ]
                 mid, outcome = upsert_forum_update(
                     api, cid, bot_id, card, previous

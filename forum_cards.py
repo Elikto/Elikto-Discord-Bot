@@ -36,11 +36,11 @@ def last_check_line(value):
         if checked.tzinfo is None:
             raise ValueError("timestamp sans fuseau")
         paris = checked.astimezone(ZoneInfo("Europe/Paris"))
-        return ("\n-# 🕒 Dernier contrôle : "
+        return ("\n-# 🕒 Dernier scan : "
                 + paris.strftime("%d/%m/%Y à %H:%M")
                 + " (Paris)")
     except (TypeError, ValueError, OverflowError):
-        return "\n-# 🕒 Dernier contrôle : non disponible"
+        return "\n-# 🕒 Dernier scan : non disponible"
 
 
 def source_description(api, thread_id, bot_id):
@@ -301,7 +301,7 @@ def credentials_from_published_forum_card(api, thread_id, bot_id, message_id):
     return credentials or None
 
 
-def build_card(groups, description, title=None, credentials=None, preview_image_url=None):
+def build_card(groups, description, title=None, credentials=None, preview_image_url=None, preview_kind="preview"):
     """Fiche : nom, description, accès, URL puis aperçu visuel."""
     if not groups:
         return None
@@ -398,14 +398,27 @@ def build_card(groups, description, title=None, credentials=None, preview_image_
         line += last_check_line(group.get("checked_at"))
         parts.extend({"type": 10, "content": chunk} for chunk in split_text(line))
     if preview_image_url:
-        # Le composant Media Gallery est inclus DANS le Container Components V2.
-        parts.append({
-            "type": 12,
-            "items": [{
-                "media": {"url": preview_image_url},
-                "description": "Aperçu visuel de " + heading,
-            }],
-        })
+        if preview_kind == "logo":
+            # Les logos/favicones sont petits : une miniature évite de les
+            # agrandir jusqu'à une galerie de mauvaise qualité.
+            parts.append({
+                "type": 9,
+                "components": [{"type": 10, "content": "**🖼️ Logo du site**"}],
+                "accessory": {
+                    "type": 11,
+                    "media": {"url": preview_image_url},
+                    "description": "Logo de " + heading,
+                },
+            })
+        else:
+            # Les vrais aperçus restent affichés en galerie pleine largeur.
+            parts.append({
+                "type": 12,
+                "items": [{
+                    "media": {"url": preview_image_url},
+                    "description": "Aperçu visuel de " + heading,
+                }],
+            })
     if len(parts) > 38:
         raise ValueError("Description trop longue pour une carte Discord")
     return [{"type": 17, "accent_color": COLOR, "components": parts}]
