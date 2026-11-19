@@ -898,12 +898,16 @@ def cached_site_preview(api, tid, page_url, tracking, reference_url=None):
 
     # L'icône tactile est souvent la seule ressource disponible sur les
     # sites SPA ou bloqués côté GitHub. Ne jamais inventer une réponse 200.
-    origin = clean_url(page_url)
-    if origin:
-        for name in ("apple-touch-icon.png", "favicon-96x96.png",
-                     "favicon-32x32.png", "favicon.png"):
+    # Même quand le HTML est bloqué (403), vérifier les véritables fichiers
+    # d'image publiés par le site ou sa page officielle de référence.
+    # N'afficher que les candidats répondant avec de vrais octets d'image.
+    for origin in sources:
+        for name in ("apple-touch-icon.png", "android-chrome-192x192.png",
+                     "favicon-192x192.png", "favicon-96x96.png",
+                     "favicon-32x32.png", "favicon.png", "logo.png",
+                     "logo.webp", "og-image.png"):
             candidate = safe_preview_image("/" + name, origin)
-            if candidate:
+            if candidate and candidate not in logo_urls:
                 logo_urls.append(candidate)
 
     seen = set()
