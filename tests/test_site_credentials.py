@@ -10,8 +10,9 @@ OWNER_ID = "111111111111111111"
 
 
 class FakeDiscord:
-    def __init__(self, messages, owner_id=OWNER_ID):
+    def __init__(self, messages, owner_id=OWNER_ID, mirror_messages=None):
         self.messages = messages
+        self.mirror_messages = mirror_messages
         self.owner_id = owner_id
         self.calls = []
 
@@ -21,6 +22,8 @@ class FakeDiscord:
             return {"owner_id": self.owner_id}
         if method == "GET" and path == f"/channels/{TR4KER_THREAD_ID}/messages":
             return self.messages
+        if method == "GET" and path == "/channels/1572759788167766058/messages":
+            return self.mirror_messages or []
         raise AssertionError(f"Unexpected request: {method} {path}")
 
 
@@ -68,6 +71,37 @@ class Tr4kerCredentialsTests(unittest.TestCase):
         self.assertIsNone(tr4ker_owner_post_credentials(
             api, TR4KER_THREAD_ID, "Tr4ker", GUILD_ID
         ))
+
+    def test_login_may_be_supplied_in_the_new_text_channel(self):
+        api = FakeDiscord(
+            [reply("Utilisateur : ancien\\nMot de passe : ancien")],
+            mirror_messages=[{
+                "id": "1800000000000000000",
+                "author": {"id": OWNER_ID},
+                "content": "Utilisateur : nouveau\\nMot de passe : updated",
+            }],
+        )
+        found = tr4ker_owner_post_credentials(
+            api, TR4KER_THREAD_ID, "Tr4ker", GUILD_ID,
+            mirror_channel_id="1572759788167766058",
+        )
+        self.assertEqual(found, {"user": "nouveau", "password": "updated"})
+        self.assertEqual(len(api.calls), 3)
+
+    def test_non_owner_in_new_channel_never_overrides_owner(self):
+        api = FakeDiscord(
+            [reply("Utilisateur : bon\\nMot de passe : correct")],
+            mirror_messages=[{
+                "id": "1800000000000000000",
+                "author": {"id": "222222222222222222"},
+                "content": "Utilisateur : fake\\nMot de passe : fake",
+            }],
+        )
+        found = tr4ker_owner_post_credentials(
+            api, TR4KER_THREAD_ID, "Tr4ker", GUILD_ID,
+            mirror_channel_id="1572759788167766058",
+        )
+        self.assertEqual(found, {"user": "bon", "password": "correct"})
 
     def test_other_threads_cannot_access_owner_login(self):
         api = FakeDiscord([reply("Utilisateur : foo\nMot de passe : bar")])
