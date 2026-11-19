@@ -203,7 +203,12 @@ def get_items(api: DiscordAPI):
         # dépasser au catalogue central la limite Discord Components V2.
         # Elles restent visibles normalement dans la barre latérale.
         if (channel.get("type") == CHANNEL_TEXT
-                and SITE_MIRROR_TOPIC_MARKER in (channel.get("topic") or "")):
+                and (SITE_MIRROR_TOPIC_MARKER in (channel.get("topic") or "")
+                     or "[elikto:streaming-hd-mirrors:v1]" in (
+                         channel.get("topic") or ""
+                     ))):
+            # Le menu Streaming HD miroir reproduit un forum existant.
+            # Le réindexer fait déborder le catalogue central Discord.
             continue
         if not public_channel(channel, permissions, categories, GUILD_ID):
             continue
