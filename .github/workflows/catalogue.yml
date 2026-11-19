@@ -20,6 +20,8 @@ on:
       - 'tr4ker_forum.py'
       - 'bot_identity.py'
       - 'tests/test_bot_identity.py'
+      - 'site_credentials.py'
+      - 'tests/test_site_credentials.py'
       - 'tests/test_tr4ker_forum.py'
       - 'site_channels.py'
       - 'tests/test_site_channels.py'
