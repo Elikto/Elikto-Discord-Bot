@@ -6,6 +6,8 @@ on:
     # Le fuseau IANA ajuste automatiquement les heures d'été / d'hiver.
     - cron: '0 7,18 * * *'
       timezone: "Europe/Paris"
+    # Un contrôle léger toutes les heures pour les sites orange.
+    - cron: '17 * * * *'
   workflow_dispatch:
   push:
     branches: [main]
@@ -128,7 +130,7 @@ jobs:
           # 1 uniquement si Discord a confirmé l'endpoint signé :
           # aucun menu inutilisable n'est publié en cas d'échec.
           DISCORD_MIRROR_DROPDOWN_ENABLED: ${{ steps.discord_dropdown.outputs.enabled }}
-          FORCE_DAILY_INTEGRITY_SCAN: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[full-scan]')) && '1' || '0' }}
+          FORCE_DAILY_INTEGRITY_SCAN: ${{ ((github.event_name == 'schedule' && github.event.schedule != '17 * * * *') || github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[full-scan]')) && '1' || '0' }}
         run: python mirror_watch.py
       - name: Recenser et vérifier quotidiennement tous les liens des salons et forums publics
         env:
@@ -149,13 +151,14 @@ jobs:
           # Repli Chromium pour les cas 403 / application JavaScript.
           PLAYWRIGHT_BROWSER_FALLBACK: '1'
           # Forcer le contrôle intégral au lancement manuel et aux commits [full-scan].
-          FORCE_DAILY_INTEGRITY_SCAN: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[full-scan]')) && '1' || '0' }}
+          FORCE_DAILY_INTEGRITY_SCAN: ${{ ((github.event_name == 'schedule' && github.event.schedule != '17 * * * *') || github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[full-scan]')) && '1' || '0' }}
+          ORANGE_HOURLY_SCAN: "1"
         run: python server_link_watch.py
       - name: Surveiller les sites publics et alimenter l'historique
         env:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           DISCORD_GUILD_ID: '1430984645012357263'
-          FORCE_DAILY_INTEGRITY_SCAN: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[full-scan]')) && '1' || '0' }}
+          FORCE_DAILY_INTEGRITY_SCAN: ${{ ((github.event_name == 'schedule' && github.event.schedule != '17 * * * *') || github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[full-scan]')) && '1' || '0' }}
         run: python site_monitor.py
       - name: Créer et synchroniser les salons de sites (sans toucher aux forums)
         env:

@@ -905,6 +905,21 @@ def cached_site_preview(api, tid, page_url, tracking, reference_url=None):
             preview_urls.extend(image_candidates_from_html(page["html"], final))
             logo_urls.extend(logo_candidates_from_html(page["html"], final))
 
+    # Lire les métadonnées du DOM via Chromium si l'HTML classique est bloqué.
+    # Le repli ne fournit une image que si l'identité du site est vérifiée.
+    if (not preview_urls and not logo_urls
+            and os.environ.get("PLAYWRIGHT_BROWSER_FALLBACK") == "1"):
+        try:
+            from browser_probe import probe_browser_site
+            browser_page = probe_browser_site(page_url, include_html=True)
+            if browser_page and browser_page.get("page_health") == "content":
+                final = browser_page.get("final_url") or page_url
+                dom = browser_page.get("html") or ""
+                preview_urls.extend(image_candidates_from_html(dom, final))
+                logo_urls.extend(logo_candidates_from_html(dom, final))
+        except (OSError, RuntimeError, ValueError, ImportError):
+            pass
+
     # L'icône tactile est souvent la seule ressource disponible sur les
     # sites SPA ou bloqués côté GitHub. Ne jamais inventer une réponse 200.
     # Même quand le HTML est bloqué (403), vérifier les véritables fichiers
@@ -914,7 +929,10 @@ def cached_site_preview(api, tid, page_url, tracking, reference_url=None):
         for name in ("apple-touch-icon.png", "android-chrome-192x192.png",
                      "favicon-192x192.png", "favicon-96x96.png",
                      "favicon-32x32.png", "favicon.png", "logo.png",
-                     "logoo.png", "logo.webp", "og-image.png"):
+                     "logoo.png", "logo.webp", "og-image.png",
+                     "assets/logo.png", "assets/logo.webp",
+                     "images/logo.png", "images/logo.webp",
+                     "img/logo.png", "static/logo.png"):
             candidate = safe_preview_image("/" + name, origin)
             if candidate and candidate not in logo_urls:
                 logo_urls.append(candidate)

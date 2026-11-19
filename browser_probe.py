@@ -38,7 +38,7 @@ def browser_page_identity(html, url, *, body_text="", navigation_count=0):
     }
 
 
-def probe_browser_site(url, *, timeout_ms=12000):
+def probe_browser_site(url, *, timeout_ms=12000, include_html=False):
     """Essai secondaire avec un navigateur réel, jamais une promesse de bypass.
 
     La vérification réseau est bornée, sans identifiants, sans téléchargement,
@@ -125,10 +125,13 @@ def probe_browser_site(url, *, timeout_ms=12000):
                 rendered_html = page.content()[:MAX_HTML]
                 text = page.locator("body").inner_text(timeout=1500)[:4000]
                 elements = page.locator("a, button, article, [role='button']").count()
-                return browser_page_identity(
+                result = browser_page_identity(
                     rendered_html, final_url,
                     body_text=text, navigation_count=elements,
                 )
+                if result and include_html:
+                    result["html"] = rendered_html
+                return result
             finally:
                 browser.close()
     except Exception as exc:

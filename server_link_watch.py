@@ -99,6 +99,17 @@ def record_migration(state, rec, observation, now, *, first_run):
     return True
 
 
+def due_hourly(last: str | None, now: datetime, minutes=55) -> bool:
+    """Hourly checks are eligible after 55 minutes, including the same day."""
+    if not last:
+        return True
+    try:
+        previous = datetime.fromisoformat(str(last).replace("Z", "+00:00"))
+        return previous.tzinfo is None or now - previous >= timedelta(minutes=minutes)
+    except (ValueError, TypeError, OverflowError):
+        return True
+
+
 def due_daily(last: str | None, now: datetime) -> bool:
     """Un contrôle par jour civil (France), avec 20 h minimum entre mesures."""
     if not last:
@@ -397,6 +408,8 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
     new_address_checks = {}
     browser_cache = {}
     browser_enabled = os.environ.get("PLAYWRIGHT_BROWSER_FALLBACK") == "1"
+    orange_hourly = (os.environ.get("ORANGE_HOURLY_SCAN") == "1"
+                     and not force_scan)
 
     # A public trends directory is only another hint source. Require an
     # explicit old→new mapping, same brand and independent HTTP/HTML checking.
@@ -426,7 +439,13 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
             and int(rec.get("http_status") or 0) not in (404, 410)
             and int(rec.get("http_probe_version") or 0) < HTTP_PROBE_VERSION
         )
-        if force_scan or previous_uncertain_failure or due_daily(rec.get("last_checked"), now):
+        orange_due = (
+            orange_hourly
+            and rec.get("status") == "restricted"
+            and rec.get("page_health") != "content"
+            and due_hourly(rec.get("last_checked"), now)
+        )
+        if force_scan or orange_due or previous_uncertain_failure or due_daily(rec.get("last_checked"), now):
             observation = check_site(rec["site_url"])
             record_check(state, rec, observation, now)
             http_unreadable_this_pass = (
@@ -448,7 +467,7 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
                 )
         if (rec.get("status") in ("online", "restricted")
                 or http_unreadable_this_pass) and (
-            force_scan
+            force_scan or orange_due
             or int(rec.get("html_health_probe_version") or 0) < HTML_HEALTH_PROBE_VERSION
             or due_daily(rec.get("name_attempted_at"), now)
         ):
@@ -601,6 +620,7 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
         "new_migration_checks": migration_checks,
         "new_announced_address_checks": len(new_address_checks),
         "browser_checks": len(browser_cache),
+        "hourly_orange_mode": orange_hourly,
         "oustreamer_hints": len(oustreamer_hints),
     }
     active_records = [rec for rec in records.values() if rec.get("active")]
