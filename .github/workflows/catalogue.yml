@@ -30,6 +30,8 @@ on:
       - 'tests/test_forum_updates.py'
       - 'thread_watch.py'
       - 'mirror_watch.py'
+      - 'mirror_channel.py'
+      - 'tests/test_mirror_channel.py'
       - 'discord_endpoint_setup.py'
       - 'api/**'
       - 'tests/test_discord_interactions.mjs'
@@ -160,6 +162,11 @@ jobs:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           DISCORD_GUILD_ID: '1430984645012357263'
         run: python site_channels.py
+      - name: Synchroniser le menu déroulant Streaming HD dans le nouveau salon
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_MIRROR_DROPDOWN_ENABLED: ${{ steps.discord_dropdown.outputs.enabled }}
+        run: python mirror_channel.py
       - name: Verifier le catalogue web genere
         run: |
           python -c "import json; d=json.load(open('site/catalogue.json', encoding='utf-8')); assert d['visibility']=='public_everyone_only'; assert len(d['categories'])>0; print('Fiches publiques:', d['stats']['entries'])"
