@@ -179,9 +179,12 @@ class MirrorTests(unittest.TestCase):
             self.assertEqual(ch["type"], 0)
             self.assertEqual(CHANNEL_MARKER.search(ch["topic"]).group(1), tid)
             self.assertEqual(len(api.messages[cid]), 1)
-            self.assertTrue(any("Ancien forum" == part["accessory"]["label"]
-                                for part in api.messages[cid][0]["components"][0]["components"]
-                                if part.get("type") == 9))
+            self.assertFalse(any(part.get("type") == 9
+                                 for part in api.messages[cid][0]["components"][0]["components"]))
+            self.assertNotIn("https://discord.com/channels/", ch["topic"])
+            self.assertNotIn("Publication d'origine", "\n".join(
+                all_text(api.messages[cid][0]["components"])
+            ))
 
         tr4ker_text = "\n".join(all_text(api.messages[
             mirrored[TR4KER]["channel_id"]][0]["components"]))
@@ -204,6 +207,69 @@ class MirrorTests(unittest.TestCase):
         self.assertFalse(any(method in ("DELETE", "PATCH") and
                              path.startswith(f"/channels/{TR4KER}")
                              for method, path, _ in api.actions))
+
+
+    def test_copies_existing_public_forum_login_without_new_message_or_old_links(self):
+        import json
+        from forum_cards import build_card
+
+        api = FakeDiscord()
+        current = state()
+        old_card_id = "1789000000000000001"
+        old_card = build_card([{
+            "url": "https://c411.org/", "status": "online", "verified": True,
+        }], "Description manuelle", "C411", credentials={
+            "user": "compte-de-test@example.org",
+            "password": "secret-fixture-only",
+        })
+        api.messages[C411] = [{
+            "id": old_card_id,
+            "author": {"id": "999"},
+            "flags": 32768,
+            "content": None,
+            "components": old_card,
+        }]
+        current["forum_updates"][C411]["message_id"] = old_card_id
+
+        first = sync_mirrors(api, catalogue(), current)
+        self.assertEqual(first["cards_created"], 3)
+        channel_id = current["site_channel_mirrors"][C411]["channel_id"]
+        message = api.messages[channel_id][0]
+        text = "\n".join(all_text(message["components"]))
+        self.assertIn("**🔐 Identifiants**", text)
+        self.assertIn("compte-de-test@example.org", text)
+        self.assertIn("||secret-fixture-only||", text)
+        self.assertEqual(text.count("https://c411.org/"), 1)
+        self.assertNotIn("Ancien forum", text)
+        self.assertNotIn("discord.com/channels/", json.dumps(message["components"]))
+        self.assertNotIn("secret-fixture-only", json.dumps(current))
+        self.assertNotIn("compte-de-test@example.org", json.dumps(current))
+
+        second = sync_mirrors(api, catalogue(), current)
+        self.assertEqual(second["cards_unchanged"], 3)
+        self.assertEqual(len(api.messages[channel_id]), 1)
+
+    def test_refuses_to_clone_login_from_a_nonbot_forum_card(self):
+        from forum_cards import build_card
+        api = FakeDiscord()
+        st = state()
+        old_card_id = "1789000000000000002"
+        api.messages[C411] = [{
+            "id": old_card_id, "author": {"id": "member"},
+            "flags": 32768, "content": None,
+            "components": build_card([{
+                "url": "https://c411.org/", "status": "online",
+                "verified": True,
+            }], "", "C411", credentials={
+                "user": "wrong@example.org", "password": "fake-pass",
+            }),
+        }]
+        st["forum_updates"][C411]["message_id"] = old_card_id
+        sync_mirrors(api, catalogue(), st)
+        cid = st["site_channel_mirrors"][C411]["channel_id"]
+        rendered = "\n".join(all_text(api.messages[cid][0]["components"]))
+        self.assertNotIn("fake-pass", rendered)
+        self.assertNotIn("wrong@example.org", rendered)
 
     def test_existing_channels_recovered_without_saved_state(self):
         api = FakeDiscord()
