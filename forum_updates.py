@@ -19,6 +19,7 @@ from name_probe import fetch_html_page, probe_site_name, parse_site_migration
 from forum_cards import (source_description, credentials_from_author_posts,
                          build_card, all_text, normalize, is_own_card,
                          card_digest, V2_FLAG)
+from site_credentials import tr4ker_owner_post_credentials
 
 MARKER = "[elikto-forum-suivi:v1]"
 MIRROR_THREAD = "1430988094374547559"
@@ -1118,6 +1119,11 @@ def sync_forum_updates(api, state, changed_events=()):
                 else site_groups(linked, info.get("title") or "Site")
             )
             credentials = credentials_from_author_posts(api, tid, bot_id)
+            owner_tr4ker = tr4ker_owner_post_credentials(
+                api, tid, info.get("title"), os.getenv("DISCORD_GUILD_ID", "")
+            )
+            if owner_tr4ker:
+                credentials = {**(credentials or {}), **owner_tr4ker}
             secure_teamflix = authorized_teamflix_credentials(tid, info.get("title"))
             if secure_teamflix:
                 credentials = {**(credentials or {}), **secure_teamflix}
