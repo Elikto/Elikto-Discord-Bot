@@ -325,16 +325,6 @@ def mirror_card(api, state, source, bot_id):
     groups = groups_for_mirror(state, source)
     original = safe_source_description(api, source, bot_id)
     tracking = (state.get("forum_updates") or {}).get(source["tid"], {})
-    if directory_kind(source["title"]) and tracking.get("active_url"):
-        # Preserve prose; hide standalone superseded URLs from the old post.
-        active = clean_url(tracking["active_url"])
-        original = "\n".join(
-            line for line in original.splitlines()
-            if not (
-                re.fullmatch(r"https?://[^\s<>]+", line.strip().strip("<>"))
-                and clean_url(line.strip().strip("<>")) != active
-            )
-        ).strip()
     if groups:
         # Only reproduce credentials ALREADY publicly displayed by the
         # original, bot-authored forum card. Never read from a private forum,

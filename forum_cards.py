@@ -301,6 +301,42 @@ def credentials_from_published_forum_card(api, thread_id, bot_id, message_id):
     return credentials or None
 
 
+def remove_obsolete_directory_urls(description, groups, title):
+    """Hide only retired brand URLs from the rendered card, not the author post.
+
+    A verified replacement (Coflix/Flemmix) is required. An unrelated URL
+    in the description, or any URL embedded within prose, is preserved.
+    """
+    kind = next(
+        (name for name in ("coflix", "flemmix")
+         if re.search(r"(?<![a-z])" + name + r"(?![a-z])",
+                      str(title or "").casefold())),
+        None,
+    )
+    if not kind:
+        return description
+    active = next(
+        (group for group in groups if group.get("verified")
+         and not group.get("no_active") and clean_url(group.get("url"))),
+        None,
+    )
+    if not active:
+        return description
+    current_host = domain(active["url"])
+    reference_host = domain(active.get("reference_url") or "")
+    kept = []
+    for line in str(description or "").splitlines():
+        pure = line.strip().strip("<>").rstrip(".,!?")
+        if re.fullmatch(r"https?://[^\s<>]+", pure, flags=re.I):
+            normalized = clean_url(pure)
+            host = domain(normalized) if normalized else ""
+            if (host.startswith(kind + ".")
+                    and host not in (current_host, reference_host)):
+                continue
+        kept.append(line)
+    return "\n".join(kept).strip()
+
+
 def build_card(groups, description, title=None, credentials=None, preview_image_url=None, preview_kind="preview"):
     """Fiche : nom, description, accès, URL puis aperçu visuel."""
     if not groups:
@@ -313,6 +349,9 @@ def build_card(groups, description, title=None, credentials=None, preview_image_
     credentials = {**(original_credentials or {}), **(credentials or {})}
     if original_vip_phrase and not credentials.get("vip_phrase"):
         credentials["vip_phrase"] = original_vip_phrase
+    regular_description = remove_obsolete_directory_urls(
+        regular_description, groups, heading
+    )
     cleaned = strip_duplicate_source_url(regular_description, groups)
     if cleaned:
         for i, chunk in enumerate(split_text(cleaned, 3800)):

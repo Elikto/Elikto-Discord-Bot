@@ -173,12 +173,16 @@ class MirrorTests(unittest.TestCase):
                   "source_category_name": "Streaming"}
         self.assertEqual(groups_for_mirror(st, source)[0]["older"], [])
         api = FakeDiscord()
-        api.originals[tid] = "Catalogue streaming\nhttps://coflix.boo/"
+        api.originals[tid] = (
+            "Catalogue streaming\nhttps://coflix.boo/\n"
+            "Site indépendant : https://other.example.org/"
+        )
         card = mirror_card(api, st, source, "999")
         visible = "\n".join(all_text(card))
         self.assertIn("https://coflix.red/", visible)
         self.assertNotIn("coflix.boo", visible)
         self.assertIn("Catalogue streaming", visible)
+        self.assertIn("Site indépendant : https://other.example.org/", visible)
 
     def test_plans_real_public_forums_only(self):
         result = catalogue_threads(catalogue())

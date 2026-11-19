@@ -808,6 +808,31 @@ class ForumUpdatesTests(unittest.TestCase):
         self.assertIn("||cinéma orange violet lundi jeudi avion||", shown(card))
         self.assertNotIn("cinéma orange violet lundi jeudi avion", repr(data))
 
+    def test_coflix_previous_link_is_not_repeated_in_rendered_card(self):
+        from forum_cards import build_card, all_text
+        groups = [{
+            "url": "https://coflix.red/",
+            "reference_url": "https://coflix.domains/",
+            "verified": True, "no_active": False,
+            "status": "online", "older": [],
+        }]
+        text = (
+            "Séries pratiques.\n\nhttps://coflix.boo/\n"
+            "https://coflix.red/\nhttps://other.example.org/"
+        )
+        visible = "\n".join(all_text(build_card(groups, text, "Coflix")))
+        self.assertNotIn("coflix.boo", visible)
+        self.assertEqual(visible.count("https://coflix.red/"), 1)
+        self.assertIn("Séries pratiques.", visible)
+        self.assertIn("https://other.example.org/", visible)
+
+        # No verified successor: the original historical URL is preserved.
+        pending = [{**groups[0], "verified": False, "no_active": True}]
+        pending_visible = "\n".join(all_text(build_card(
+            pending, "Description\nhttps://coflix.boo/", "Coflix"
+        )))
+        self.assertIn("https://coflix.boo/", pending_visible)
+
     def test_every_site_card_places_url_after_description_access_and_before_image(self):
         from forum_cards import build_card
         content = (
