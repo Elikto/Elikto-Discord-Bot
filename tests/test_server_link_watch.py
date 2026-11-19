@@ -147,6 +147,65 @@ class ServerWatchTests(unittest.TestCase):
         self.assertTrue(watch.due_daily(checked.isoformat(), checked + timedelta(hours=21)))
         self.assertFalse(watch.due_daily(checked.isoformat(), checked + timedelta(hours=10)))
 
+    def test_hourly_due_is_independent_of_twice_daily_clock(self):
+        start = datetime(2026, 11, 19, 14, tzinfo=timezone.utc)
+        self.assertFalse(watch.due_hourly(start.isoformat(), start + timedelta(minutes=40)))
+        self.assertTrue(watch.due_hourly(start.isoformat(), start + timedelta(minutes=56)))
+        self.assertFalse(watch.due_daily(start.isoformat(), start + timedelta(hours=1)))
+
+    def test_hourly_scan_checks_only_orange_restricted_sites(self):
+        api = FakeDiscord()
+        s = state()
+        orange, green = "https://cinezzz.club/", "https://good-site.org/"
+        source = {
+            "url": "https://discord.com/channels/1430984645012357263/21/201",
+            "kind": "fil",
+        }
+        recent = (NOW - timedelta(hours=1)).isoformat()
+        s["server_links"] = {
+            orange: {
+                "thread_id": "21", "title": "Cinezzz",
+                "discord_url": source["url"], "site_url": orange,
+                "active": True, "status": "restricted", "page_health": "unknown",
+                "last_checked": recent, "name_attempted_at": NOW.isoformat(),
+                "migration_attempted_at": NOW.isoformat(),
+                "migration_probe_version": watch.MIGRATION_PROBE_VERSION,
+                "sources": [source],
+            },
+            green: {
+                "thread_id": "21", "title": "Other",
+                "discord_url": source["url"], "site_url": green,
+                "active": True, "status": "online", "page_health": "content",
+                "last_checked": recent, "name_attempted_at": NOW.isoformat(),
+                "migration_attempted_at": NOW.isoformat(),
+                "migration_probe_version": watch.MIGRATION_PROBE_VERSION,
+                "sources": [source],
+            },
+        }
+        discovered = {
+            url: {"sources": [source], "source_count": 1}
+            for url in (orange, green)
+        }
+        with patch.dict("os.environ", {
+            "ORANGE_HOURLY_SCAN": "1",
+            "FORCE_DAILY_INTEGRITY_SCAN": "0",
+            "PLAYWRIGHT_BROWSER_FALLBACK": "0",
+        }), patch("server_link_watch.check_site",
+                  return_value={"result": "restricted", "http_status": 403}
+        ) as probe, patch(
+            "server_link_watch.probe_site_name", return_value=None
+        ), patch(
+            "server_link_watch.read_oustreamer_changes", return_value=[]
+        ):
+            report, _ = watch.watch_server_links(
+                api, s, NOW, discover=lambda _: (discovered, {}, [])
+            )
+        probe.assert_called_once_with(orange)
+        self.assertEqual(s["server_links"][green]["status"], "online")
+        self.assertEqual(s["server_links"][orange]["status"], "restricted")
+        self.assertEqual(report["complete"], True)
+        self.assertEqual(s["server_scan"]["hourly_orange_mode"], True)
+
     def test_all_websites_checked_daily_and_no_repeat_on_same_day(self):
         api = FakeDiscord()
         s = state()

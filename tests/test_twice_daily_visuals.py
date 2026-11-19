@@ -19,9 +19,39 @@ class ScheduleAndVisualsTests(unittest.TestCase):
         workflow = Path(".github/workflows/catalogue.yml").read_text(encoding="utf-8")
         self.assertIn("cron: '0 7,18 * * *'", workflow)
         self.assertIn('timezone: "Europe/Paris"', workflow)
-        self.assertEqual(workflow.count("cron:"), 1)
+        self.assertEqual(workflow.count("cron:"), 2)
+        self.assertIn("cron: '17 * * * *'", workflow)
+        self.assertIn("github.event.schedule != '17 * * * *'", workflow)
         self.assertIn("github.event_name == 'schedule'", workflow)
         self.assertIn("FORCE_DAILY_INTEGRITY_SCAN", workflow)
+
+    def test_browser_logo_can_recover_verified_html_after_403(self):
+        from forum_updates import cached_site_preview
+        tracking = {}
+        browser = {
+            "name": "Cinezzz",
+            "page_health": "content",
+            "final_url": "https://cinezzz.club/",
+            "html": '<link rel="icon" type="image/png" href="/img/logo.png">',
+        }
+        with patch.dict("os.environ", {"PLAYWRIGHT_BROWSER_FALLBACK": "1"}), patch(
+            "forum_updates.image_candidates_from_discord_starter", return_value=[]
+        ), patch(
+            "forum_updates.fetch_html_page", return_value=None
+        ), patch(
+            "browser_probe.probe_browser_site", return_value=browser
+        ) as probe, patch(
+            "forum_updates.preview_image_works",
+            side_effect=lambda u: u.endswith("/img/logo.png")
+        ):
+            found = cached_site_preview(
+                object(), "100", "https://cinezzz.club/", tracking
+            )
+        self.assertEqual(found, "https://cinezzz.club/img/logo.png")
+        self.assertEqual(tracking["preview_image_kind"], "logo")
+        probe.assert_called_once_with(
+            "https://cinezzz.club/", include_html=True
+        )
 
     def test_last_scan_date_hour_is_localized_to_paris(self):
         self.assertIn(
