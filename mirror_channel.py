@@ -92,6 +92,28 @@ def find_or_create_channel(api, state=None):
     return channel_id, True
 
 
+def retire_bot_only_duplicate(api, previous, destination, bot_id):
+    """Only remove a redundant bot-created channel with zero member posts."""
+    old_id = str(previous.get("channel_id") or "")
+    old_message = str(previous.get("message_id") or "")
+    if not old_id or not old_message or old_id in (destination, THREAD_ID):
+        return False
+    channels = api.call("GET", f"/guilds/{GUILD_ID}/channels")
+    old = next((c for c in channels if str(c.get("id")) == old_id), None)
+    if (not old or old.get("type") != CHANNEL_TEXT
+            or TOPIC_MARKER not in (old.get("topic") or "")):
+        return False
+    messages = api.call("GET", f"/channels/{old_id}/messages", params={"limit": 100})
+    if (len(messages) != 1
+            or str(messages[0].get("id")) != old_message
+            or str((messages[0].get("author") or {}).get("id")) != bot_id):
+        print("MIROIRS SALON : ancien doublon conservé (messages inconnus)")
+        return False
+    api.call("DELETE", f"/channels/{old_id}")
+    print("MIROIRS SALON : ancien doublon du bot supprimé", old_id)
+    return True
+
+
 def sync_mirror_channel(api, state, *, dropdown_enabled=False):
     source = (state.get("tracked_threads") or {}).get(THREAD_ID) or {}
     sites = source.get("display_sites") or []
@@ -106,6 +128,7 @@ def sync_mirror_channel(api, state, *, dropdown_enabled=False):
     )
     channel_id, created = find_or_create_channel(api, state)
     bot_id = str(api.call("GET", "/users/@me")["id"])
+    previous_channel = dict(state.get("streaming_mirror_channel") or {})
     tracked = state.setdefault("streaming_mirror_channel", {})
     if str(tracked.get("channel_id")) != channel_id:
         tracked.pop("message_id", None)
@@ -121,6 +144,10 @@ def sync_mirror_channel(api, state, *, dropdown_enabled=False):
     tracked["message_id"] = message_id
     if str(original.get("channel_id")) == channel_id:
         original["message_id"] = message_id
+        try:
+            retire_bot_only_duplicate(api, previous_channel, channel_id, bot_id)
+        except RuntimeError as exc:
+            print("MIROIRS SALON : nettoyage prudent indisponible:", str(exc)[:120])
     print(
         "MIROIRS SALON :",
         len(sites), "adresses dans le menu ; salon", channel_id,

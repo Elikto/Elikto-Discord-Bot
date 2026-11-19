@@ -331,7 +331,7 @@ def mirror_card(api, state, source, bot_id):
         original = "\n".join(
             line for line in original.splitlines()
             if not (
-                re.fullmatch(r"https?://[^\\s<>]+", line.strip().strip("<>"))
+                re.fullmatch(r"https?://[^\s<>]+", line.strip().strip("<>"))
                 and clean_url(line.strip().strip("<>")) != active
             )
         ).strip()

@@ -81,6 +81,11 @@ class FakeDiscord:
             item.update({"components": json["components"],
                          "flags": json["flags"], "content": json["content"]})
             return dict(item)
+        if method == "DELETE" and path.startswith("/channels/"):
+            cid = path.split("/")[2]
+            self.channels = [c for c in self.channels if str(c["id"]) != cid]
+            self.bot_messages.pop(cid, None)
+            return {"id": cid}
         raise AssertionError(f"Unexpected request: {method} {path}")
 
 
@@ -149,6 +154,71 @@ class MirrorChannelTests(unittest.TestCase):
             api.bot_messages["555"][0]["components"][0]["components"][1]
             ["components"][0]["type"], 3
         )
+
+    def test_bot_only_duplicate_is_retired_after_reusing_original_salon(self):
+        api = FakeDiscord()
+        api.channels.extend([
+            {"id": "555", "type": 0, "name": "streaming-hd",
+             "parent_id": "111",
+             "topic": f"[elikto:site-channel:v1:{THREAD_ID}]"},
+            {"id": "777", "type": 0, "name": CHANNEL_NAME,
+             "parent_id": "111", "topic": TOPIC_MARKER},
+        ])
+        api.bot_messages["555"] = [{
+            "id": "899", "author": {"id": "999"}, "flags": 32768,
+            "content": None, "components": [{
+                "type": 17, "components": [
+                    {"type": 10, "content": "## ✦ 🎬 Streaming HD ✦"},
+                ],
+            }],
+        }]
+        api.bot_messages["777"] = [{
+            "id": "800", "author": {"id": "999"}, "flags": 32768,
+            "content": None, "components": [],
+        }]
+        state = mirror_state()
+        state["site_channel_mirrors"] = {
+            THREAD_ID: {"channel_id": "555", "message_id": "899"}
+        }
+        state["streaming_mirror_channel"] = {
+            "channel_id": "777", "message_id": "800"
+        }
+        cid, mid = sync_mirror_channel(api, state, dropdown_enabled=True)
+        self.assertEqual((cid, mid), ("555", "899"))
+        self.assertNotIn("777", [str(c["id"]) for c in api.channels])
+        self.assertIn(("DELETE", "/channels/777"), api.calls)
+
+    def test_duplicate_with_member_messages_is_never_removed(self):
+        api = FakeDiscord()
+        api.channels.extend([
+            {"id": "555", "type": 0, "name": "streaming-hd",
+             "parent_id": "111",
+             "topic": f"[elikto:site-channel:v1:{THREAD_ID}]"},
+            {"id": "778", "type": 0, "name": CHANNEL_NAME,
+             "parent_id": "111", "topic": TOPIC_MARKER},
+        ])
+        api.bot_messages["555"] = [{
+            "id": "899", "author": {"id": "999"}, "flags": 32768,
+            "content": None, "components": [{
+                "type": 17, "components": [
+                    {"type": 10, "content": "## ✦ 🎬 Streaming HD ✦"},
+                ],
+            }],
+        }]
+        api.bot_messages["778"] = [
+            {"id": "801", "author": {"id": "999"}},
+            {"id": "802", "author": {"id": "member"}},
+        ]
+        state = mirror_state()
+        state["site_channel_mirrors"] = {
+            THREAD_ID: {"channel_id": "555", "message_id": "899"}
+        }
+        state["streaming_mirror_channel"] = {
+            "channel_id": "778", "message_id": "801"
+        }
+        sync_mirror_channel(api, state, dropdown_enabled=True)
+        self.assertIn("778", [str(c["id"]) for c in api.channels])
+        self.assertNotIn(("DELETE", "/channels/778"), api.calls)
 
     def test_traffic_light_only_green_with_verified_html(self):
         source = mirror_state()["tracked_threads"][THREAD_ID]["display_sites"]
