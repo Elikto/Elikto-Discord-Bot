@@ -16,6 +16,7 @@ from urllib.parse import urljoin, urlsplit
 from site_probe import (clean_url, check_site, resolve_public_ip,
                         PublicHTTPSConnection, PublicHTTPConnection, USER_AGENT)
 from name_probe import fetch_html_page, probe_site_name, parse_site_migration
+from site_credentials import authorized_tr4ker_credentials
 from forum_cards import (source_description, credentials_from_author_posts,
                          build_card, all_text, normalize, is_own_card,
                          card_digest, V2_FLAG)
@@ -1119,8 +1120,10 @@ def sync_forum_updates(api, state, changed_events=()):
             )
             credentials = credentials_from_author_posts(api, tid, bot_id)
             secure_teamflix = authorized_teamflix_credentials(tid, info.get("title"))
-            if secure_teamflix:
-                credentials = {**(credentials or {}), **secure_teamflix}
+            secure_tr4ker = authorized_tr4ker_credentials(tid, info.get("title"))
+            if secure_teamflix or secure_tr4ker:
+                credentials = {**(credentials or {}), **(secure_teamflix or {}),
+                               **(secure_tr4ker or {})}
             preview_url = clean_url(groups[0]["url"])
             image = (cached_site_preview(
                 api, tid, preview_url, previous,
