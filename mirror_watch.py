@@ -496,7 +496,7 @@ def mirror_check_suffix(site):
     return " · Non disponible"
 
 
-def render_site_cards(items, thread_name, dropdown_enabled=False):
+def render_site_cards(items, thread_name, dropdown_enabled=False, *, status_badges=False):
     """Une seule URL principale, le reste en spoiler Discord Components V2.
 
     Le spoiler du Container se révèle par un clic sans service interactif.
@@ -511,12 +511,11 @@ def render_site_cards(items, thread_name, dropdown_enabled=False):
         }]
 
     # Priorité aux adresses accessibles provenant du fil d'origine.
-    primary = next(
-        (site for site in available
-         if mirror_status_marker(site)[0] == "🟢" and site.get("source_urls")), None
-    ) or next(
-        (site for site in available
-         if mirror_status_marker(site)[0] == "🟢"), None
+    primary = (
+        next((site for site in available
+              if mirror_status_marker(site)[0] == "🟢"
+              and site.get("source_urls")), None)
+        if status_badges else None
     ) or next(
         (site for site in available
          if site.get("status") == "online" and site.get("source_urls")), None
@@ -529,10 +528,16 @@ def render_site_cards(items, thread_name, dropdown_enabled=False):
         url = clean_url(site.get("url"))
         name = str(site.get("name") or urlsplit(url).hostname).strip()
         name = name.replace("@", "@\u200b").replace("]", "").replace("[", "")[:48]
-        marker, label = mirror_status_marker(site)
-        content = f"### {marker} ✦ [{name}]({url})"
-        if marker != "🟢":
-            content += "\n-# " + label
+        if status_badges:
+            marker, label = mirror_status_marker(site)
+            content = f"### {marker} ✦ [{name}]({url})"
+            if marker != "🟢":
+                content += "\n-# " + label
+        else:
+            prefix = "❌ " if site.get("status") == "empty_index" else ""
+            content = f"### {prefix}✦ [{name}]({url})"
+            if prefix:
+                content += "\n-# Page vide : index de répertoire détecté"
         old_names = []
         for raw in site.get("previous_names", []):
             former = str(raw).replace("@", "@\u200b")[:40]
@@ -567,7 +572,8 @@ def render_site_cards(items, thread_name, dropdown_enabled=False):
         except (TypeError, ValueError, OverflowError):
             continue
     latest_actual = max(real_scans).isoformat() if real_scans else None
-    main_content += last_check_line(latest_actual)
+    if latest_actual or status_badges:
+        main_content += last_check_line(latest_actual)
     components = [{
         "type": 17, "accent_color": HEADER_ACCENT,
         "components": [{"type": 10, "content": main_content}],
@@ -585,9 +591,27 @@ def render_site_cards(items, thread_name, dropdown_enabled=False):
                 label = str(site.get("name") or urlsplit(url).hostname)
                 label = label.replace("@", "@\u200b")[:100]
                 entry = {"label": label, "value": url}
-                marker, label = mirror_status_marker(site)
-                entry["emoji"] = {"name": marker}
-                entry["description"] = (label + mirror_check_suffix(site))[:100]
+                if status_badges:
+                    marker, status_text = mirror_status_marker(site)
+                    entry["emoji"] = {"name": marker}
+                    entry["description"] = (
+                        status_text + mirror_check_suffix(site)
+                    )[:100]
+                elif site.get("page_health") == "parked":
+                    entry["description"] = "❌ Domaine expiré / parqué"
+                elif site.get("page_health") == "interstitial":
+                    entry["description"] = "❌ Page publicitaire / intermédiaire"
+                elif (site.get("status") == "empty_index"
+                        or site.get("page_health") == "empty_index"):
+                    entry["description"] = "❌ Index vide"
+                elif site.get("status") == "online":
+                    entry["description"] = (
+                        "✅ Page du site vérifiée"
+                        if site.get("page_health") == "content"
+                        else "🟡 Serveur OK · contenu non vérifié"
+                    )
+                else:
+                    entry["description"] = "Disponibilité à vérifier"
                 options.append(entry)
             components[0]["components"].append({
                 "type": 1,
@@ -631,7 +655,8 @@ def component_signature(components):
     return tuple(
         (entry.get("type"), entry.get("accent_color"), entry.get("spoiler"),
          entry.get("content"), entry.get("custom_id"), entry.get("placeholder"),
-         tuple((opt.get("label"), opt.get("value"), opt.get("description"))
+         tuple((opt.get("label"), opt.get("value"), opt.get("description"),
+                (opt.get("emoji") or {}).get("name"))
                for opt in entry.get("options") or []),
          component_signature(entry.get("components") or []))
         for entry in (components or [])
