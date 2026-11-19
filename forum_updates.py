@@ -725,7 +725,7 @@ class SitePreviewParser(HTMLParser):
             # avec une balise <img> sans texte alternatif ni classe logo.
             named_logo = bool(re.fullmatch(
                 r"(?:site[-_]?logo|brand[-_]?logo|logoo?|logotype)"
-                r"(?:[-_.][a-z0-9]+)*\\.(?:png|webp|jpe?g|gif)",
+                r"(?:[-_.][a-z0-9]+)*\.(?:png|webp|jpe?g|gif)",
                 filename
             ))
             if (re.search(r"(?<![a-z])(logo|logotype|brand)(?![a-z])", label)
