@@ -259,6 +259,48 @@ def credentials_from_author_posts(api, thread_id, bot_id):
     return latest
 
 
+
+def credentials_from_published_forum_card(api, thread_id, bot_id, message_id):
+    """Read existing credentials already displayed in the original public card.
+
+    The forum card remains the source of truth, and credentials live only in
+    this process's memory. Never persist them to data/monitor_state.json.
+    Ignore user-made/lookalike messages and unrelated descriptions.
+    """
+    if not str(message_id or "").isdigit():
+        return None
+    try:
+        message = api.call("GET", f"/channels/{thread_id}/messages/{message_id}")
+    except RuntimeError:
+        return None
+    if not is_own_card(message, bot_id):
+        return None
+
+    credentials = {}
+    for raw in all_text(message.get("components") or []):
+        if raw.startswith("**🔐 Identifiants**"):
+            # Only parse the explicitly labeled block, never other messages
+            # that might contain a random username/password.
+            normalized = []
+            for line in raw.splitlines()[1:]:
+                clean = line.replace("**", "").strip()
+                if clean.endswith("||") and "||" in clean:
+                    start, sep, secret = clean.partition("||")
+                    if sep:
+                        clean = start + secret.removesuffix("||")
+                normalized.append(clean)
+            fields, _ = credential_fields("\n".join(normalized))
+            if {"user", "password"}.issubset(fields):
+                credentials.update(fields)
+        elif raw.startswith("**🔐 Accès VIP**"):
+            cleaned = [line.replace("**", "").replace("||", "")
+                       for line in raw.splitlines()[1:]]
+            vip, _ = vip_phrase_fields("\n".join(cleaned))
+            if vip:
+                credentials["vip_phrase"] = vip
+    return credentials or None
+
+
 def build_card(groups, description, title=None, credentials=None, preview_image_url=None):
     """Fiche : nom, description, accès, URL puis aperçu visuel."""
     if not groups:

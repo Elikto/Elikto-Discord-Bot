@@ -20,13 +20,14 @@ from sync_catalogue import (
 )
 from forum_cards import (
     build_card, source_description, safe_title, credential_fields,
-    V2_FLAG,
+    credentials_from_published_forum_card, V2_FLAG,
 )
 from forum_updates import (
     latest_check, records_for_forum, site_groups, upsert_forum_update,
 )
 from site_monitor import load_state, STATE_PATH
 from site_probe import clean_url
+from site_credentials import tr4ker_owner_post_credentials
 
 PREFIX = "[elikto:site-channel:v1:"
 CHANNEL_MARKER = re.compile(r"\[elikto:site-channel:v1:(\d{16,22})\]")
@@ -113,7 +114,6 @@ def channel_topic(source):
     return (
         f"✦ {icon} {name} · {kind}\n"
         "Adresse, statut et dernier contrôle actualisés par le bot.\n"
-        f"📚 Fiche d'origine : {source['source_url']}\n"
         f"{PREFIX}{source['tid']}]"
     )[:1024]
 
@@ -256,6 +256,8 @@ def safe_source_description(api, source, bot_id):
         if (
             BOILERPLATE.fullmatch(stripped)
             or SOURCE_URL_LINE.fullmatch(stripped)
+            or re.search(r"https?://(?:www\.)?(?:discord(?:app)?\.com)/channels/\d+/\d+",
+                         stripped, re.I)
             or SENSITIVE_HEADING.match(stripped)
             or credential_fields(stripped)[0]
             or stripped.strip("*✦ ").casefold() == source["title"].casefold()
@@ -306,11 +308,17 @@ def mirror_card(api, state, source, bot_id):
     original = safe_source_description(api, source, bot_id)
     tracking = (state.get("forum_updates") or {}).get(source["tid"], {})
     if groups:
-        # Le lien de l'ancien fil est une ressource distincte, pas un
-        # doublon d'adresse du site. Aucun identifiant n'est recopié.
+        # Only reproduce credentials ALREADY publicly displayed by the
+        # original, bot-authored forum card. Never read from a private forum,
+        # and never persist the login in the JSON state or the repository.
+        credentials = credentials_from_published_forum_card(
+            api, source["tid"], bot_id, tracking.get("message_id")
+        ) or tr4ker_owner_post_credentials(
+            api, source["tid"], source["title"], GUILD_ID
+        ) or {}
         components = build_card(
             groups, original, source["title"],
-            credentials={}, preview_image_url=tracking.get("preview_image_url"),
+            credentials=credentials, preview_image_url=tracking.get("preview_image_url"),
         )
     else:
         components = [{
@@ -323,19 +331,7 @@ def mirror_card(api, state, source, bot_id):
                 )},
             ],
         }]
-    components = polish_mirror_components(components, source, groups)
-    components[0]["components"].append({
-        "type": 14, "divider": True, "spacing": 1,
-    })
-    components[0]["components"].append({
-        "type": 9,
-        "components": [{"type": 10, "content": "-# 📚 Publication d'origine conservée"}],
-        "accessory": {
-            "type": 2, "style": 5, "label": "Ancien forum",
-            "url": source["source_url"],
-        },
-    })
-    return components
+    return polish_mirror_components(components, source, groups)
 
 
 def public_sources(api, catalogue, channels):
