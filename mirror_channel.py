@@ -87,7 +87,7 @@ def sync_mirror_channel(api, state, *, dropdown_enabled=False):
     # already handles in the old forum.
     cards = render_site_cards(
         sites, source.get("name") or "Streaming HD miroir",
-        dropdown_enabled=dropdown_enabled,
+        dropdown_enabled=dropdown_enabled, status_badges=True,
     )
     channel_id, created = find_or_create_channel(api)
     bot_id = str(api.call("GET", "/users/@me")["id"])
