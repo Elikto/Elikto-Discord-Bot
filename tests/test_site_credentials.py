@@ -2,7 +2,8 @@
 import unittest
 
 from site_credentials import (
-    tr4ker_owner_post_credentials, TR4KER_THREAD_ID,
+    tr4ker_owner_post_credentials, teamflix_owner_post_credentials,
+    TR4KER_THREAD_ID, TEAMFLIX_THREAD_ID,
 )
 
 GUILD_ID = "1430984645012357263"
@@ -20,7 +21,10 @@ class FakeDiscord:
         self.calls.append((method, path, params))
         if method == "GET" and path == f"/guilds/{GUILD_ID}":
             return {"owner_id": self.owner_id}
-        if method == "GET" and path == f"/channels/{TR4KER_THREAD_ID}/messages":
+        if method == "GET" and path in (
+            f"/channels/{TR4KER_THREAD_ID}/messages",
+            f"/channels/{TEAMFLIX_THREAD_ID}/messages"
+        ):
             return self.messages
         if method == "GET" and path == "/channels/1572759788167766058/messages":
             return self.mirror_messages or []
@@ -36,6 +40,18 @@ def reply(content, author=OWNER_ID, *, bot=False):
 
 
 class Tr4kerCredentialsTests(unittest.TestCase):
+    def test_teamflix_owner_post_is_supported_only_for_teamflix(self):
+        api = FakeDiscord([reply(
+            "Utilisateur : test-owner\nMot de passe : test-only"
+        )])
+        value = teamflix_owner_post_credentials(
+            api, TEAMFLIX_THREAD_ID, "Teamflix", GUILD_ID
+        )
+        self.assertEqual(value, {"user": "test-owner", "password": "test-only"})
+        self.assertIsNone(teamflix_owner_post_credentials(
+            api, TR4KER_THREAD_ID, "Tr4ker", GUILD_ID
+        ))
+
     def test_guild_owner_can_provide_both_credentials_in_one_reply(self):
         api = FakeDiscord([reply(
             "👤 Utilisateur : login-de-test@example.org\n"

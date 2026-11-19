@@ -7,9 +7,10 @@ No values are written to source code, GitHub Actions logs or monitoring JSON.
 from forum_cards import credential_fields
 
 TR4KER_THREAD_ID = "1572752361967853713"
+TEAMFLIX_THREAD_ID = "1565898044518568187"
 
 
-def tr4ker_owner_post_credentials(
+def _owner_post_credentials(
     api, thread_id, forum_title, guild_id, mirror_channel_id=None
 ):
     """Read one complete owner-authored credential post from Tr4ker.
@@ -18,8 +19,8 @@ def tr4ker_owner_post_credentials(
     post directly in #tr4ker without returning to archived forum threads.
     The latest legitimate post wins. Never persist or log credential values.
     """
-    if (str(thread_id) != TR4KER_THREAD_ID
-            or str(forum_title or "").casefold().strip() != "tr4ker"):
+    permitted = {TR4KER_THREAD_ID: "tr4ker", TEAMFLIX_THREAD_ID: "teamflix"}
+    if permitted.get(str(thread_id)) != str(forum_title or "").casefold().strip():
         return None
     try:
         guild = api.call("GET", f"/guilds/{guild_id}")
@@ -62,3 +63,24 @@ def tr4ker_owner_post_credentials(
     if not candidates:
         return None
     return max(candidates, key=lambda entry: entry[0])[1]
+
+
+def tr4ker_owner_post_credentials(
+    api, thread_id, forum_title, guild_id, mirror_channel_id=None
+):
+    if str(thread_id) != TR4KER_THREAD_ID:
+        return None
+    return _owner_post_credentials(
+        api, thread_id, forum_title, guild_id, mirror_channel_id
+    )
+
+
+def teamflix_owner_post_credentials(
+    api, thread_id, forum_title, guild_id, mirror_channel_id=None
+):
+    """Only an owner-authored post in the Teamflix forum or mirror qualifies."""
+    if str(thread_id) != TEAMFLIX_THREAD_ID:
+        return None
+    return _owner_post_credentials(
+        api, thread_id, forum_title, guild_id, mirror_channel_id
+    )

@@ -19,7 +19,7 @@ from name_probe import fetch_html_page, probe_site_name, parse_site_migration
 from forum_cards import (source_description, credentials_from_author_posts,
                          build_card, all_text, normalize, is_own_card,
                          card_digest, V2_FLAG)
-from site_credentials import tr4ker_owner_post_credentials
+from site_credentials import tr4ker_owner_post_credentials, teamflix_owner_post_credentials
 
 MARKER = "[elikto-forum-suivi:v1]"
 MIRROR_THREAD = "1430988094374547559"
@@ -1234,7 +1234,14 @@ def sync_forum_updates(api, state, changed_events=()):
             )
             if owner_tr4ker:
                 credentials = {**(credentials or {}), **owner_tr4ker}
-            secure_teamflix = authorized_teamflix_credentials(tid, info.get("title"))
+            secure_teamflix = (authorized_teamflix_credentials(tid, info.get("title"))
+                               or teamflix_owner_post_credentials(
+                                   api, tid, info.get("title"),
+                                   os.getenv("DISCORD_GUILD_ID", ""),
+                                   mirror_channel_id=(state.get("site_channel_mirrors") or {}).get(
+                                       tid, {}
+                                   ).get("channel_id"),
+                               ))
             if secure_teamflix:
                 credentials = {**(credentials or {}), **secure_teamflix}
             preview_url = clean_url(groups[0]["url"])
