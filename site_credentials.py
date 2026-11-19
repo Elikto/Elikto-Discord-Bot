@@ -50,6 +50,14 @@ def tr4ker_owner_post_credentials(
                 continue
             fields, _ = credential_fields(message.get("content") or "")
             if {"user", "password"}.issubset(fields):
+                # Allow an owner to hide the original Discord post with
+                # spoiler syntax too. build_card will apply a single spoiler.
+                secret = fields["password"].strip()
+                if secret.startswith("||") and secret.endswith("||"):
+                    secret = secret[2:-2]
+                if not secret or len(secret) > 200:
+                    continue
+                fields["password"] = secret
                 candidates.append((int(message.get("id") or 0), fields))
     if not candidates:
         return None

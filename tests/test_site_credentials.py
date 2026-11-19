@@ -50,6 +50,28 @@ class Tr4kerCredentialsTests(unittest.TestCase):
         })
         self.assertEqual(len(api.calls), 2)
 
+    def test_owner_can_hide_password_in_spoiler_and_card_adds_only_one(self):
+        from forum_cards import build_card, all_text
+        api = FakeDiscord([reply(
+            "Utilisateur : test@example.org\n"
+            "Mot de passe : ||hidden-only-in-discord||"
+        )])
+        found = tr4ker_owner_post_credentials(
+            api, TR4KER_THREAD_ID, "Tr4ker", GUILD_ID
+        )
+        self.assertEqual(found["password"], "hidden-only-in-discord")
+        card = build_card([{"url": "https://tr4ker.net/", "verified": True,
+                            "status": "online"}], "", "Tr4ker",
+                          credentials=found)
+        self.assertIn(
+            "||hidden-only-in-discord||",
+            "\n".join(all_text(card)),
+        )
+        self.assertNotIn(
+            "||||hidden-only-in-discord||||",
+            "\n".join(all_text(card)),
+        )
+
     def test_other_member_cannot_replace_guild_owner_credentials(self):
         api = FakeDiscord([
             reply("Utilisateur : faux\nMot de passe : faux", "222222222222222222"),
