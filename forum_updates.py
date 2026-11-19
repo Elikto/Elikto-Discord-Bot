@@ -872,7 +872,8 @@ def cached_site_preview(api, tid, page_url, tracking, reference_url=None):
     now = datetime.now(timezone.utc)
     saved = (tracking.get("preview_image_url")
              if tracking.get("preview_image_source") == page_url else None)
-    if saved and preview_image_works(saved):
+    saved_is_valid = bool(saved and preview_image_works(saved))
+    if saved_is_valid and tracking.get("preview_image_kind") != "logo":
         tracking.setdefault("preview_image_kind", "preview")
         return saved
 
@@ -906,17 +907,33 @@ def cached_site_preview(api, tid, page_url, tracking, reference_url=None):
                 logo_urls.append(candidate)
 
     seen = set()
-    for kind, urls in (("preview", preview_urls), ("logo", logo_urls)):
-        for candidate in urls:
-            if candidate in seen:
-                continue
-            seen.add(candidate)
-            if preview_image_works(candidate):
-                tracking["preview_image_source"] = page_url
-                tracking["preview_image_url"] = candidate
-                tracking["preview_image_kind"] = kind
-                tracking["preview_image_checked_at"] = now.isoformat(timespec="seconds")
-                return candidate
+    for candidate in preview_urls:
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        if preview_image_works(candidate):
+            tracking["preview_image_source"] = page_url
+            tracking["preview_image_url"] = candidate
+            tracking["preview_image_kind"] = "preview"
+            tracking["preview_image_checked_at"] = now.isoformat(timespec="seconds")
+            return candidate
+
+    # A former favicon should never prevent a newly available OG preview
+    # from replacing it. Retain the valid logo if the page still has no
+    # usable large preview (avoid flicker or needless image URL changes).
+    if saved_is_valid and tracking.get("preview_image_kind") == "logo":
+        return saved
+
+    for candidate in logo_urls:
+        if candidate in seen:
+            continue
+        seen.add(candidate)
+        if preview_image_works(candidate):
+            tracking["preview_image_source"] = page_url
+            tracking["preview_image_url"] = candidate
+            tracking["preview_image_kind"] = "logo"
+            tracking["preview_image_checked_at"] = now.isoformat(timespec="seconds")
+            return candidate
 
     tracking["preview_image_source"] = page_url
     tracking["preview_image_url"] = None
