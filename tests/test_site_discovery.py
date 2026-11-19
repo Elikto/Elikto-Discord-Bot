@@ -22,6 +22,34 @@ class SiteDiscoveryTests(unittest.TestCase):
         self.assertEqual(candidates["https://bintov.com/"]["name"], "BINTOV")
         self.assertIn("https://watof.com/", candidates)
 
+    def test_oustreamer_is_checked_as_independent_public_reference(self):
+        tracked = {}
+        seen = []
+        def fetch(url):
+            seen.append(url)
+            if url == site_discovery.OUSTREAMER_TRENDS:
+                return page("coflix.boo → coflix.red")
+            return None
+        candidates = site_discovery.update_candidates(tracked, NOW, fetch)
+        self.assertIn(site_discovery.OUSTREAMER_TRENDS, seen)
+        self.assertEqual(
+            tracked["discovery_sources"][site_discovery.OUSTREAMER_TRENDS], "lue"
+        )
+        # A single uncorroborated third-party claim never gets published.
+        self.assertNotIn("https://coflix.red/", candidates)
+
+    def test_oustreamer_and_natchecker_can_cross_confirm_explicit_change(self):
+        tracked = {}
+        def fetch(url):
+            if url == site_discovery.OUSTREAMER_TRENDS:
+                return page("nouveau.com → suivant.com")
+            if "natchecker" in url:
+                return page("NOUVEAU devient suivant.com")
+            return None
+        result = site_discovery.update_candidates(tracked, NOW, fetch)
+        self.assertIn("https://suivant.com/", result)
+        self.assertEqual(result["https://suivant.com/"]["name"], "SUIVANT")
+
     def test_natchecker_annonce_par_complete_history(self):
         sample = (
             "<article><h2>Domgrav nouveau nom</h2>"

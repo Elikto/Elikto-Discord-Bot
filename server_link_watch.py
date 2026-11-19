@@ -20,6 +20,7 @@ import re
 from site_probe import RE_URL, clean_url, check_site
 from name_probe import probe_site_name, probe_site_migration
 from browser_probe import probe_browser_site
+from oustreamer_source import read_changes as read_oustreamer_changes
 from tr4ker_forum import SEED_MARKER, SITE_URL as TR4KER_URL
 from forum_updates import sync_forum_updates
 from site_monitor import (
@@ -397,6 +398,16 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
     browser_cache = {}
     browser_enabled = os.environ.get("PLAYWRIGHT_BROWSER_FALLBACK") == "1"
 
+    # A public trends directory is only another hint source. Require an
+    # explicit old→new mapping, same brand and independent HTTP/HTML checking.
+    oustreamer_hints = read_oustreamer_changes(state, now, force=force_scan)
+    hinted = {}
+    for change in oustreamer_hints:
+        old_host = (urlsplit(change["old_url"]).hostname or "").removeprefix("www.")
+        new_host = (urlsplit(change["url"]).hostname or "").removeprefix("www.")
+        if old_host.split(".")[0] == new_host.split(".")[0]:
+            hinted[old_host] = change
+
     def browser_identity(target):
         if not browser_enabled:
             return None
@@ -501,6 +512,15 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
             migration_checks += 1
             if notice:
                 record_migration(state, rec, notice, now, first_run=first_run)
+        old_host = (urlsplit(rec["site_url"]).hostname or "").removeprefix("www.")
+        hint = hinted.get(old_host)
+        if (hint and (not rec.get("announced_url")
+                      or str(rec.get("migration_evidence") or "").startswith("oustreamer:"))):
+            record_migration(
+                state, rec,
+                {"announced_url": hint["url"], "evidence": hint["evidence"]},
+                now, first_run=first_run,
+            )
         # Garde-fou pour l'annonce Webflix documentée par deux captures :
         # utile si la notice est rendue côté JavaScript et absente du HTML.
         if rec["site_url"] in OBSERVED_MIGRATIONS and not rec.get("announced_url"):
@@ -581,6 +601,7 @@ def watch_server_links(api, state, now=None, *, discover=find_server_links):
         "new_migration_checks": migration_checks,
         "new_announced_address_checks": len(new_address_checks),
         "browser_checks": len(browser_cache),
+        "oustreamer_hints": len(oustreamer_hints),
     }
     active_records = [rec for rec in records.values() if rec.get("active")]
     report = {

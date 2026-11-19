@@ -17,6 +17,7 @@ import re
 
 from site_probe import clean_url
 from name_probe import fetch_html_page
+from oustreamer_source import SOURCE_URL as OUSTREAMER_TRENDS, parse_oustreamer_changes
 
 # Candidats identifiés dans les relevés publics datés du 10-12 novembre 2026.
 # Ces observations ne prouvent ni affiliation, ni droits de diffusion.
@@ -43,6 +44,7 @@ REFERENCE_PAGES = (
     "https://natchecker.com/fr/blog/domgrav-nouveau-nom",
     "https://alexitauzin.com/top-50-meilleurs-sites-streaming-gratuits/",
     "https://gtlf.fr/meilleurs-sites-streaming-gratuit/",
+    OUSTREAMER_TRENDS,
 )
 # Une annonce de migration explicite, pas un simple lien ou résultat sponsorisé.
 MIGRATION = re.compile(
@@ -171,7 +173,14 @@ def update_candidates(tracked: dict, now: datetime, fetcher=fetch_html_page) -> 
             sources[source] = "inaccessible"
             continue
         sources[source] = "lue"
-        discovered = extract_migrations(page["html"])
+        if source == OUSTREAMER_TRENDS:
+            discovered = [
+                {"url": change["url"], "name": change["name"],
+                 "previous_names": change["previous_names"]}
+                for change in parse_oustreamer_changes(page["html"])
+            ]
+        else:
+            discovered = extract_migrations(page["html"])
         for item in discovered:
             found = observations.setdefault(item["url"], {
                 "name": item["name"], "previous_names": set(), "sources": set(),
