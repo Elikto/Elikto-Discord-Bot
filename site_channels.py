@@ -27,6 +27,7 @@ from forum_updates import (
 )
 from site_monitor import load_state, STATE_PATH
 from site_probe import clean_url
+from site_credentials import tr4ker_owner_post_credentials
 
 PREFIX = "[elikto:site-channel:v1:"
 CHANNEL_MARKER = re.compile(r"\[elikto:site-channel:v1:(\d{16,22})\]")
@@ -312,6 +313,8 @@ def mirror_card(api, state, source, bot_id):
         # and never persist the login in the JSON state or the repository.
         credentials = credentials_from_published_forum_card(
             api, source["tid"], bot_id, tracking.get("message_id")
+        ) or tr4ker_owner_post_credentials(
+            api, source["tid"], source["title"], GUILD_ID
         ) or {}
         components = build_card(
             groups, original, source["title"],
