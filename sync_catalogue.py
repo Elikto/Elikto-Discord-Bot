@@ -377,43 +377,53 @@ def render(grouped):
 
 
 def publish(api: DiscordAPI, grouped):
-    """Un seul message Discord : toutes les rubriques dans des cartes colorees."""
-    from dashboard_unique import render_dashboard
+    """One coherent catalogue across one or more bounded Discord V2 messages."""
+    from dashboard_unique import render_dashboard_pages
     from catalogue_v2 import FLAG_V2, marker_id, normalize
 
     me = str(api.call("GET", "/users/@me")["id"])
     existing = api.own_messages(CHANNEL_ID, me)
-    marker = f"{MARKER}index"
-    components = render_dashboard(grouped)
-    payload = {
-        "flags": FLAG_V2,
-        "components": components,
-        "allowed_mentions": {"parse": []},
+    pages = render_dashboard_pages(grouped)
+    retained_ids = set()
+
+    for number, components in enumerate(pages, 1):
+        marker = (f"{MARKER}index" if number == 1
+                  else f"{MARKER}index:page:{number}")
+        payload = {
+            "flags": FLAG_V2,
+            "components": components,
+            "allowed_mentions": {"parse": []},
+        }
+        found = existing.get(f"v2id:{marker_id(marker)}") or existing.get(marker)
+        if found:
+            old_components = found.get("components", [])
+            if (not (found.get("flags", 0) & FLAG_V2)
+                    or normalize(old_components) != normalize(components)):
+                data = dict(payload)
+                if not (found.get("flags", 0) & FLAG_V2):
+                    data.update({"content": None, "embeds": []})
+                api.call("PATCH", f"/channels/{CHANNEL_ID}/messages/{found['id']}",
+                         json=data)
+                print("CATALOGUE : page", number, "actualisée")
+            message_id = str(found["id"])
+        else:
+            created = api.call(
+                "POST", f"/channels/{CHANNEL_ID}/messages", json=payload
+            )
+            message_id = str(created["id"])
+            print("CATALOGUE : page", number, "créée")
+        retained_ids.add(message_id)
+
+    # Only after every page has been safely written, remove stale bot-owned
+    # catalogue pages. Original member posts and unrelated bot messages stay.
+    known_ids = {
+        marker_id(f"{MARKER}index"),
+        *(marker_id(f"{MARKER}index:page:{number}") for number in range(2, 101)),
     }
-
-    found = existing.get(f"v2id:{marker_id(marker)}") or existing.get(marker)
-    if found:
-        old_components = found.get("components", [])
-        if (not (found.get("flags", 0) & FLAG_V2)
-                or normalize(old_components) != normalize(components)):
-            data = dict(payload)
-            if not (found.get("flags", 0) & FLAG_V2):
-                data.update({"content": None, "embeds": []})
-            api.call("PATCH", f"/channels/{CHANNEL_ID}/messages/{found['id']}", json=data)
-            print("Tableau de bord unique actualise")
-        dashboard_id = str(found["id"])
-    else:
-        created = api.call("POST", f"/channels/{CHANNEL_ID}/messages", json=payload)
-        dashboard_id = str(created["id"])
-        print("Tableau de bord unique cree")
-
-    # Nettoyage exclusivement apres creation/actualisation reussie :
-    # les anciennes pages de categories appartiennent au bot, pas aux auteurs.
-    # Les cartes V2 avaient un pied de page caracteristique.
     stale_ids = set()
     for key, message in existing.items():
         message_id = str(message["id"])
-        if message_id == dashboard_id:
+        if message_id in retained_ids:
             continue
         old_embed = key.startswith(f"{MARKER}cat:")
         old_v2 = any(
@@ -422,18 +432,21 @@ def publish(api: DiscordAPI, grouped):
             for child in parent.get("components", [])
             if isinstance(child, dict)
         )
-        if old_embed or old_v2:
+        old_page = any(
+            p.get("type") == 17 and p.get("id") in known_ids
+            for p in message.get("components", [])
+        )
+        if old_embed or old_v2 or old_page:
             stale_ids.add(message_id)
 
     for message_id in stale_ids:
         api.call("DELETE", f"/channels/{CHANNEL_ID}/messages/{message_id}")
-        print("Ancienne carte de rubrique retiree :", message_id)
+        print("CATALOGUE : ancienne page remplacée", message_id)
 
     print(
-        f"Termine : un seul message central, {len(grouped)} categories, "
-        f"{len(stale_ids)} anciennes cartes retirees."
+        f"Terminé : {len(pages)} page(s), {len(grouped)} catégorie(s), "
+        f"{len(stale_ids)} ancien(s) message(s) nettoyé(s), sans fiche masquée."
     )
-
 
 
 def main():

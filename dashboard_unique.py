@@ -111,3 +111,39 @@ def render_dashboard(grouped, now=None):
         "Aucune fiche ne sera masquee. Il faut repartir les fiches sur "
         "plusieurs messages de catalogue."
     )
+
+
+def render_dashboard_pages(grouped, now=None):
+    """Publish all public sites in as many valid Discord V2 messages as needed.
+
+    A normal-size catalogue keeps the historical one-message layout.
+    Large catalogues split only at category boundaries, with stable page
+    markers to PATCH old bot messages rather than post duplicates.
+    """
+    try:
+        return [render_dashboard(grouped, now=now)]
+    except ValueError:
+        pass
+
+    cards = build(grouped, include_forum_links=False, compact=True, now=now)
+    pages, current = [], []
+    for card in cards:
+        if total_components([card]) > MAX_COMPONENTS or total_chars([card]) > MAX_CHARS:
+            raise ValueError(
+                "Une rubrique dépasse seule la limite Discord : "
+                "aucune fiche ne sera masquée."
+            )
+        if current and (
+            total_components(current + [card]) > MAX_COMPONENTS
+            or total_chars(current + [card]) > MAX_CHARS
+        ):
+            pages.append(current)
+            current = []
+        current.append(card)
+    if current:
+        pages.append(current)
+    for number, page in enumerate(pages[1:], start=2):
+        # Only change the first category container's identity. Its content
+        # and direct site links remain unchanged.
+        page[0]["id"] = marker_id(f"{MARKER}index:page:{number}")
+    return pages

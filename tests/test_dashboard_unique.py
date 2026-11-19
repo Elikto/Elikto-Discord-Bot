@@ -1,7 +1,7 @@
 import unittest
 from datetime import datetime, timezone
 
-from dashboard_unique import build, render_dashboard, forum_link
+from dashboard_unique import build, render_dashboard, render_dashboard_pages, forum_link
 from catalogue_v2 import total_components, total_chars
 
 
@@ -79,6 +79,41 @@ class DashboardTests(unittest.TestCase):
         }
         with self.assertRaisesRegex(ValueError, "Aucune fiche ne sera masquee"):
             render_dashboard(data)
+
+    def test_large_catalogue_uses_multiple_pages_without_omitting_sites(self):
+        from catalogue_v2 import MARKER, marker_id
+        data = {
+            (str(i), f"Rubrique {i}"): {
+                "forum": [
+                    ("Ouvrir le forum", f"https://discord.com/channels/1/{1000+i}")
+                ] + [
+                    (f"Fiche {i}-{j}",
+                     f"https://discord.com/channels/1/{10000+i*100+j}")
+                    for j in range(24)
+                ],
+            }
+            for i in range(8)
+        }
+        pages = render_dashboard_pages(data)
+        self.assertGreater(len(pages), 1)
+        body = "\n".join(
+            component.get("content", "")
+            for page in pages
+            for card in page
+            for component in card.get("components", [])
+        )
+        self.assertEqual(pages[0][0]["id"], marker_id(MARKER + "index"))
+        for number, page in enumerate(pages[1:], start=2):
+            self.assertEqual(
+                page[0]["id"], marker_id(f"{MARKER}index:page:{number}")
+            )
+        for page in pages:
+            self.assertLessEqual(total_chars(page), 4000)
+            self.assertLessEqual(total_components(page), 40)
+        for i in range(8):
+            for j in range(24):
+                url = f"https://discord.com/channels/1/{10000+i*100+j}"
+                self.assertEqual(body.count(url), 1)
 
     def test_real_28_fiches_are_all_visible_in_one_message(self):
         """Regression sur les vrais 28 noms du serveur, sans contenu prive."""
