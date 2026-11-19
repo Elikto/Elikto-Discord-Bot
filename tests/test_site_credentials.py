@@ -112,11 +112,11 @@ class Tr4kerCredentialsTests(unittest.TestCase):
 
     def test_only_forum_messages_can_supply_credentials(self):
         api = FakeDiscord(
-            [reply("Utilisateur : bon\\nMot de passe : original")],
+            [reply("Utilisateur : bon\nMot de passe : original")],
             mirror_messages=[{
                 "id": "1800000000000000000",
                 "author": {"id": OWNER_ID},
-                "content": "Utilisateur : mauvais\\nMot de passe : miroir",
+                "content": "Utilisateur : mauvais\nMot de passe : miroir",
             }]
         )
         found = tr4ker_owner_post_credentials(
@@ -131,7 +131,7 @@ class Tr4kerCredentialsTests(unittest.TestCase):
 
     def test_teamflix_credentials_must_come_from_own_forum(self):
         api = FakeDiscord([
-            reply("Utilisateur : team-test\\nMot de passe : pass-test")
+            reply("Utilisateur : team-test\nMot de passe : pass-test")
         ])
         self.assertEqual(teamflix_owner_post_credentials(
             api, TEAMFLIX_THREAD_ID, "Teamflix", GUILD_ID
