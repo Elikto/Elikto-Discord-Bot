@@ -105,6 +105,20 @@ class ScheduleAndVisualsTests(unittest.TestCase):
         self.assertEqual(result, "https://tr4ker.net/favicon-32x32.png")
         self.assertEqual(tracking["preview_image_kind"], "logo")
 
+    def test_wordpress_logo_filename_without_alt_is_detected(self):
+        html = (
+            '<img src="/wp-content/themes/theme/images/logoo.png">'
+            '<img alt="" src="/wp-content/themes/theme/images/logo.webp">'
+            '<img alt="" src="/wp-content/themes/theme/images/poster.webp">'
+        )
+        self.assertEqual(
+            logo_candidates_from_html(html, "https://skidrowreloaded.com/"),
+            [
+                "https://skidrowreloaded.com/wp-content/themes/theme/images/logoo.png",
+                "https://skidrowreloaded.com/wp-content/themes/theme/images/logo.webp",
+            ],
+        )
+
     def test_svg_ico_local_data_and_private_urls_not_published(self):
         html = (
             '<link rel="icon" href="data:image/png;base64,AA">'
