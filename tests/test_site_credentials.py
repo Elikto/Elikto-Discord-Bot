@@ -74,11 +74,11 @@ class Tr4kerCredentialsTests(unittest.TestCase):
 
     def test_login_may_be_supplied_in_the_new_text_channel(self):
         api = FakeDiscord(
-            [reply("Utilisateur : ancien\\nMot de passe : ancien")],
+            [reply("Utilisateur : ancien\nMot de passe : ancien")],
             mirror_messages=[{
                 "id": "1800000000000000000",
                 "author": {"id": OWNER_ID},
-                "content": "Utilisateur : nouveau\\nMot de passe : updated",
+                "content": "Utilisateur : nouveau\nMot de passe : updated",
             }],
         )
         found = tr4ker_owner_post_credentials(
@@ -90,11 +90,11 @@ class Tr4kerCredentialsTests(unittest.TestCase):
 
     def test_non_owner_in_new_channel_never_overrides_owner(self):
         api = FakeDiscord(
-            [reply("Utilisateur : bon\\nMot de passe : correct")],
+            [reply("Utilisateur : bon\nMot de passe : correct")],
             mirror_messages=[{
                 "id": "1800000000000000000",
                 "author": {"id": "222222222222222222"},
-                "content": "Utilisateur : fake\\nMot de passe : fake",
+                "content": "Utilisateur : fake\nMot de passe : fake",
             }],
         )
         found = tr4ker_owner_post_credentials(
