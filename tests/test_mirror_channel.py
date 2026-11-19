@@ -127,7 +127,9 @@ class MirrorChannelTests(unittest.TestCase):
             "status": "online", "source_urls": ["https://unconfirmed.example.org/"],
             "last_checked": "2026-11-19T06:00:00+00:00",
         })
-        parts = render_site_cards(source, "Mirrors", dropdown_enabled=True)[0]["components"]
+        parts = render_site_cards(
+            source, "Mirrors", dropdown_enabled=True, status_badges=True
+        )[0]["components"]
         options = {
             x["label"]: x for p in parts if p["type"] == 1
             for x in p["components"][0]["options"]
