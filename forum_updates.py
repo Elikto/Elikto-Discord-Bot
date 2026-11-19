@@ -717,11 +717,20 @@ class SitePreviewParser(HTMLParser):
         elif tag == "img":
             label = " ".join(str(attributes.get(k) or "")
                              for k in ("alt", "class", "id", "title")).lower()
-            if re.search(r"(?<![a-z])(logo|logotype|brand)(?![a-z])", label):
-                self.add_logo("html-logo", (
-                    attributes.get("src") or attributes.get("data-src")
-                    or attributes.get("data-original") or ""
-                ))
+            src = (attributes.get("src") or attributes.get("data-src")
+                   or attributes.get("data-lazy-src")
+                   or attributes.get("data-original") or "")
+            filename = urlsplit(src).path.rsplit("/", 1)[-1].lower()
+            # Certaines interfaces WordPress affichent « logoo.png »
+            # avec une balise <img> sans texte alternatif ni classe logo.
+            named_logo = bool(re.fullmatch(
+                r"(?:site[-_]?logo|brand[-_]?logo|logoo?|logotype)"
+                r"(?:[-_.][a-z0-9]+)*\\.(?:png|webp|jpe?g|gif)",
+                filename
+            ))
+            if (re.search(r"(?<![a-z])(logo|logotype|brand)(?![a-z])", label)
+                    or named_logo):
+                self.add_logo("html-logo", src)
 
 
 def safe_preview_image(raw, page_url):
@@ -905,7 +914,7 @@ def cached_site_preview(api, tid, page_url, tracking, reference_url=None):
         for name in ("apple-touch-icon.png", "android-chrome-192x192.png",
                      "favicon-192x192.png", "favicon-96x96.png",
                      "favicon-32x32.png", "favicon.png", "logo.png",
-                     "logo.webp", "og-image.png"):
+                     "logoo.png", "logo.webp", "og-image.png"):
             candidate = safe_preview_image("/" + name, origin)
             if candidate and candidate not in logo_urls:
                 logo_urls.append(candidate)
