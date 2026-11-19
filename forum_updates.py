@@ -1238,6 +1238,7 @@ def sync_forum_updates(api, state, changed_events=()):
                                else selected.get("url")),
                 "active_verified": bool(selected.get("verified")),
                 "active_status": selected.get("status"),
+                "active_checked_at": selected.get("checked_at"),
                 "suggested_url": selected.get("suggested_url"),
             }
             result[outcome] += 1
