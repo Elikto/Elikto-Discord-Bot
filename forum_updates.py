@@ -1120,7 +1120,10 @@ def sync_forum_updates(api, state, changed_events=()):
             )
             credentials = credentials_from_author_posts(api, tid, bot_id)
             owner_tr4ker = tr4ker_owner_post_credentials(
-                api, tid, info.get("title"), os.getenv("DISCORD_GUILD_ID", "")
+                api, tid, info.get("title"), os.getenv("DISCORD_GUILD_ID", ""),
+                mirror_channel_id=(state.get("site_channel_mirrors") or {}).get(
+                    tid, {}
+                ).get("channel_id"),
             )
             if owner_tr4ker:
                 credentials = {**(credentials or {}), **owner_tr4ker}
