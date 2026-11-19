@@ -686,10 +686,15 @@ def validated_directory_groups(linked, kind):
 
 
 class SitePreviewParser(HTMLParser):
-    """Métadonnées d'image déjà publiées par la page, sans exécuter de JS."""
+    """Métadonnées OG/Twitter et logos réellement déclarés dans le HTML."""
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.images = {}
+        self.logos = {}
+
+    def add_logo(self, kind, url):
+        if url:
+            self.logos.setdefault(kind, []).append(url)
 
     def handle_starttag(self, tag, attrs):
         attributes = dict(attrs)
@@ -698,9 +703,25 @@ class SitePreviewParser(HTMLParser):
             if key in {"og:image", "og:image:url", "twitter:image",
                        "twitter:image:src"}:
                 self.images.setdefault(key, attributes.get("content") or "")
-        elif tag == "link" and "image_src" in (
-                attributes.get("rel") or "").lower().split():
-            self.images.setdefault("image_src", attributes.get("href") or "")
+            elif key in {"og:logo", "twitter:logo", "msapplication-tileimage"}:
+                self.add_logo(key, attributes.get("content"))
+        elif tag == "link":
+            rel = (attributes.get("rel") or "").lower().split()
+            url = attributes.get("href") or ""
+            if "image_src" in rel:
+                self.images.setdefault("image_src", url)
+            if "apple-touch-icon" in rel or "apple-touch-icon-precomposed" in rel:
+                self.add_logo("apple-touch-icon", url)
+            elif "icon" in rel:
+                self.add_logo("favicon", url)
+        elif tag == "img":
+            label = " ".join(str(attributes.get(k) or "")
+                             for k in ("alt", "class", "id", "title")).lower()
+            if re.search(r"(?<![a-z])(logo|logotype|brand)(?![a-z])", label):
+                self.add_logo("html-logo", (
+                    attributes.get("src") or attributes.get("data-src")
+                    or attributes.get("data-original") or ""
+                ))
 
 
 def safe_preview_image(raw, page_url):
@@ -729,6 +750,23 @@ def image_candidates_from_html(html_text, page_url):
         candidate = safe_preview_image(parser.images.get(key), page_url)
         if candidate and candidate not in results:
             results.append(candidate)
+    return results
+
+
+def logo_candidates_from_html(html_text, page_url):
+    """Logos réels, puis icônes tactiles/PNG ; aucun SVG ni .ico cassé."""
+    parser = SitePreviewParser()
+    try:
+        parser.feed(str(html_text or "")[:96000])
+    except (ValueError, AssertionError):
+        return []
+    results = []
+    for key in ("og:logo", "twitter:logo", "html-logo",
+                "apple-touch-icon", "msapplication-tileimage", "favicon"):
+        for raw in parser.logos.get(key, []):
+            candidate = safe_preview_image(raw, page_url)
+            if candidate and candidate not in results:
+                results.append(candidate)
     return results
 
 
@@ -825,43 +863,64 @@ def image_from_discord_starter(api, tid, page_url):
 
 
 def cached_site_preview(api, tid, page_url, tracking, reference_url=None):
-    """Toujours revalider une image : un lien mis en cache peut expirer.
+    """Essayer une vraie prévisualisation, puis le logo/favicone du site.
 
-    Repli sur l'image OpenGraph du site de référence lorsqu'elle existe.
-    Ne jamais créer de second message uniquement pour l'aperçu.
+    Les images sont validées par lecture HTTPS publique et signature PNG,
+    JPEG, GIF, WEBP ou AVIF. Les liens SVG/ICO et les pages HTML déguisées
+    en images sont exclus pour ne pas casser les cartes Discord.
     """
     now = datetime.now(timezone.utc)
     saved = (tracking.get("preview_image_url")
              if tracking.get("preview_image_source") == page_url else None)
     if saved and preview_image_works(saved):
+        tracking.setdefault("preview_image_kind", "preview")
         return saved
 
     sources = [page_url]
     reference = clean_url(reference_url)
     if reference and reference != page_url:
         sources.append(reference)
-    seen = set()
+    preview_urls = []
+    logo_urls = []
     for source in sources:
-        candidates = image_candidates_from_discord_starter(api, tid, source)
+        preview_urls.extend(image_candidates_from_discord_starter(api, tid, source))
         try:
             page = fetch_html_page(source, timeout=4)
+            if not page:
+                page = fetch_html_page(source, timeout=4, browser_compatible=True)
         except (OSError, TimeoutError, ValueError, UnicodeError):
             page = None
         if page:
-            candidates.extend(image_candidates_from_html(
-                page["html"], page.get("final_url") or source
-            ))
-        for candidate in candidates:
+            final = page.get("final_url") or source
+            preview_urls.extend(image_candidates_from_html(page["html"], final))
+            logo_urls.extend(logo_candidates_from_html(page["html"], final))
+
+    # L'icône tactile est souvent la seule ressource disponible sur les
+    # sites SPA ou bloqués côté GitHub. Ne jamais inventer une réponse 200.
+    origin = clean_url(page_url)
+    if origin:
+        for name in ("apple-touch-icon.png", "favicon-96x96.png",
+                     "favicon-32x32.png", "favicon.png"):
+            candidate = safe_preview_image("/" + name, origin)
+            if candidate:
+                logo_urls.append(candidate)
+
+    seen = set()
+    for kind, urls in (("preview", preview_urls), ("logo", logo_urls)):
+        for candidate in urls:
             if candidate in seen:
                 continue
             seen.add(candidate)
             if preview_image_works(candidate):
                 tracking["preview_image_source"] = page_url
                 tracking["preview_image_url"] = candidate
+                tracking["preview_image_kind"] = kind
                 tracking["preview_image_checked_at"] = now.isoformat(timespec="seconds")
                 return candidate
+
     tracking["preview_image_source"] = page_url
     tracking["preview_image_url"] = None
+    tracking["preview_image_kind"] = None
     tracking["preview_image_checked_at"] = now.isoformat(timespec="seconds")
     return None
 
@@ -1141,6 +1200,7 @@ def sync_forum_updates(api, state, changed_events=()):
             components = build_card(
                 groups, original, info.get("title") or "Site",
                 credentials=credentials, preview_image_url=image,
+                preview_kind=previous.get("preview_image_kind") or "preview",
             )
             if not components:
                 result["skipped"] += 1
