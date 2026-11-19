@@ -314,7 +314,10 @@ def mirror_card(api, state, source, bot_id):
         credentials = credentials_from_published_forum_card(
             api, source["tid"], bot_id, tracking.get("message_id")
         ) or tr4ker_owner_post_credentials(
-            api, source["tid"], source["title"], GUILD_ID
+            api, source["tid"], source["title"], GUILD_ID,
+            mirror_channel_id=(state.get("site_channel_mirrors") or {}).get(
+                source["tid"], {}
+            ).get("channel_id"),
         ) or {}
         components = build_card(
             groups, original, source["title"],
