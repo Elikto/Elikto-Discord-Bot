@@ -647,7 +647,7 @@ def component_text(components):
     return texts
 
 
-def upsert_bot_message(api, tracked, bot_id, content):
+def upsert_bot_message(api, tracked, bot_id, content, *, channel_id=THREAD_ID):
     """Migrer l'ancien message texte vers les cartes, puis éditer sans doublon."""
     is_v2 = isinstance(content, list)
     if is_v2:
@@ -664,24 +664,24 @@ def upsert_bot_message(api, tracked, bot_id, content):
             expected = component_signature(content)
             if existing != expected:
                 api.call(
-                    "PATCH", f"/channels/{THREAD_ID}/messages/{message['id']}",
+                    "PATCH", f"/channels/{channel_id}/messages/{message['id']}",
                     json=payload,
                 )
         elif (message.get("content") or "") != content:
             api.call(
-                "PATCH", f"/channels/{THREAD_ID}/messages/{message['id']}",
+                "PATCH", f"/channels/{channel_id}/messages/{message['id']}",
                 json=payload,
             )
         return str(message["id"])
 
     known = tracked.get("message_id")
     if known:
-        old = api.call("GET", f"/channels/{THREAD_ID}/messages/{known}")
+        old = api.call("GET", f"/channels/{channel_id}/messages/{known}")
         if str(old.get("author", {}).get("id")) == bot_id:
             return update_if_needed(old)
         raise ValueError("Le message connu n'appartient pas au bot")
 
-    messages = api.call("GET", f"/channels/{THREAD_ID}/messages", params={"limit": 100})
+    messages = api.call("GET", f"/channels/{channel_id}/messages", params={"limit": 100})
     for msg in messages:
         if str(msg.get("author", {}).get("id")) != bot_id:
             continue
@@ -692,10 +692,11 @@ def upsert_bot_message(api, tracked, bot_id, content):
             or prior.startswith("## ✦ SITES ACTUELS")
             or prior.startswith("🎬 Dernière sortie cinéma")
             or "CINÉMA HD · SITES ACTUELS" in v2_text
+            or "## 🎬 STREAMING HD" in v2_text
         ):
             return update_if_needed(msg)
 
-    created = api.call("POST", f"/channels/{THREAD_ID}/messages", json=payload)
+    created = api.call("POST", f"/channels/{channel_id}/messages", json=payload)
     return str(created["id"])
 
 
