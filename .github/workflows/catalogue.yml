@@ -18,6 +18,8 @@ on:
       - 'forum_updates.py'
       - 'forum_cards.py'
       - 'tr4ker_forum.py'
+      - 'bot_identity.py'
+      - 'tests/test_bot_identity.py'
       - 'tests/test_tr4ker_forum.py'
       - 'site_channels.py'
       - 'tests/test_site_channels.py'
@@ -78,6 +80,11 @@ jobs:
         run: node --check site/app.js
       - name: Tester le menu Discord
         run: node --test tests/test_discord_interactions.mjs
+      - name: Afficher le bot sous le nom checker link
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_GUILD_ID: '1430984645012357263'
+        run: python bot_identity.py
       - name: Créer ou retrouver la fiche Tr4ker dans le forum Torrent
         env:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
