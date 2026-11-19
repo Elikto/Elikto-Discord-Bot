@@ -14,8 +14,10 @@ class FakeDiscord:
 
     def call(self, method, path, *, json=None):
         self.calls.append((method, path, json))
-        if method == "GET" and path == f"/guilds/{GUILD_ID}/members/@me":
-            return {"nick": self.nick, "user": {"username": "scan stream"}}
+        if method == "GET" and path == "/users/@me":
+            return {"id": "999", "username": "scan stream"}
+        if method == "GET" and path == f"/guilds/{GUILD_ID}/members/999":
+            return {"nick": self.nick, "user": {"id": "999"}}
         if method == "PATCH" and path == f"/guilds/{GUILD_ID}/members/@me":
             self.nick = json["nick"]
             return {"nick": self.nick}
@@ -27,24 +29,27 @@ class BotIdentityTests(unittest.TestCase):
         api = FakeDiscord("scan stream")
         self.assertTrue(ensure_bot_nickname(api))
         self.assertEqual(api.nick, BOT_NICKNAME)
-        self.assertEqual(len(api.calls), 2)
-        self.assertEqual(api.calls[1], (
+        self.assertEqual(len(api.calls), 3)
+        self.assertEqual(api.calls[0][:2], ("GET", "/users/@me"))
+        self.assertEqual(api.calls[1][:2], (
+            "GET", f"/guilds/{GUILD_ID}/members/999"
+        ))
+        self.assertEqual(api.calls[2], (
             "PATCH", f"/guilds/{GUILD_ID}/members/@me",
             {"nick": "checker link"},
         ))
-        self.assertFalse(any("users/@me" in path for _, path, _ in api.calls))
 
     def test_idempotent_when_already_renamed(self):
         api = FakeDiscord("checker link")
         self.assertFalse(ensure_bot_nickname(api))
-        self.assertEqual(len(api.calls), 1)
+        self.assertEqual(len(api.calls), 2)
 
     def test_refuses_unconfirmed_nickname(self):
         api = FakeDiscord("scan stream")
 
         def no_confirmation(method, path, *, json=None):
-            if method == "GET":
-                return {"nick": "scan stream"}
+            if path == "/users/@me":
+                return {"id": "999"}
             return {"nick": "scan stream"}
 
         api.call = no_confirmation
