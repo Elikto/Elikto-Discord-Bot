@@ -36,6 +36,18 @@ DOWNLOAD_CATEGORIES = {
     "jeux-video": "🎮 Téléchargement · Jeux vidéo",
     "livres": "📚 Téléchargement · Livres",
 }
+STYLED_CATEGORIES = {
+    "streaming": ("🎬 Streaming · Sites", "🎬", "Streaming", 0x8B5CF6),
+    "anti-pub": ("🛡️ Anti-pub · Sites", "🛡️", "Protection et anti-pub", 0x06B6D4),
+    "ressource": ("🧰 Ressources · Sites", "🧰", "Outils et ressources", 0x64748B),
+    "achat-shopping": ("🛍️ Shopping · Sites", "🛍️", "Shopping et comparateurs", 0xEC4899),
+}
+DOWNLOAD_STYLE = {
+    "torrent": ("📥", "Torrents", 0x6366F1),
+    "jeux-video": ("🎮", "Jeux vidéo", 0x0EA5E9),
+    "livres": ("📚", "Livres et ebooks", 0xF59E0B),
+}
+FALLBACK_STYLE = ("🌐", "Sites référencés", 0x8271D8)
 MAX_PER_CATEGORY = 45  # Marge sous la limite Discord de 50 salons.
 MAX_CREATED = 250
 
@@ -73,12 +85,112 @@ def original_forum_group(item):
     return original if original in DOWNLOAD_CATEGORIES else None
 
 
+def mirror_style(item):
+    group = original_forum_group(item)
+    if group:
+        return DOWNLOAD_STYLE[group]
+    category = fold(item.get("source_category_name", "")).lower().strip()
+    if category in STYLED_CATEGORIES:
+        return STYLED_CATEGORIES[category][1:]
+    return FALLBACK_STYLE
+
+
 def destination_category_name(item, part=1):
     group = original_forum_group(item)
-    base = DOWNLOAD_CATEGORIES[group] if group else mirror_category_name(
-        item["source_category_name"]
-    )
+    category = fold(item.get("source_category_name", "")).lower().strip()
+    if group:
+        base = DOWNLOAD_CATEGORIES[group]
+    elif category in STYLED_CATEGORIES:
+        base = STYLED_CATEGORIES[category][0]
+    else:
+        base = mirror_category_name(item["source_category_name"])
     return base + (f" {part}" if part > 1 else "")
+
+
+def channel_topic(source):
+    icon, kind, _ = mirror_style(source)
+    name = safe_title(source.get("title")) or "Site"
+    return (
+        f"✦ {icon} {name} · {kind}\n"
+        "Adresse, statut et dernier contrôle actualisés par le bot.\n"
+        f"📚 Fiche d'origine : {source['source_url']}\n"
+        f"{PREFIX}{source['tid']}]"
+    )[:1024]
+
+
+def polished_status(group):
+    status = group.get("status")
+    if status in ("offline", "parked", "interstitial", "empty_index"):
+        return "🔴 Adresse indisponible ou invalide", 0xEF4444
+    if group.get("no_active"):
+        return "🟡 Aucune adresse confirmée", 0xD97706
+    if status == "restricted" and not group.get("verified"):
+        return "🟠 Accès restreint · contenu non confirmé", 0xF97316
+    if group.get("verified"):
+        return "🟢 Site vérifié", None
+    return "🟡 Vérification en attente", 0xD97706
+
+
+def polish_mirror_components(components, source, groups):
+    """Habiller UNIQUEMENT les salons miroirs, sans altérer les forums source.
+
+    Conserve les URL, dates, preuves de statut et médias de build_card.
+    Une couleur d'alerte prime sur la couleur de la rubrique.
+    """
+    icon, kind, theme_color = mirror_style(source)
+    card = components[0]
+    original_parts = list(card["components"])
+    first = original_parts.pop(0)
+    first["content"] = "## ✦ " + icon + " " + safe_title(source["title"]) + " ✦"
+    top = [
+        first,
+        {"type": 10, "content": "-# " + kind + "  •  Fiche du catalogue"},
+        {"type": 14, "divider": True, "spacing": 1},
+    ]
+    if groups:
+        status, color = polished_status(groups[0])
+        card["accent_color"] = color if color is not None else theme_color
+        top.append({"type": 10, "content": "**" + status + "**"})
+    else:
+        card["accent_color"] = 0x94A3B8
+        top.append({"type": 10, "content": "**🟡 Adresse en cours de vérification**"})
+
+    sites = []
+    reference = []
+    descriptions = []
+    media = []
+    for part in original_parts:
+        if part.get("type") == 12:
+            media.append(part)
+            continue
+        content = part.get("content", "")
+        if ("**🌐 Site actif**" in content
+                or "**🌐 Site (accès restreint)**" in content):
+            if groups and groups[0].get("no_active"):
+                label = "**🌐 Adresse non confirmée**"
+            elif groups and groups[0].get("status") in ("offline", "parked", "empty_index", "interstitial"):
+                label = "**🌐 Dernière adresse connue**"
+            elif groups and groups[0].get("verified"):
+                label = "**🌐 Adresse actuelle**"
+            else:
+                label = "**🌐 Adresse à confirmer**"
+            content = content.replace("**🌐 Site actif**", label).replace(
+                "**🌐 Site (accès restreint)**", label
+            )
+            sites.append({**part, "content": content})
+        elif content.startswith("**🔎 Site de référence**"):
+            reference.append(part)
+        else:
+            descriptions.append(part)
+
+    top.extend(sites)
+    top.extend(reference)
+    if descriptions:
+        top.append({"type": 14, "divider": True, "spacing": 1})
+        top.extend(descriptions)
+    top.extend(media)
+    card["components"] = top
+    return components
 
 
 def destination_group_key(item):
@@ -211,6 +323,10 @@ def mirror_card(api, state, source, bot_id):
                 )},
             ],
         }]
+    components = polish_mirror_components(components, source, groups)
+    components[0]["components"].append({
+        "type": 14, "divider": True, "spacing": 1,
+    })
     components[0]["components"].append({
         "type": 9,
         "components": [{"type": 10, "content": "-# 📚 Publication d'origine conservée"}],
@@ -277,15 +393,18 @@ def create_structure(api, sources):
     created_categories = 0
     created_channels = 0
 
-    # Convert the existing bot-generated 'Telechargement · Sites' category
-    # into 'Téléchargement · Torrents'. This preserves the existing category
-    # ID and keeps the 8 torrent channels in place during migration.
-    for cid in {s["source_category"] for s in sources
-                if original_forum_group(s) == "torrent"}:
-        example = next(s for s in sources if s["source_category"] == cid
-                       and original_forum_group(s) == "torrent")
-        old_name = mirror_category_name(example["source_category_name"])
-        new_name = DOWNLOAD_CATEGORIES["torrent"]
+    # Give a consistent aesthetic to *managed* categories. Keep IDs and
+    # never rename an unrelated or user-customized category.
+    categories_to_style = {}
+    for entry in sources:
+        if original_forum_group(entry) not in (None, "torrent"):
+            continue  # The old mixed folder is reused for Torrents only.
+        cid = entry["source_category"]
+        new_name = destination_category_name(entry)
+        old_name = mirror_category_name(entry["source_category_name"])
+        if old_name != new_name:
+            categories_to_style[(cid, new_name)] = old_name
+    for (cid, new_name), old_name in categories_to_style.items():
         legacy = next((c for c in categories.values()
                        if fold(c.get("name", "")) == fold(old_name)), None)
         existing_new = any(c.get("name") == new_name
@@ -309,7 +428,10 @@ def create_structure(api, sources):
     # Categories remain top-level (Discord does not support nesting).
     # The name is stable across daily runs; ' 2' only when 45 slots are full.
     def managed_category_names(item):
-        names = {fold(mirror_category_name(item["source_category_name"]))}
+        names = {
+            fold(mirror_category_name(item["source_category_name"])),
+            fold(destination_category_name(item)),
+        }
         if original_forum_group(item):
             names.update(fold(label) for label in DOWNLOAD_CATEGORIES.values())
         return names
@@ -357,6 +479,17 @@ def create_structure(api, sources):
         existing = copies.get(tid)
         target = choose_category(item, existing)
         if existing:
+            # Update only original bot-written topics. A user-customized topic
+            # is never overwritten, and the channel/message IDs remain stable.
+            old_topic = str(existing.get("topic") or "")
+            if (old_topic.startswith("Fiche miroir · ancienne publication :")
+                    or old_topic.startswith("✦ ")):
+                new_topic = channel_topic(item)
+                if new_topic != old_topic:
+                    api.call("PATCH", f"/channels/{existing['id']}",
+                             json={"topic": new_topic})
+                    existing["topic"] = new_topic
+                    print("SALONS : sujet enrichi", existing["name"])
             if str(existing.get("parent_id")) != str(target["id"]):
                 current_category = categories.get(str(existing.get("parent_id")))
                 # Only migrate from one of the previously bot-managed mirror
@@ -382,10 +515,7 @@ def create_structure(api, sources):
             raise RuntimeError("Limite de sécurité des créations atteinte")
         created = api.call("POST", f"/guilds/{GUILD_ID}/channels", json={
             "name": slug, "type": CHANNEL_TEXT, "parent_id": target["id"],
-            "topic": (
-                "Fiche miroir · ancienne publication : " + item["source_url"]
-                + " " + PREFIX + tid + "]"
-            )[:1024],
+            "topic": channel_topic(item),
         })
         channels.append(created)
         copies[tid] = created

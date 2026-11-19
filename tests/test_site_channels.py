@@ -392,5 +392,112 @@ class MirrorTests(unittest.TestCase):
         self.assertEqual(next_run["cards_created"], 1)
 
 
+    def test_all_mirror_cards_are_styled_by_source_rubric(self):
+        from site_channels import mirror_style, polish_mirror_components
+        from forum_cards import build_card, all_text, is_own_card
+        samples = [
+            ("Streaming", "films-et-series", "🎬", 0x8B5CF6),
+            ("Anti-pub", "extension-navigateur", "🛡️", 0x06B6D4),
+            ("Telechargement", "torrent", "📥", 0x6366F1),
+            ("Telechargement", "jeux-video", "🎮", 0x0EA5E9),
+            ("Telechargement", "livres", "📚", 0xF59E0B),
+            ("ressource", "transfert-de-fichiers", "🧰", 0x64748B),
+            ("Achat-Shopping", "comparateur-prix", "🛍️", 0xEC4899),
+        ]
+        for category, forum, icon, accent in samples:
+            with self.subTest(rubric=category, forum=forum):
+                source = {
+                    "tid": WEBFLIX, "title": "Site test",
+                    "source_category_name": category,
+                    "source_forum_name": forum,
+                }
+                group = {"url": "https://example.net/", "status": "online",
+                         "verified": True, "older": [],
+                         "checked_at": "2026-11-18T23:00:00+00:00"}
+                card = build_card([group], "Description personnelle.", "Site test")
+                polished = polish_mirror_components(card, source, [group])
+                parts = polished[0]["components"]
+                texts = "\n".join(all_text(polished))
+                self.assertEqual(polished[0]["accent_color"], accent)
+                self.assertTrue(parts[0]["content"].startswith("## ✦ " + icon))
+                self.assertIn("🟢 Site vérifié", texts)
+                self.assertEqual(texts.count("https://example.net/"), 1)
+                self.assertIn("19/11/2026", texts)
+                self.assertIn("Description personnelle.", texts)
+                self.assertIn("type", parts[2])
+                self.assertEqual(parts[2]["type"], 14)
+                self.assertTrue(is_own_card({
+                    "author": {"id": "999"}, "components": polished
+                }, "999"))
+
+    def test_uncertain_sites_never_say_active_or_turn_green(self):
+        from site_channels import polish_mirror_components
+        from forum_cards import build_card, all_text
+        source = {"tid": WEBFLIX, "title": "Cinezzz",
+                  "source_category_name": "Streaming",
+                  "source_forum_name": "films-et-series"}
+        cases = [
+            ("restricted", False, "🟠 Accès restreint", 0xF97316,
+             "🌐 Adresse à confirmer"),
+            ("offline", False, "🔴 Adresse indisponible", 0xEF4444,
+             "🌐 Dernière adresse connue"),
+            ("unknown", False, "🟡 Vérification en attente", 0xD97706,
+             "🌐 Adresse à confirmer"),
+        ]
+        for status, verified, badge, color, label in cases:
+            with self.subTest(status=status):
+                group = {"url": "https://cinezzz.club/", "status": status,
+                         "verified": verified, "older": []}
+                card = polish_mirror_components(
+                    build_card([group], "", "Cinezzz"), source, [group]
+                )
+                text = "\n".join(all_text(card))
+                self.assertIn(badge, text)
+                self.assertIn(label, text)
+                self.assertNotIn("🌐 Site actif", text)
+                self.assertEqual(card[0]["accent_color"], color)
+                self.assertEqual(text.count("https://cinezzz.club/"), 1)
+
+    def test_existing_categories_are_renamed_not_recreated_and_topics_preserved(self):
+        api = FakeDiscord()
+        state_ = state()
+        sync_mirrors(api, catalogue(), state_)
+        streaming = next(c for c in api.channels if c.get("name") == "🎬 Streaming · Sites")
+        self.assertEqual(streaming["type"], 4)
+        web = next(c for c in api.channels if
+                   str(c.get("id")) ==
+                   state_["site_channel_mirrors"][WEBFLIX]["channel_id"])
+        self.assertIn("🎬 WebFlix", web["topic"])
+        self.assertIn("[elikto:site-channel:v1:", web["topic"])
+        web_id = web["id"]
+        msg_id = state_["site_channel_mirrors"][WEBFLIX]["message_id"]
+
+        # Reproduce an old installation: the existing category and default
+        # topic need a non-destructive visual refresh.
+        streaming["name"] = "Streaming · Sites"
+        web["topic"] = ("Fiche miroir · ancienne publication : "
+                        f"https://discord.com/channels/{GUILD}/{WEBFLIX} "
+                        + PREFIX + WEBFLIX + "]")
+        result = sync_mirrors(api, catalogue(), state_)
+        self.assertEqual(result["categories_renamed"], 1)
+        self.assertEqual(result["categories_created"], 0)
+        self.assertEqual(result["channels_created"], 0)
+        self.assertEqual(web["id"], web_id)
+        self.assertEqual(state_["site_channel_mirrors"][WEBFLIX]["message_id"], msg_id)
+        self.assertIn("🎬 WebFlix", web["topic"])
+        self.assertIn("🎬 Streaming · Sites",
+                      [c["name"] for c in api.channels])
+        again = sync_mirrors(api, catalogue(), state_)
+        self.assertEqual(again["categories_renamed"], 0)
+        self.assertEqual(again["cards_unchanged"], 3)
+
+        # Custom topic not owned by the bot stays untouched.
+        web["topic"] = "Mon texte personnalisé " + PREFIX + WEBFLIX + "]"
+        sync_mirrors(api, catalogue(), state_)
+        self.assertEqual(web["topic"],
+                         "Mon texte personnalisé " + PREFIX + WEBFLIX + "]")
+
+
+
 if __name__ == "__main__":
     unittest.main()
