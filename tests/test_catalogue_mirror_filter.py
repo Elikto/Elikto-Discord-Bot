@@ -20,6 +20,10 @@ class FakeAPI:
                 {"id": "401", "type": 0, "name": "autre-site", "parent_id": "300",
                  "topic": "Fiche miroir [elikto:site-channel:v1:1431054520477024297]"},
                 {"id": "500", "type": 0, "name": "général", "parent_id": "100"},
+                {"id": "301", "type": 4, "name": "🎬 Streaming · Sites"},
+                {"id": "302", "type": 0, "name": "streaming-hd-miroirs",
+                 "parent_id": "301",
+                 "topic": "🎬 suivi [elikto:streaming-hd-mirrors:v1]"},
             ]
         if (method, path) == ("GET", f"/guilds/{GUILD_ID}/threads/active"):
             return {"threads": [{
@@ -38,6 +42,7 @@ class CatalogueMirrorTests(unittest.TestCase):
         all_categories = {name: forums for (_, name), forums in grouped.items()}
         self.assertIn("Telechargement", all_categories)
         self.assertNotIn("Telechargement · Sites", all_categories)
+        self.assertNotIn("🎬 Streaming · Sites", all_categories)
         entries = all_categories["Telechargement"]["torrent"]
         self.assertEqual(
             [title for title, _ in entries if title == "Tr4ker"], ["Tr4ker"]
