@@ -102,6 +102,8 @@ jobs:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           TEAMFLIX_LOGIN_USERNAME: ${{ secrets.TEAMFLIX_LOGIN_USERNAME }}
           TEAMFLIX_LOGIN_PASSWORD: ${{ secrets.TEAMFLIX_LOGIN_PASSWORD }}
+          TR4KER_LOGIN_USERNAME: ${{ secrets.TR4KER_LOGIN_USERNAME }}
+          TR4KER_LOGIN_PASSWORD: ${{ secrets.TR4KER_LOGIN_PASSWORD }}
           DISCORD_GUILD_ID: '1430984645012357263'
           EXCLUDED_CHANNEL_IDS: ${{ vars.EXCLUDED_CHANNEL_IDS }}
         run: python sync_catalogue.py

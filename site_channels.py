@@ -25,6 +25,7 @@ from forum_cards import (
 from forum_updates import (
     latest_check, records_for_forum, site_groups, upsert_forum_update,
     directory_kind,
+    authorized_tr4ker_credentials, authorized_teamflix_credentials,
 )
 from mirror_watch import THREAD_ID as STREAMING_HD_THREAD_ID
 from site_monitor import load_state, STATE_PATH
@@ -336,6 +337,10 @@ def mirror_card(api, state, source, bot_id):
             mirror_channel_id=(state.get("site_channel_mirrors") or {}).get(
                 source["tid"], {}
             ).get("channel_id"),
+        ) or authorized_tr4ker_credentials(
+            source["tid"], source["title"]
+        ) or authorized_teamflix_credentials(
+            source["tid"], source["title"]
         ) or teamflix_owner_post_credentials(
             api, source["tid"], source["title"], GUILD_ID,
             mirror_channel_id=(state.get("site_channel_mirrors") or {}).get(

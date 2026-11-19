@@ -861,6 +861,23 @@ class ForumUpdatesTests(unittest.TestCase):
         self.assertEqual(parts[image_i]["items"][0]["media"]["url"],
                          "https://sample.example.org/cover.jpg")
 
+    def test_tr4ker_secret_is_restricted_to_the_intended_card(self):
+        from forum_updates import authorized_tr4ker_credentials
+        with patch.dict("os.environ", {
+            "TR4KER_LOGIN_USERNAME": "test-login",
+            "TR4KER_LOGIN_PASSWORD": "test-pass",
+        }):
+            self.assertEqual(
+                authorized_tr4ker_credentials("1572752361967853713", "Tr4ker"),
+                {"user": "test-login", "password": "test-pass"},
+            )
+            self.assertIsNone(authorized_tr4ker_credentials(
+                "1572752361967853713", "Autre", 
+            ))
+            self.assertIsNone(authorized_tr4ker_credentials(
+                "1565898044518568187", "Teamflix",
+            ))
+
     def test_vip_url_is_also_immediately_before_preview(self):
         from forum_cards import build_card
         components = build_card(

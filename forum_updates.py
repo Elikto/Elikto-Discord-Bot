@@ -19,7 +19,10 @@ from name_probe import fetch_html_page, probe_site_name, parse_site_migration
 from forum_cards import (source_description, credentials_from_author_posts,
                          build_card, all_text, normalize, is_own_card,
                          card_digest, V2_FLAG)
-from site_credentials import tr4ker_owner_post_credentials, teamflix_owner_post_credentials
+from site_credentials import (
+    tr4ker_owner_post_credentials, teamflix_owner_post_credentials,
+    TR4KER_THREAD_ID,
+)
 
 MARKER = "[elikto-forum-suivi:v1]"
 MIRROR_THREAD = "1430988094374547559"
@@ -1187,6 +1190,24 @@ def authorized_teamflix_credentials(thread_id, forum_title):
     return {"user": username, "password": password}
 
 
+def authorized_tr4ker_credentials(thread_id, forum_title):
+    """Read the two private GitHub Actions secrets only for Tr4ker.
+
+    Never write their values to source code, monitoring JSON or logs.
+    """
+    if (str(thread_id) != TR4KER_THREAD_ID
+            or str(forum_title or "").casefold().strip() != "tr4ker"):
+        return None
+    username = os.environ.get("TR4KER_LOGIN_USERNAME", "").strip()
+    password = os.environ.get("TR4KER_LOGIN_PASSWORD", "").strip()
+    if not username or not password:
+        return None
+    if (len(username) > 150 or len(password) > 200
+            or any(x in username + password for x in ("\r", "\n", "||"))):
+        return None
+    return {"user": username, "password": password}
+
+
 def sync_forum_updates(api, state, changed_events=()):
     """Initialiser tous les forums publics, puis synchroniser les changements.
 
@@ -1226,7 +1247,9 @@ def sync_forum_updates(api, state, changed_events=()):
                 else site_groups(linked, info.get("title") or "Site")
             )
             credentials = credentials_from_author_posts(api, tid, bot_id)
-            owner_tr4ker = tr4ker_owner_post_credentials(
+            owner_tr4ker = authorized_tr4ker_credentials(
+                tid, info.get("title")
+            ) or tr4ker_owner_post_credentials(
                 api, tid, info.get("title"), os.getenv("DISCORD_GUILD_ID", ""),
                 mirror_channel_id=(state.get("site_channel_mirrors") or {}).get(
                     tid, {}
