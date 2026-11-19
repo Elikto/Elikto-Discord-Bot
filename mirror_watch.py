@@ -718,6 +718,7 @@ def upsert_bot_message(api, tracked, bot_id, content, *, channel_id=THREAD_ID):
             or prior.startswith("🎬 Dernière sortie cinéma")
             or "CINÉMA HD · SITES ACTUELS" in v2_text
             or "## 🎬 STREAMING HD" in v2_text
+            or "## ✦ 🎬 Streaming HD ✦" in v2_text
         ):
             return update_if_needed(msg)
 

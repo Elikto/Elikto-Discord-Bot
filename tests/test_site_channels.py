@@ -150,6 +150,36 @@ class FakeDiscord:
         raise AssertionError(f"Unexpected {method} {path}")
 
 class MirrorTests(unittest.TestCase):
+    def test_coflix_retires_superseded_domain_in_current_salon_card(self):
+        tid = "1430989234264870912"
+        st = state()
+        st["records"][tid] = {
+            "site_url": "https://coflix.boo/", "status": "unknown"
+        }
+        st["server_links"]["https://coflix.boo/"] = {
+            "site_url": "https://coflix.boo/", "status": "unknown",
+            "active": True,
+            "sources": [{
+                "url": f"https://discord.com/channels/{GUILD}/{tid}/{tid}",
+                "kind": "fil",
+            }],
+        }
+        st["forum_updates"][tid] = {
+            "active_url": "https://coflix.red/",
+            "active_status": "online", "active_verified": True,
+            "active_checked_at": "2026-11-19T02:20:11+00:00",
+        }
+        source = {"tid": tid, "title": "Coflix",
+                  "source_category_name": "Streaming"}
+        self.assertEqual(groups_for_mirror(st, source)[0]["older"], [])
+        api = FakeDiscord()
+        api.originals[tid] = "Catalogue streaming\nhttps://coflix.boo/"
+        card = mirror_card(api, st, source, "999")
+        visible = "\n".join(all_text(card))
+        self.assertIn("https://coflix.red/", visible)
+        self.assertNotIn("coflix.boo", visible)
+        self.assertIn("Catalogue streaming", visible)
+
     def test_plans_real_public_forums_only(self):
         result = catalogue_threads(catalogue())
         self.assertEqual({x["tid"] for x in result}, {TR4KER, C411, WEBFLIX})

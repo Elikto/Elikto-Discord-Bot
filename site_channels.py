@@ -24,7 +24,9 @@ from forum_cards import (
 )
 from forum_updates import (
     latest_check, records_for_forum, site_groups, upsert_forum_update,
+    directory_kind,
 )
+from mirror_watch import THREAD_ID as STREAMING_HD_THREAD_ID
 from site_monitor import load_state, STATE_PATH
 from site_probe import clean_url
 from site_credentials import tr4ker_owner_post_credentials
@@ -289,6 +291,10 @@ def groups_for_mirror(state, source):
             "reference_url": reference,
         })
         selected.setdefault("older", [])
+        if directory_kind(source["title"]):
+            # Old domains stay in the private scan history, but do not leak
+            # back into current-directory cards as obsolete addresses.
+            selected["older"] = []
         # Do not use the last scan of an old domain as the scan of the
         # new destination URL; take only matching observations.
         scan_link = (state.get("server_links") or {}).get(active, {})
@@ -319,6 +325,16 @@ def mirror_card(api, state, source, bot_id):
     groups = groups_for_mirror(state, source)
     original = safe_source_description(api, source, bot_id)
     tracking = (state.get("forum_updates") or {}).get(source["tid"], {})
+    if directory_kind(source["title"]) and tracking.get("active_url"):
+        # Preserve prose; hide standalone superseded URLs from the old post.
+        active = clean_url(tracking["active_url"])
+        original = "\n".join(
+            line for line in original.splitlines()
+            if not (
+                re.fullmatch(r"https?://[^\\s<>]+", line.strip().strip("<>"))
+                and clean_url(line.strip().strip("<>")) != active
+            )
+        ).strip()
     if groups:
         # Only reproduce credentials ALREADY publicly displayed by the
         # original, bot-authored forum card. Never read from a private forum,
@@ -559,8 +575,17 @@ def sync_mirrors(api, catalogue, state):
             continue
         cid = str(copy["id"])
         try:
-            card = mirror_card(api, state, source, bot_id)
             known = tracking.get(tid, {})
+            # Streaming HD is maintained by mirror_channel.py using the
+            # verified mirror scan, not by this generic one-URL renderer.
+            live_stream = state.get("streaming_mirror_channel") or {}
+            if (tid == STREAMING_HD_THREAD_ID
+                    and str(live_stream.get("channel_id")) == cid
+                    and live_stream.get("message_id")
+                    and str(live_stream["message_id"]) == str(known.get("message_id"))):
+                result["cards_unchanged"] += 1
+                continue
+            card = mirror_card(api, state, source, bot_id)
             previous = {
                 "message_id": known.get("message_id")
                 if known.get("channel_id") == cid else None

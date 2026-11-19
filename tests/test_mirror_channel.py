@@ -119,6 +119,37 @@ class MirrorChannelTests(unittest.TestCase):
         self.assertFalse(any(m in ("POST", "PATCH") for m, _ in api.calls))
         self.assertFalse(any(THREAD_ID in p for _, p in api.calls))
 
+    def test_reuses_existing_streaming_hd_salon_without_second_channel(self):
+        api = FakeDiscord()
+        api.channels.append({
+            "id": "555", "type": 0, "name": "streaming-hd",
+            "parent_id": "111",
+            "topic": f"[elikto:site-channel:v1:{THREAD_ID}]",
+        })
+        api.bot_messages["555"] = [{
+            "id": "899", "author": {"id": "999"}, "flags": 32768,
+            "content": None, "components": [{
+                "type": 17, "components": [{
+                    "type": 10, "content": "## ✦ 🎬 Streaming HD ✦",
+                }],
+            }],
+        }]
+        state = mirror_state()
+        state["site_channel_mirrors"] = {
+            THREAD_ID: {"channel_id": "555", "message_id": "899"}
+        }
+        cid, mid = sync_mirror_channel(api, state, dropdown_enabled=True)
+        self.assertEqual((cid, mid), ("555", "899"))
+        self.assertEqual(len(api.bot_messages["555"]), 1)
+        self.assertFalse(any(method == "POST" and path.endswith("/channels")
+                             for method, path in api.calls))
+        self.assertEqual(state["streaming_mirror_channel"]["channel_id"], "555")
+        self.assertEqual(state["site_channel_mirrors"][THREAD_ID]["message_id"], "899")
+        self.assertEqual(
+            api.bot_messages["555"][0]["components"][0]["components"][1]
+            ["components"][0]["type"], 3
+        )
+
     def test_traffic_light_only_green_with_verified_html(self):
         source = mirror_state()["tracked_threads"][THREAD_ID]["display_sites"]
         source.insert(0, {

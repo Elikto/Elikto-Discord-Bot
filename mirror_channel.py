@@ -23,8 +23,23 @@ CHANNEL_TOPIC = (
 )
 
 
-def find_or_create_channel(api):
+def find_or_create_channel(api, state=None):
     channels = api.call("GET", f"/guilds/{GUILD_ID}/channels")
+    # The original Streaming HD site-channel already exists. Reuse it
+    # rather than creating a duplicate streaming-hd-miroirs channel.
+    known = ((state or {}).get("site_channel_mirrors") or {}).get(THREAD_ID, {})
+    preferred_id = str(known.get("channel_id") or "")
+    original_marker = f"[elikto:site-channel:v1:{THREAD_ID}]"
+    originals = [
+        c for c in channels
+        if c.get("type") == CHANNEL_TEXT
+        and (original_marker in (c.get("topic") or "")
+             or (preferred_id and str(c.get("id")) == preferred_id))
+    ]
+    if len(originals) > 1:
+        raise RuntimeError("Plusieurs salons associés à Streaming HD : doublon à examiner")
+    if originals:
+        return str(originals[0]["id"]), False
     found = [
         channel for channel in channels
         if channel.get("type") == CHANNEL_TEXT
@@ -89,16 +104,23 @@ def sync_mirror_channel(api, state, *, dropdown_enabled=False):
         sites, source.get("name") or "Streaming HD miroir",
         dropdown_enabled=dropdown_enabled, status_badges=True,
     )
-    channel_id, created = find_or_create_channel(api)
+    channel_id, created = find_or_create_channel(api, state)
     bot_id = str(api.call("GET", "/users/@me")["id"])
     tracked = state.setdefault("streaming_mirror_channel", {})
     if str(tracked.get("channel_id")) != channel_id:
         tracked.pop("message_id", None)
     tracked["channel_id"] = channel_id
+    original = (state.get("site_channel_mirrors") or {}).get(THREAD_ID, {})
+    if (str(original.get("channel_id")) == channel_id
+            and original.get("message_id")):
+        # Reuse and edit the card already posted in the requested channel.
+        tracked["message_id"] = str(original["message_id"])
     message_id = upsert_bot_message(
         api, tracked, bot_id, cards, channel_id=channel_id,
     )
     tracked["message_id"] = message_id
+    if str(original.get("channel_id")) == channel_id:
+        original["message_id"] = message_id
     print(
         "MIROIRS SALON :",
         len(sites), "adresses dans le menu ; salon", channel_id,
