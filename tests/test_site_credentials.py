@@ -110,36 +110,35 @@ class Tr4kerCredentialsTests(unittest.TestCase):
             api, TR4KER_THREAD_ID, "Tr4ker", GUILD_ID
         ))
 
-    def test_login_may_be_supplied_in_the_new_text_channel(self):
+    def test_only_forum_messages_can_supply_credentials(self):
         api = FakeDiscord(
-            [reply("Utilisateur : ancien\nMot de passe : ancien")],
+            [reply("Utilisateur : bon\\nMot de passe : original")],
             mirror_messages=[{
                 "id": "1800000000000000000",
                 "author": {"id": OWNER_ID},
-                "content": "Utilisateur : nouveau\nMot de passe : updated",
-            }],
+                "content": "Utilisateur : mauvais\\nMot de passe : miroir",
+            }]
         )
         found = tr4ker_owner_post_credentials(
             api, TR4KER_THREAD_ID, "Tr4ker", GUILD_ID,
             mirror_channel_id="1572759788167766058",
         )
-        self.assertEqual(found, {"user": "nouveau", "password": "updated"})
-        self.assertEqual(len(api.calls), 3)
+        self.assertEqual(found, {"user": "bon", "password": "original"})
+        self.assertFalse(any(
+            "/1572759788167766058/messages" in path
+            for _, path, _ in api.calls
+        ))
 
-    def test_non_owner_in_new_channel_never_overrides_owner(self):
-        api = FakeDiscord(
-            [reply("Utilisateur : bon\nMot de passe : correct")],
-            mirror_messages=[{
-                "id": "1800000000000000000",
-                "author": {"id": "222222222222222222"},
-                "content": "Utilisateur : fake\nMot de passe : fake",
-            }],
-        )
-        found = tr4ker_owner_post_credentials(
-            api, TR4KER_THREAD_ID, "Tr4ker", GUILD_ID,
-            mirror_channel_id="1572759788167766058",
-        )
-        self.assertEqual(found, {"user": "bon", "password": "correct"})
+    def test_teamflix_credentials_must_come_from_own_forum(self):
+        api = FakeDiscord([
+            reply("Utilisateur : team-test\\nMot de passe : pass-test")
+        ])
+        self.assertEqual(teamflix_owner_post_credentials(
+            api, TEAMFLIX_THREAD_ID, "Teamflix", GUILD_ID
+        ), {"user": "team-test", "password": "pass-test"})
+        self.assertIsNone(teamflix_owner_post_credentials(
+            api, TR4KER_THREAD_ID, "Tr4ker", GUILD_ID
+        ))
 
     def test_other_threads_cannot_access_owner_login(self):
         api = FakeDiscord([reply("Utilisateur : foo\nMot de passe : bar")])

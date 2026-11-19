@@ -1,7 +1,7 @@
 """Read Tr4ker's credentials only from a verified Discord server owner post.
 
 The original Tr4ker forum starter was written by the bot and contains no
-credentials. The owner can provide them in ONE message in the original thread or mirror.
+credentials. The owner can provide them in ONE message in the original forum thread only.
 No values are written to source code, GitHub Actions logs or monitoring JSON.
 """
 from forum_cards import credential_fields
@@ -13,11 +13,9 @@ TEAMFLIX_THREAD_ID = "1565898044518568187"
 def _owner_post_credentials(
     api, thread_id, forum_title, guild_id, mirror_channel_id=None
 ):
-    """Read one complete owner-authored credential post from Tr4ker.
+    """Read the latest complete owner-authored post from this source forum.
 
-    Accepts the original forum and the NEW text channel. This lets the owner
-    post directly in #tr4ker without returning to archived forum threads.
-    The latest legitimate post wins. Never persist or log credential values.
+    Never inspect the mirror channel or use GitHub secrets as a substitute.
     """
     permitted = {TR4KER_THREAD_ID: "tr4ker", TEAMFLIX_THREAD_ID: "teamflix"}
     if permitted.get(str(thread_id)) != str(forum_title or "").casefold().strip():
@@ -31,19 +29,20 @@ def _owner_post_credentials(
         return None
 
     candidates = []
-    channels = [str(thread_id)]
-    mirror_id = str(mirror_channel_id or "")
-    if mirror_id.isdigit() and mirror_id not in channels:
-        channels.insert(0, mirror_id)
-
-    for channel_id in channels:
+    before = None
+    for _ in range(20):
+        params = {"limit": 100}
+        if before:
+            params["before"] = before
         try:
             messages = api.call(
-                "GET", f"/channels/{channel_id}/messages",
-                params={"limit": 100}
+                "GET", f"/channels/{thread_id}/messages",
+                params=params
             )
         except (RuntimeError, AssertionError, ValueError, TypeError):
-            continue
+            break
+        if not messages:
+            break
         for message in messages:
             author = message.get("author") or {}
             if (str(author.get("id")) != owner_id or author.get("bot")
@@ -59,7 +58,19 @@ def _owner_post_credentials(
                 if not secret or len(secret) > 200:
                     continue
                 fields["password"] = secret
-                candidates.append((int(message.get("id") or 0), fields))
+                try:
+                    candidates.append((int(message.get("id") or 0), fields))
+                except (ValueError, TypeError):
+                    continue
+        if len(messages) < 100:
+            break
+        try:
+            oldest = str(min(int(item["id"]) for item in messages))
+        except (TypeError, ValueError, KeyError):
+            break
+        if oldest == before:
+            break
+        before = oldest
     if not candidates:
         return None
     return max(candidates, key=lambda entry: entry[0])[1]
@@ -78,7 +89,7 @@ def tr4ker_owner_post_credentials(
 def teamflix_owner_post_credentials(
     api, thread_id, forum_title, guild_id, mirror_channel_id=None
 ):
-    """Only an owner-authored post in the Teamflix forum or mirror qualifies."""
+    """Only an owner-authored post in the source Teamflix forum qualifies."""
     if str(thread_id) != TEAMFLIX_THREAD_ID:
         return None
     return _owner_post_credentials(

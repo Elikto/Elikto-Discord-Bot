@@ -20,12 +20,11 @@ from sync_catalogue import (
 )
 from forum_cards import (
     build_card, source_description, safe_title, last_check_line, credential_fields,
-    credentials_from_published_forum_card, V2_FLAG,
+    credentials_from_author_posts, credentials_from_published_forum_card, V2_FLAG,
 )
 from forum_updates import (
     latest_check, records_for_forum, site_groups, upsert_forum_update,
     directory_kind,
-    authorized_tr4ker_credentials, authorized_teamflix_credentials,
 )
 from mirror_watch import THREAD_ID as STREAMING_HD_THREAD_ID
 from site_monitor import load_state, STATE_PATH
@@ -327,26 +326,27 @@ def mirror_card(api, state, source, bot_id):
     original = safe_source_description(api, source, bot_id)
     tracking = (state.get("forum_updates") or {}).get(source["tid"], {})
     if groups:
-        # Only reproduce credentials ALREADY publicly displayed by the
-        # original, bot-authored forum card. Never read from a private forum,
-        # and never persist the login in the JSON state or the repository.
-        credentials = credentials_from_published_forum_card(
-            api, source["tid"], bot_id, tracking.get("message_id")
-        ) or tr4ker_owner_post_credentials(
-            api, source["tid"], source["title"], GUILD_ID,
-            mirror_channel_id=(state.get("site_channel_mirrors") or {}).get(
-                source["tid"], {}
-            ).get("channel_id"),
-        ) or authorized_tr4ker_credentials(
-            source["tid"], source["title"]
-        ) or authorized_teamflix_credentials(
-            source["tid"], source["title"]
-        ) or teamflix_owner_post_credentials(
-            api, source["tid"], source["title"], GUILD_ID,
-            mirror_channel_id=(state.get("site_channel_mirrors") or {}).get(
-                source["tid"], {}
-            ).get("channel_id"),
-        ) or {}
+        # For Tr4ker/Teamflix the ORIGINAL forum is authoritative,
+        # including the starter author's posts and guild owner's replies.
+        title = source["title"].strip().casefold()
+        if title in ("tr4ker", "teamflix"):
+            credentials = credentials_from_author_posts(
+                api, source["tid"], bot_id
+            ) or {}
+            forum_owner_credentials = (
+                tr4ker_owner_post_credentials(
+                    api, source["tid"], source["title"], GUILD_ID
+                )
+                or teamflix_owner_post_credentials(
+                    api, source["tid"], source["title"], GUILD_ID
+                )
+            )
+            if forum_owner_credentials:
+                credentials.update(forum_owner_credentials)
+        else:
+            credentials = credentials_from_published_forum_card(
+                api, source["tid"], bot_id, tracking.get("message_id")
+            ) or {}
         components = build_card(
             groups, original, source["title"],
             credentials=credentials, preview_image_url=tracking.get("preview_image_url"),

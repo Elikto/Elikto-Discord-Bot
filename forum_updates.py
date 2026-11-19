@@ -21,7 +21,6 @@ from forum_cards import (source_description, credentials_from_author_posts,
                          card_digest, V2_FLAG)
 from site_credentials import (
     tr4ker_owner_post_credentials, teamflix_owner_post_credentials,
-    TR4KER_THREAD_ID,
 )
 
 MARKER = "[elikto-forum-suivi:v1]"
@@ -1170,44 +1169,6 @@ def upsert_preview(api, tid, bot_id, url, tracking, candidates=()):
     return str(posted["id"]), "created"
 
 
-def authorized_teamflix_credentials(thread_id, forum_title):
-    """Read a dedicated, non-versioned GitHub Actions secret for Teamflix.
-
-    Never write credentials into monitor_state.json or GitHub history.
-    They are only forwarded to the intended Discord forum card.
-    """
-    if str(thread_id) != TEAMFLIX_THREAD or str(forum_title or "").casefold() != "teamflix":
-        return None
-    username = os.environ.get("TEAMFLIX_LOGIN_USERNAME", "").strip()
-    password = os.environ.get("TEAMFLIX_LOGIN_PASSWORD", "").strip()
-    if not username or not password:
-        return None
-    if len(username) > 150 or len(password) > 200 or any(
-        x in password for x in ("\\r", "\\n", "||")
-    ):
-        # Refuse malformed values instead of leaking them into Discord Markdown.
-        return None
-    return {"user": username, "password": password}
-
-
-def authorized_tr4ker_credentials(thread_id, forum_title):
-    """Read the two private GitHub Actions secrets only for Tr4ker.
-
-    Never write their values to source code, monitoring JSON or logs.
-    """
-    if (str(thread_id) != TR4KER_THREAD_ID
-            or str(forum_title or "").casefold().strip() != "tr4ker"):
-        return None
-    username = os.environ.get("TR4KER_LOGIN_USERNAME", "").strip()
-    password = os.environ.get("TR4KER_LOGIN_PASSWORD", "").strip()
-    if not username or not password:
-        return None
-    if (len(username) > 150 or len(password) > 200
-            or any(x in username + password for x in ("\r", "\n", "||"))):
-        return None
-    return {"user": username, "password": password}
-
-
 def sync_forum_updates(api, state, changed_events=()):
     """Initialiser tous les forums publics, puis synchroniser les changements.
 
@@ -1247,26 +1208,18 @@ def sync_forum_updates(api, state, changed_events=()):
                 else site_groups(linked, info.get("title") or "Site")
             )
             credentials = credentials_from_author_posts(api, tid, bot_id)
-            owner_tr4ker = authorized_tr4ker_credentials(
-                tid, info.get("title")
-            ) or tr4ker_owner_post_credentials(
-                api, tid, info.get("title"), os.getenv("DISCORD_GUILD_ID", ""),
-                mirror_channel_id=(state.get("site_channel_mirrors") or {}).get(
-                    tid, {}
-                ).get("channel_id"),
+            # Only the author's/owner's messages in this source forum
+            # may supply credentials; never a mirror or GitHub secret.
+            owner_credentials = (
+                tr4ker_owner_post_credentials(
+                    api, tid, info.get("title"), os.getenv("DISCORD_GUILD_ID", "")
+                )
+                or teamflix_owner_post_credentials(
+                    api, tid, info.get("title"), os.getenv("DISCORD_GUILD_ID", "")
+                )
             )
-            if owner_tr4ker:
-                credentials = {**(credentials or {}), **owner_tr4ker}
-            secure_teamflix = (authorized_teamflix_credentials(tid, info.get("title"))
-                               or teamflix_owner_post_credentials(
-                                   api, tid, info.get("title"),
-                                   os.getenv("DISCORD_GUILD_ID", ""),
-                                   mirror_channel_id=(state.get("site_channel_mirrors") or {}).get(
-                                       tid, {}
-                                   ).get("channel_id"),
-                               ))
-            if secure_teamflix:
-                credentials = {**(credentials or {}), **secure_teamflix}
+            if owner_credentials:
+                credentials = {**(credentials or {}), **owner_credentials}
             preview_url = clean_url(groups[0]["url"])
             image = (cached_site_preview(
                 api, tid, preview_url, previous,
